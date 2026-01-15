@@ -1,0 +1,109 @@
+[gd_scene load_steps=3 format=3 uid="uid://dxjsf50l3alof"]
+
+[ext_resource type="Script" uid="uid://cwr3057a08dwh" path="res://Scripts/UI/EnemyInfoCard.gd" id="1_script"]
+[ext_resource type="Texture2D" uid="uid://0modheirbetv" path="res://Tilesheet/kenney_fantasy-ui-borders/Vector/fantasy-ui-borders.svg" id="2_1m2yp"]
+
+[node name="EnemyInfoCard" type="PanelContainer"]
+custom_minimum_size = Vector2(288, 80)
+offset_right = 288.0
+offset_bottom = 80.0
+mouse_filter = 2
+script = ExtResource("1_script")
+
+[node name="Background" type="NinePatchRect" parent="."]
+texture_filter = 1
+texture_repeat = 1
+layout_mode = 2
+texture = ExtResource("2_1m2yp")
+region_rect = Rect2(860, 226, 48, 48)
+patch_margin_left = 16
+patch_margin_top = 16
+patch_margin_right = 16
+patch_margin_bottom = 16
+
+[node name="HBox" type="HBoxContainer" parent="."]
+layout_mode = 2
+theme_override_constants/separation = 10
+
+[node name="Icon" type="TextureRect" parent="HBox"]
+texture_filter = 1
+custom_minimum_size = Vector2(64, 64)
+layout_mode = 2
+expand_mode = 1
+stretch_mode = 5
+
+[node name="InfoBox" type="VBoxContainer" parent="HBox"]
+layout_mode = 2
+size_flags_horizontal = 3
+alignment = 1
+
+[node name="NameLabel" type="Label" parent="HBox/InfoBox"]
+layout_mode = 2
+theme_override_colors/font_color = Color(1, 0.6, 0.6, 1)
+theme_override_font_sizes/font_size = 18
+text = "Enemy Name"
+
+			[node name="StatsBox" type="VBoxContainer" parent="HBox/InfoBox"]
+			layout_mode = 2
+			theme_override_constants/separation = -4
+
+			[node name="BarrierContainer" type="HBoxContainer" parent="HBox/InfoBox/StatsBox"]
+			custom_minimum_size = Vector2(0, 8)
+			layout_mode = 2
+			alignment = 1
+
+			[node name="HPBarContainer" type="MarginContainer" parent="HBox/InfoBox/StatsBox"]
+			custom_minimum_size = Vector2(180, 14)
+			layout_mode = 2
+			size_flags_horizontal = 0
+
+			[node name="HPBar" type="ProgressBar" parent="HBox/InfoBox/StatsBox/HPBarContainer"]
+			custom_minimum_size = Vector2(180, 14)
+			layout_mode = 2
+			size_flags_vertical = 4
+			value = 100.0
+			show_percentage = false
+
+			[node name="HPLabel" type="RichTextLabel" parent="HBox/InfoBox/StatsBox/HPBarContainer"]
+			clip_contents = false
+			custom_minimum_size = Vector2(0, 14)
+			layout_mode = 2
+			theme_override_constants/outline_size = 4
+			theme_override_font_sizes/normal_font_size = 10
+			bbcode_enabled = true
+			text = "[center]HP: 100[/center]"
+			scroll_active = false
+
+			[node name="StatsGrid" type="GridContainer" parent="HBox/InfoBox"]
+			layout_mode = 2
+			theme_override_constants/h_separation = 20
+			columns = 2
+
+			[node name="StrLabel" type="Label" parent="HBox/InfoBox/StatsGrid"]
+			layout_mode = 2
+			theme_override_colors/font_color = Color(1, 0.4, 0.4, 1)
+			theme_override_font_sizes/font_size = 12
+			text = "STR: 10"
+
+			[node name="DexLabel" type="Label" parent="HBox/InfoBox/StatsGrid"]
+			layout_mode = 2
+			theme_override_colors/font_color = Color(0.4, 1, 0.4, 1)
+			theme_override_font_sizes/font_size = 12
+			text = "DEX: 10"
+
+			[node name="IntLabel" type="Label" parent="HBox/InfoBox/StatsGrid"]
+			layout_mode = 2
+			theme_override_colors/font_color = Color(0.4, 0.4, 1, 1)
+			theme_override_font_sizes/font_size = 12
+			text = "INT: 10"
+
+			[node name="PieLabel" type="Label" parent="HBox/InfoBox/StatsGrid"]
+			layout_mode = 2
+			theme_override_colors/font_color = Color(1, 1, 0.4, 1)
+			theme_override_font_sizes/font_size = 12
+			text = "PIE: 10"
+
+[node name="ComboLabel" type="Label" parent="HBox/InfoBox"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 12
+text = "Combo: 1"

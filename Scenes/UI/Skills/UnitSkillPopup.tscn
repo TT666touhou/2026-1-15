@@ -1,0 +1,123 @@
+[gd_scene load_steps=3 format=3 uid="uid://bgnosk87uujw3"]
+
+[ext_resource type="Script" uid="uid://b1au7rb1c3y2r" path="res://Scripts/UI/Skills/SkillTooltipUI.gd" id="1"]
+
+[sub_resource type="StyleBoxFlat" id="1"]
+bg_color = Color(0.1, 0.1, 0.1, 1)
+border_width_left = 1
+border_width_top = 1
+border_width_right = 1
+border_width_bottom = 1
+corner_radius_top_left = 4
+corner_radius_top_right = 4
+corner_radius_bottom_right = 4
+corner_radius_bottom_left = 4
+
+[node name="UnitSkillPopup" type="PanelContainer"]
+custom_minimum_size = Vector2(250, 0)
+offset_right = 250.0
+offset_bottom = 100.0
+mouse_filter = 2
+theme_override_styles/panel = SubResource("1")
+script = ExtResource("1")
+
+[node name="Margin" type="MarginContainer" parent="."]
+layout_mode = 2
+theme_override_constants/margin_left = 10
+theme_override_constants/margin_top = 10
+theme_override_constants/margin_right = 10
+theme_override_constants/margin_bottom = 10
+
+[node name="VBox" type="VBoxContainer" parent="Margin"]
+layout_mode = 2
+theme_override_constants/separation = 5
+
+[node name="NameLabel" type="Label" parent="Margin/VBox"]
+unique_name_in_owner = true
+layout_mode = 2
+theme_override_colors/font_color = Color(1, 0.9, 0.4, 1)
+theme_override_font_sizes/font_size = 18
+text = "Skill Name"
+
+[node name="HSeparator" type="HSeparator" parent="Margin/VBox"]
+layout_mode = 2
+
+[node name="DescLabel" type="Label" parent="Margin/VBox"]
+unique_name_in_owner = true
+layout_mode = 2
+theme_override_font_sizes/font_size = 14
+text = "Description here..."
+autowrap_mode = 2
+
+[node name="TargetingTypeLabel" type="Label" parent="Margin/VBox"]
+unique_name_in_owner = true
+layout_mode = 2
+theme_override_colors/font_color = Color(0.4, 0.8, 1, 1)
+theme_override_font_sizes/font_size = 12
+text = "Targeting: Center on Unit"
+horizontal_alignment = 1
+
+[node name="ExecutionModeLabel" type="Label" parent="Margin/VBox"]
+unique_name_in_owner = true
+layout_mode = 2
+theme_override_colors/font_color = Color(0.8, 1, 0.4, 1)
+theme_override_font_sizes/font_size = 12
+text = "Mode: Direct"
+horizontal_alignment = 1
+
+[node name="HSeparator2" type="HSeparator" parent="Margin/VBox"]
+layout_mode = 2
+
+[node name="RangeHeader" type="Label" parent="Margin/VBox"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.7, 0.7, 0.7, 1)
+theme_override_font_sizes/font_size = 12
+text = "- RANGE -"
+horizontal_alignment = 1
+
+[node name="GridsHBox" type="HBoxContainer" parent="Margin/VBox"]
+layout_mode = 2
+theme_override_constants/separation = 10
+alignment = 1
+
+[node name="SelectionContainer" type="VBoxContainer" parent="Margin/VBox/GridsHBox"]
+unique_name_in_owner = true
+layout_mode = 2
+
+[node name="Label" type="Label" parent="Margin/VBox/GridsHBox/SelectionContainer"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.4, 0.6, 1, 1)
+theme_override_font_sizes/font_size = 10
+text = "Selection"
+horizontal_alignment = 1
+
+[node name="Center" type="CenterContainer" parent="Margin/VBox/GridsHBox/SelectionContainer"]
+layout_mode = 2
+
+[node name="RangeGrid" type="GridContainer" parent="Margin/VBox/GridsHBox/SelectionContainer/Center"]
+unique_name_in_owner = true
+layout_mode = 2
+theme_override_constants/h_separation = 2
+theme_override_constants/v_separation = 2
+columns = 7
+
+[node name="EffectContainer" type="VBoxContainer" parent="Margin/VBox/GridsHBox"]
+unique_name_in_owner = true
+layout_mode = 2
+
+[node name="Label" type="Label" parent="Margin/VBox/GridsHBox/EffectContainer"]
+layout_mode = 2
+theme_override_colors/font_color = Color(1, 0.6, 0.2, 1)
+theme_override_font_sizes/font_size = 10
+text = "Effect"
+horizontal_alignment = 1
+
+[node name="Center" type="CenterContainer" parent="Margin/VBox/GridsHBox/EffectContainer"]
+layout_mode = 2
+
+[node name="EffectGrid" type="GridContainer" parent="Margin/VBox/GridsHBox/EffectContainer/Center"]
+unique_name_in_owner = true
+layout_mode = 2
+theme_override_constants/h_separation = 2
+theme_override_constants/v_separation = 2
+columns = 7

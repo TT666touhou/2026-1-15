@@ -1,0 +1,6 @@
+[gd_scene load_steps=2 format=3 uid="uid://cx6i8j7y6k3m4"]
+
+[ext_resource type="Script" uid="uid://ch2i8m4k8p5q1" path="res://Scripts/UI/MovementRangeIndicator.gd" id="1_indicator"]
+
+[node name="MovementRangeIndicator" type="Node2D"]
+script = ExtResource("1_indicator")

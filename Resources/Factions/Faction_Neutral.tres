@@ -1,0 +1,10 @@
+[gd_resource type="Resource" script_class="FactionDefinition" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://Scripts/Resources/FactionDefinition.gd" id="1_w6t4u"]
+
+[resource]
+script = ExtResource("1_w6t4u")
+faction_name = "Neutral"
+color = Color(0.8, 0.8, 0.8, 1)
+is_controllable = false
+

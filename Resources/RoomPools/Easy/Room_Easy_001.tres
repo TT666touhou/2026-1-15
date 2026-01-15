@@ -1,0 +1,25 @@
+[gd_resource type="Resource" script_class="RoomTemplate" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://Scripts/Map/RoomTemplate.gd" id="1_4l580"]
+
+[resource]
+script = ExtResource("1_4l580")
+room_name = "T001"
+difficulty = 0
+entities = Array[Dictionary]([{
+"card_path": "res://Resources/Cards/Enemy_001.tres",
+"pos": Vector2i(4, 1)
+}, {
+"card_path": "res://Resources/Cards/Enemy_001.tres",
+"pos": Vector2i(4, 2)
+}, {
+"card_path": "res://Resources/Cards/Enemy_001.tres",
+"pos": Vector2i(4, 3)
+}, {
+"card_path": "res://Resources/Cards/Enemy_001.tres",
+"pos": Vector2i(4, 4)
+}, {
+"card_path": "res://Resources/Cards/Enemy_001.tres",
+"pos": Vector2i(4, 5)
+}])
+player_spawn_points = Array[Vector2i]([Vector2i(0, 2), Vector2i(0, 3), Vector2i(0, 4)])

@@ -1,0 +1,14 @@
+[gd_resource type="Resource" script_class="MovementArrowSettings" load_steps=4 format=3 uid="uid://iqeurk6l7rs6"]
+
+[ext_resource type="Texture2D" uid="uid://d27puar3ajqse" path="res://Tilesheet/kenney_cursor-pack/PNG/Basic/Double/navigation_n.png" id="1_ptqhh"]
+[ext_resource type="Script" uid="uid://difo8l60afhpo" path="res://Scripts/UI/MovementArrowSettings.gd" id="1_settings"]
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_atr8m"]
+atlas = ExtResource("1_ptqhh")
+region = Rect2(8, 8, 48, 48)
+
+[resource]
+script = ExtResource("1_settings")
+arrow_texture = SubResource("AtlasTexture_atr8m")
+arrow_scale = 0.07
+inset_distance = 1.7

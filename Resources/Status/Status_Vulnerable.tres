@@ -1,0 +1,18 @@
+[gd_resource type="Resource" script_class="StatusDefinition" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://Scripts/SkillSystem/StatusDefinition.gd" id="1_status"]
+
+[resource]
+script = ExtResource("1_status")
+id = "Vulnerable"
+display_name = "Vulnerable"
+icon_scene_path = "res://Scenes/UI/Status/StatusIcon_Vulnerable.tscn"
+is_debuff = true
+behavior_type = 0
+stacking_rule = 0
+duration_turns = 2
+params = {
+"stat": "damage_received",
+"value": 0.5
+}
+

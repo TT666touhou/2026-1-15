@@ -1,0 +1,9 @@
+[gd_scene load_steps=2 format=3]
+
+[ext_resource type="PackedScene" path="res://Scenes/UI/Status/StatusIcon.tscn" id="1_base"]
+
+[node name="StatusIcon_Poison" instance=ExtResource("1_base")]
+
+[node name="Icon" parent="." index="0"]
+modulate = Color(0.5, 0, 0.5, 1)
+region_rect = Rect2(528, 128, 16, 16)

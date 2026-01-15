@@ -1,0 +1,12 @@
+[gd_resource type="Resource" script_class="ResourceData" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://Resources/Resources/ResourceData.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+resource_type = "gold"
+min_amount = 400
+max_amount = 800
+gather_time = 6.0
+gather_yield = 15
+

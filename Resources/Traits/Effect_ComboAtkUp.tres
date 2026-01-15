@@ -1,0 +1,14 @@
+[gd_resource type="Resource" script_class="TraitEffect" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://Resources/Traits/TraitEffect.gd" id="1_script"]
+
+[resource]
+script = ExtResource("1_script")
+target_faction = 1
+target_unit_id = ""
+condition_type = 2
+condition_value = 2.0
+comparison = 3
+stat_type = 0
+value = 1.5
+

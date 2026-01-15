@@ -1,0 +1,16 @@
+[gd_resource type="Resource" script_class="MovementRangeData" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://Resources/MovementRanges/MovementRangeData.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+display_name = "Enemy002 Movement (Giant)"
+north = 0
+south = 1
+west = 0
+east = 2
+northwest = 1
+northeast = 0
+southwest = 0
+southeast = 0
+limit_to_furthest = true

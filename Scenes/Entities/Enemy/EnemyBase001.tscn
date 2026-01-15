@@ -1,0 +1,37 @@
+[gd_scene load_steps=7 format=3]
+
+[ext_resource type="Texture2D" path="res://Tilesheet/colored-transparent_packed.png" id="1"]
+[ext_resource type="Script" path="res://Scripts/Entities/BuildingStat.gd" id="2"]
+[ext_resource type="Resource" path="res://Footprints/Footprint_2x2.tres" id="2_footprint"]
+[ext_resource type="Script" path="res://Scripts/Entities/CardProvider.gd" id="3"]
+[ext_resource type="Script" path="res://Scripts/Entities/GridEntity.gd" id="6"]
+
+[ext_resource type="PackedScene" uid="uid://df6i8j7y6k3m4" path="res://Scenes/UI/UnitMovementArrows.tscn" id="25_arrows"]
+
+[sub_resource type="RectangleShape2D" id="1"]
+size = Vector2(32, 32)
+
+[node name="EnemyBase001" type="CharacterBody2D"]
+collision_layer = 0
+collision_mask = 0
+script = ExtResource("6")
+footprint_data = ExtResource("2_footprint")
+
+[node name="Sprite2D" type="Sprite2D" parent="."]
+texture_filter = 1
+texture_repeat = 1
+texture = ExtResource("1")
+region_enabled = true
+region_rect = Rect2(96, 320, 32, 32)
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="."]
+shape = SubResource("1")
+
+[node name="BuildingStat" type="Node" parent="."]
+script = ExtResource("2")
+
+[node name="CardProvider" type="Node" parent="."]
+script = ExtResource("3")
+
+[node name="UnitMovementArrows" parent="." instance=ExtResource("25_arrows")]
+z_index = 5

@@ -1,0 +1,17 @@
+[gd_resource type="Resource" script_class="MovementRangeData" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://Resources/MovementRanges/MovementRangeData.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+display_name = "One Step Movement"
+north = 1
+south = 1
+west = 1
+east = 1
+northwest = 1
+northeast = 1
+southwest = 1
+southeast = 1
+limit_to_furthest = true
+

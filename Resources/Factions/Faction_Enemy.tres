@@ -1,0 +1,10 @@
+[gd_resource type="Resource" script_class="FactionDefinition" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://Scripts/Resources/FactionDefinition.gd" id="1_v5s3t"]
+
+[resource]
+script = ExtResource("1_v5s3t")
+faction_name = "Enemy"
+color = Color(1, 0.3, 0.3, 1)
+is_controllable = false
+

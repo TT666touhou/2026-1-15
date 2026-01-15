@@ -1,0 +1,36 @@
+[gd_scene load_steps=3 format=3]
+
+[ext_resource type="Script" path="res://Scripts/UI/Skills/SkillBarUI.gd" id="1"]
+[ext_resource type="PackedScene" path="res://Scenes/UI/Skills/SkillSlotNode.tscn" id="2"]
+[ext_resource type="PackedScene" path="res://Scenes/UI/Skills/SkillTooltipUI.tscn" id="3"]
+
+[node name="SkillBarNode" type="VBoxContainer"]
+anchors_preset = 7
+anchor_left = 0.5
+anchor_top = 1.0
+anchor_right = 0.5
+anchor_bottom = 1.0
+offset_left = -250.0
+offset_top = -192.0
+offset_right = 250.0
+grow_horizontal = 2
+grow_vertical = 0
+theme_override_constants/separation = 16
+alignment = 2
+script = ExtResource("1")
+button_scene = ExtResource("2")
+tooltip_scene = ExtResource("3")
+
+[node name="FixedTooltipSlot" type="PanelContainer" parent="."]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(512, 128)
+layout_mode = 2
+size_flags_horizontal = 4
+mouse_filter = 2
+
+[node name="ButtonContainer" type="HBoxContainer" parent="."]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(0, 48)
+layout_mode = 2
+theme_override_constants/separation = 16
+alignment = 1

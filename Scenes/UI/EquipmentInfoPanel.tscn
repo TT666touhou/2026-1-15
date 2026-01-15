@@ -1,0 +1,127 @@
+[gd_scene load_steps=3 format=3 uid="uid://hdgeb5ww48fr"]
+
+[ext_resource type="Script" uid="uid://bn2wtkskcxven" path="res://Scripts/UI/EquipmentInfoPanel.gd" id="1_script"]
+[ext_resource type="Texture2D" uid="uid://0modheirbetv" path="res://Tilesheet/kenney_fantasy-ui-borders/Vector/fantasy-ui-borders.svg" id="2_ui"]
+
+[node name="EquipmentInfoPanel" type="PanelContainer"]
+custom_minimum_size = Vector2(240, 0)
+offset_right = 240.0
+offset_bottom = 40.0
+mouse_filter = 2
+script = ExtResource("1_script")
+
+[node name="Background" type="NinePatchRect" parent="."]
+texture_filter = 1
+texture_repeat = 1
+layout_mode = 2
+texture = ExtResource("2_ui")
+region_rect = Rect2(860, 226, 48, 48)
+patch_margin_left = 16
+patch_margin_top = 16
+patch_margin_right = 16
+patch_margin_bottom = 16
+
+[node name="VBox" type="VBoxContainer" parent="."]
+layout_mode = 2
+theme_override_constants/separation = 8
+
+[node name="Margin" type="MarginContainer" parent="VBox"]
+layout_mode = 2
+theme_override_constants/margin_left = 12
+theme_override_constants/margin_top = 12
+theme_override_constants/margin_right = 12
+
+[node name="Header" type="HBoxContainer" parent="VBox/Margin"]
+layout_mode = 2
+theme_override_constants/separation = 10
+
+[node name="Icon" type="TextureRect" parent="VBox/Margin/Header"]
+texture_filter = 1
+custom_minimum_size = Vector2(40, 40)
+layout_mode = 2
+expand_mode = 1
+stretch_mode = 5
+
+[node name="Info" type="VBoxContainer" parent="VBox/Margin/Header"]
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_constants/separation = 0
+alignment = 1
+
+[node name="NameLabel" type="Label" parent="VBox/Margin/Header/Info"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 16
+text = "Item Name"
+
+[node name="LevelLabel" type="Label" parent="VBox/Margin/Header/Info"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.7, 0.7, 0.7, 1)
+theme_override_font_sizes/font_size = 12
+text = "Lv.1 | Common"
+
+[node name="HSeparator" type="HSeparator" parent="VBox"]
+layout_mode = 2
+theme_override_constants/separation = 0
+
+[node name="ContentMargin" type="MarginContainer" parent="VBox"]
+layout_mode = 2
+theme_override_constants/margin_left = 12
+theme_override_constants/margin_right = 12
+theme_override_constants/margin_bottom = 12
+
+[node name="ContentLabel" type="RichTextLabel" parent="VBox/ContentMargin"]
+layout_mode = 2
+theme_override_font_sizes/normal_font_size = 12
+theme_override_font_sizes/bold_font_size = 12
+bbcode_enabled = true
+text = "Modifiers list..."
+fit_content = true
+scroll_active = false
+
+[node name="DebugUI" type="CanvasLayer" parent="."]
+unique_name_in_owner = true
+visible = false
+
+[node name="DebugControls" type="PanelContainer" parent="DebugUI"]
+anchors_preset = 7
+anchor_left = 0.5
+anchor_top = 1.0
+anchor_right = 0.5
+anchor_bottom = 1.0
+offset_left = -150.0
+offset_top = -60.0
+offset_right = 150.0
+offset_bottom = -20.0
+grow_horizontal = 2
+grow_vertical = 0
+
+[node name="Margin" type="MarginContainer" parent="DebugUI/DebugControls"]
+layout_mode = 2
+theme_override_constants/margin_left = 12
+theme_override_constants/margin_top = 5
+theme_override_constants/margin_right = 12
+theme_override_constants/margin_bottom = 5
+
+[node name="HBox" type="HBoxContainer" parent="DebugUI/DebugControls/Margin"]
+layout_mode = 2
+theme_override_constants/separation = 10
+
+[node name="TextLabel" type="Label" parent="DebugUI/DebugControls/Margin/HBox"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 14
+text = "Debug Level:"
+
+[node name="LevelSlider" type="HSlider" parent="DebugUI/DebugControls/Margin/HBox"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 4
+min_value = 1.0
+value = 1.0
+
+[node name="ValueLabel" type="Label" parent="DebugUI/DebugControls/Margin/HBox"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(30, 0)
+layout_mode = 2
+theme_override_font_sizes/font_size = 14
+text = "1"

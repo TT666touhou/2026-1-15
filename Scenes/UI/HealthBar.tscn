@@ -1,0 +1,24 @@
+[gd_scene load_steps=3 format=3]
+
+[ext_resource type="Script" path="res://Scripts/UI/HealthBar.gd" id="1"]
+
+[sub_resource type="PlaceholderTexture2D" id="PlaceholderTexture2D_white"]
+
+[node name="HealthBar" type="Control"]
+layout_mode = 3
+anchors_preset = 0
+script = ExtResource("1")
+back_bar = NodePath("BackBar")
+front_bar = NodePath("FrontBar")
+
+[node name="BackBar" type="TextureProgressBar" parent="."]
+layout_mode = 1
+value = 100.0
+texture_progress = SubResource("PlaceholderTexture2D_white")
+tint_progress = Color(0.960784, 0.298039, 0.298039, 1)
+
+[node name="FrontBar" type="TextureProgressBar" parent="."]
+layout_mode = 1
+value = 100.0
+texture_progress = SubResource("PlaceholderTexture2D_white")
+tint_progress = Color(0.258824, 0.960784, 0.258824, 1)

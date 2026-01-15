@@ -1,0 +1,16 @@
+[gd_scene load_steps=4 format=3]
+
+[ext_resource type="Script" path="res://Scripts/Map/GateEntity.gd" id="1_script"]
+[ext_resource type="Texture2D" path="res://Tilesheet/colored-transparent_packed.png" id="2_o3i4b"]
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_ch7yt"]
+atlas = ExtResource("2_o3i4b")
+region = Rect2(272, 320, 16, 16)
+
+[node name="GateEntity" type="Node2D"]
+script = ExtResource("1_script")
+
+[node name="Sprite2D" type="Sprite2D" parent="."]
+texture_filter = 1
+texture_repeat = 1
+texture = SubResource("AtlasTexture_ch7yt")

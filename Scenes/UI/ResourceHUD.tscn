@@ -1,0 +1,19 @@
+[gd_scene load_steps=5 format=3]
+
+[ext_resource type="Script" path="res://Scripts/UI/ResourceHUD.gd" id="1"]
+[ext_resource type="Texture2D" path="res://Tilesheet/colored-transparent_packed.png" id="2_un1dl"]
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_blgrw"]
+atlas = ExtResource("2_un1dl")
+region = Rect2(432, 176, 16, 16)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_ritqx"]
+atlas = ExtResource("2_un1dl")
+region = Rect2(656, 48, 16, 16)
+
+[node name="ResourceHUD" type="HBoxContainer"]
+texture_filter = 1
+texture_repeat = 1
+script = ExtResource("1")
+texture_soul = SubResource("AtlasTexture_blgrw")
+texture_gold = SubResource("AtlasTexture_ritqx")

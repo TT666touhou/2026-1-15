@@ -1,0 +1,27 @@
+[gd_scene load_steps=3 format=3 uid="uid://c6q7x8y4v5b2n"]
+
+[ext_resource type="Script" path="res://Scripts/UI/EquipmentSlotUI.gd" id="1_script"]
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_slot"]
+bg_color = Color(0.1, 0.1, 0.1, 0.5)
+border_width_left = 1
+border_width_top = 1
+border_width_right = 1
+border_width_bottom = 1
+border_color = Color(0.3, 0.3, 0.3, 1)
+corner_radius_top_left = 2
+corner_radius_top_right = 2
+corner_radius_bottom_right = 2
+corner_radius_bottom_left = 2
+
+[node name="EquipmentSlotUI" type="PanelContainer"]
+custom_minimum_size = Vector2(48, 48)
+theme_override_styles/panel = SubResource("StyleBoxFlat_slot")
+script = ExtResource("1_script")
+
+[node name="Icon" type="TextureRect" parent="."]
+texture_filter = 1
+layout_mode = 2
+expand_mode = 1
+stretch_mode = 5
+mouse_filter = 2

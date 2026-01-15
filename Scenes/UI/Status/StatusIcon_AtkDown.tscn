@@ -1,0 +1,12 @@
+[gd_scene load_steps=2 format=3]
+
+[ext_resource type="PackedScene" path="res://Scenes/UI/Status/StatusIcon.tscn" id="1_base"]
+
+[node name="StatusIcon_AtkDown" instance=ExtResource("1_base")]
+test_mode = true
+
+[node name="Icon" parent="." index="0"]
+region_rect = Rect2(512, 144, 16, 16)
+
+[node name="TurnLabel" parent="." index="1"]
+modulate = Color(0.8, 0, 0, 1)

@@ -1,0 +1,34 @@
+[gd_scene load_steps=3 format=3]
+
+[ext_resource type="Script" path="res://Scripts/UI/StatusIcon.gd" id="1_script"]
+[ext_resource type="Texture2D" path="res://Tilesheet/colored-transparent_packed.png" id="2_tex"]
+
+[node name="StatusIcon" type="Control"]
+custom_minimum_size = Vector2(16, 16)
+layout_mode = 3
+anchors_preset = 0
+offset_right = 16.0
+offset_bottom = 16.0
+script = ExtResource("1_script")
+
+[node name="Icon" type="Sprite2D" parent="."]
+texture_filter = 1
+position = Vector2(8, 8)
+texture = ExtResource("2_tex")
+region_enabled = true
+region_rect = Rect2(624, 144, 16, 16)
+
+[node name="TurnLabel" type="Label" parent="."]
+texture_filter = 1
+texture_repeat = 1
+layout_mode = 0
+offset_left = 4.0
+offset_top = 4.0
+offset_right = 16.0
+offset_bottom = 16.0
+theme_override_colors/font_outline_color = Color(0, 0, 0, 1)
+theme_override_constants/outline_size = 2
+theme_override_font_sizes/font_size = 8
+text = "3"
+horizontal_alignment = 2
+vertical_alignment = 2

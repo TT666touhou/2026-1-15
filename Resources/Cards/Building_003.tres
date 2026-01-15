@@ -1,0 +1,17 @@
+[gd_resource type="Resource" load_steps=4 format=3]
+
+[ext_resource type="Script" path="res://Resources/Cards/BuildingCard.gd" id="1"]
+[ext_resource type="PackedScene" path="res://Scenes/Entities/Player/Building003.tscn" id="2"]
+[ext_resource type="Resource" path="res://Footprints/Footprint_1x1.tres" id="3"]
+
+
+[resource]
+script = ExtResource("1")
+display_name = "Unit Spawner"
+max_health = 250.0
+building_scene = ExtResource("2")
+footprint_data = ExtResource("3")
+cost = {
+"soul": 1
+}
+

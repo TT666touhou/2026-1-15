@@ -1,0 +1,57 @@
+[gd_resource type="Resource" script_class="UnitCard" load_steps=14 format=3]
+
+[ext_resource type="Script" path="res://Resources/Cards/UnitCard.gd" id="1_unitcard"]
+[ext_resource type="PackedScene" path="res://Scenes/Entities/Player/Unit002.tscn" id="2_unitscene"]
+[ext_resource type="Resource" path="res://Footprints/Footprint_1x1.tres" id="3_footprint"]
+[ext_resource type="Resource" path="res://Resources/MovementRanges/MovementRange_Unit002.tres" id="4_movement"]
+[ext_resource type="Resource" path="res://Resources/Factions/Faction_Player.tres" id="5_faction"]
+[ext_resource type="Texture2D" path="res://Tilesheet/1bit_assetpack/1bit_assetpack/characters/knight.png" id="6_icon"]
+[ext_resource type="Resource" path="res://Resources/Traits/Trait_HeavyCommand.tres" id="7_trait"]
+[ext_resource type="Resource" path="res://Resources/Skills/TestSkills/Skill_Move_Abs_Cross.tres" id="8_s1"]
+[ext_resource type="Resource" path="res://Resources/Skills/TestSkills/Skill_Direct_Abs_Checker.tres" id="9_s2"]
+[ext_resource type="Resource" path="res://Resources/Skills/TestSkills/Skill_Tactical_Move.tres" id="10_s3"]
+[ext_resource type="Resource" path="res://Resources/Skills/CustomSkills/Skill_X_Penetration.tres" id="11_xskill"]
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_icon"]
+atlas = ExtResource("6_icon")
+region = Rect2(0, 0, 16, 16)
+
+[resource]
+script = ExtResource("1_unitcard")
+unit_scene = ExtResource("2_unitscene")
+faction = ExtResource("5_faction")
+icon = SubResource("AtlasTexture_icon")
+footprint_data = ExtResource("3_footprint")
+movement_range_data = ExtResource("4_movement")
+spawn_animation = 1
+attack_damage = 15
+base_str = 18
+base_dex = 6
+base_int = 4
+base_pie = 12
+base_combo_count = 1.0
+move_speed_anim = 200.0
+base_crit_rate = 0.05
+base_luck = 0
+base_avoid = 0.0
+base_dr = 0.0
+base_resistance = 0.0
+base_reflect = 0.0
+base_pursuit = 0
+base_parry = 0.0
+base_drain = 0.0
+base_crit_dmg = 0.0
+base_penetration = 0.0
+base_shield = 0
+base_barriers = 0
+max_health = 150.0
+card_id = "unit_002"
+card_name = "Unit 002"
+description = "A heavy unit with limited rear movement."
+cost = {
+"soul": 20
+}
+display_name = "Heavy Guard"
+max_playable_count = 0
+character_trait = ExtResource("7_trait")
+default_skills = Array[Resource]([ExtResource("11_xskill"), ExtResource("8_s1"), ExtResource("9_s2"), ExtResource("10_s3")])

@@ -1,0 +1,35 @@
+[gd_resource type="Resource" script_class="BaseItemResource" load_steps=8 format=3 uid="uid://dt2hjsp34q4gx"]
+
+[ext_resource type="Texture2D" uid="uid://igs8giojsm55" path="res://Tilesheet/colored-transparent_packed.png" id="1_atlas"]
+[ext_resource type="Script" uid="uid://cums6yvi6wbcm" path="res://Scripts/Items/AffixDefinition.gd" id="2_affix_script"]
+[ext_resource type="Script" uid="uid://j3mkl5jfwq5g" path="res://Scripts/Items/BaseItemResource.gd" id="3_script"]
+
+[sub_resource type="Resource" id="SubResource_pie"]
+script = ExtResource("2_affix_script")
+stat_type = 3
+base_value = 2.0
+weight = 10.0
+
+[sub_resource type="Resource" id="SubResource_hp"]
+script = ExtResource("2_affix_script")
+stat_type = 4
+base_value = 20.0
+weight = 10.0
+
+[sub_resource type="Resource" id="SubResource_dr"]
+script = ExtResource("2_affix_script")
+stat_type = 5
+base_value = 0.02
+weight = 5.0
+min_ilvl = 5
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_plate"]
+atlas = ExtResource("1_atlas")
+region = Rect2(528, 16, 16, 16)
+
+[resource]
+script = ExtResource("3_script")
+item_names = Array[String](["堅固甲冑"])
+slot = 1
+visual_icons = Array[Texture2D]([SubResource("AtlasTexture_plate")])
+affix_pool = Array[ExtResource("2_affix_script")]([SubResource("SubResource_hp"), SubResource("SubResource_dr"), SubResource("SubResource_pie")])

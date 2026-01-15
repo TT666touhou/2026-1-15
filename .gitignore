@@ -1,0 +1,19 @@
+# Godot-specific ignores
+.godot/
+*.uid
+
+# Built-in ignores
+.import/
+export_presets.cfg
+
+# Imported resources (if they are recreated on import)
+*.translation
+
+# Mono-specific ignores (if applicable)
+.mono/
+bin/
+obj/
+
+# OS-specific
+.DS_Store
+Thumbs.db

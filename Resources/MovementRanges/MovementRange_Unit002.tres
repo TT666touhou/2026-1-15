@@ -1,0 +1,16 @@
+[gd_resource type="Resource" script_class="MovementRangeData" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://Resources/MovementRanges/MovementRangeData.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+north = 2
+south = 0
+west = 1
+east = 1
+northwest = 0
+northeast = 0
+southwest = 0
+southeast = 0
+display_name = "Limited Rear"
+limit_to_furthest = true

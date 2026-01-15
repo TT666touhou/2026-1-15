@@ -1,0 +1,23 @@
+[gd_scene load_steps=5 format=3 uid="uid://dkh0prhess2lr"]
+
+[ext_resource type="Script" uid="uid://jb4uqqk8gaiw" path="res://Scripts/Entities/PropEntity.gd" id="1"]
+[ext_resource type="Resource" path="res://Footprints/Footprint_1x1.tres" id="3"]
+[ext_resource type="Texture2D" uid="uid://ceqrqmjxupqa7" path="res://Tilesheet/1bit_assetpack/1bit_assetpack/environment/tilemap_full.png" id="3_14o30"]
+
+[sub_resource type="RectangleShape2D" id="1"]
+size = Vector2(16, 16)
+
+[node name="PropBase" type="CharacterBody2D"]
+collision_layer = 0
+collision_mask = 0
+script = ExtResource("1")
+footprint_data = ExtResource("3")
+
+[node name="Sprite2D" type="Sprite2D" parent="."]
+texture_filter = 1
+texture = ExtResource("3_14o30")
+region_enabled = true
+region_rect = Rect2(128, 112, 16, 16)
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="."]
+shape = SubResource("1")

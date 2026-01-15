@@ -1,0 +1,11 @@
+[gd_resource type="Resource" script_class="TraitData" load_steps=3 format=3]
+
+[ext_resource type="Script" path="res://Resources/Traits/TraitData.gd" id="1_script"]
+[ext_resource type="Resource" path="res://Resources/Traits/Effect_Test_OnDamaged.tres" id="2_effect"]
+
+[resource]
+script = ExtResource("1_script")
+trait_name = "Test OnDamaged"
+description = "On damaged: Self gain 1 Soul"
+effects = Array[Resource("res://Resources/Traits/TraitEffect.gd")]([ExtResource("2_effect")])
+

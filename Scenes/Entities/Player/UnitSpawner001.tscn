@@ -1,0 +1,41 @@
+[gd_scene load_steps=7 format=3]
+
+[ext_resource type="Texture2D" path="res://Tilesheet/colored-transparent_packed.png" id="1"]
+[ext_resource type="Script" path="res://Scripts/Entities/BuildingStat.gd" id="2"]
+[ext_resource type="Script" path="res://Scripts/Entities/UnitSpawner.gd" id="3"]
+[ext_resource type="PackedScene" path="res://Scenes/Entities/Player/Unit001.tscn" id="4"]
+[ext_resource type="Resource" path="res://Resources/Cards/Unit_001.tres" id="5"]
+[ext_resource type="Script" path="res://Scripts/Entities/CardProvider.gd" id="6"]
+
+[sub_resource type="RectangleShape2D" id="1"]
+size = Vector2(16, 16)
+
+[node name="UnitSpawner001" type="CharacterBody2D"]
+collision_layer = 0
+collision_mask = 0
+
+[node name="Sprite2D" type="Sprite2D" parent="."]
+light_mask = 2
+texture_filter = 1
+texture_repeat = 1
+texture = ExtResource("1")
+region_enabled = true
+region_rect = Rect2(16, 144, 16, 16)
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="."]
+shape = SubResource("1")
+
+[node name="BuildingStat" type="Node" parent="."]
+script = ExtResource("2")
+
+[node name="UnitSpawner" type="Node" parent="."]
+script = ExtResource("3")
+unit_scene = ExtResource("4")
+unit_card = ExtResource("5")
+
+[node name="SpawnPoint" type="Node2D" parent="."]
+position = Vector2(0, -16)
+
+[node name="CardProvider" type="Node" parent="."]
+script = ExtResource("6")
+

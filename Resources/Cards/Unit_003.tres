@@ -1,0 +1,54 @@
+[gd_resource type="Resource" script_class="UnitCard" load_steps=12 format=3]
+
+[ext_resource type="Script" path="res://Resources/Cards/UnitCard.gd" id="1_unitcard"]
+[ext_resource type="PackedScene" path="res://Scenes/Entities/Player/Unit003.tscn" id="2_unitscene"]
+[ext_resource type="Resource" path="res://Footprints/Footprint_1x1.tres" id="3_footprint"]
+[ext_resource type="Resource" path="res://Resources/MovementRanges/MovementRange_Unit003.tres" id="4_movement"]
+[ext_resource type="Resource" path="res://Resources/Factions/Faction_Player.tres" id="5_faction"]
+[ext_resource type="Texture2D" path="res://Tilesheet/1bit_assetpack/1bit_assetpack/characters/wizard.png" id="6_icon"]
+[ext_resource type="Resource" path="res://Resources/Skills/TestSkills/Skill_Move_Rel_X.tres" id="7_s1"]
+[ext_resource type="Resource" path="res://Resources/Skills/TestSkills/Skill_Direct_Rel_Global.tres" id="8_s2"]
+[ext_resource type="Resource" path="res://Resources/Skills/TestSkills/Skill_Tactical_Move.tres" id="9_s3"]
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_icon"]
+atlas = ExtResource("6_icon")
+region = Rect2(0, 0, 16, 16)
+
+[resource]
+script = ExtResource("1_unitcard")
+unit_scene = ExtResource("2_unitscene")
+faction = ExtResource("5_faction")
+icon = SubResource("AtlasTexture_icon")
+footprint_data = ExtResource("3_footprint")
+movement_range_data = ExtResource("4_movement")
+spawn_animation = 2
+attack_damage = 8
+base_str = 8
+base_dex = 16
+base_int = 10
+base_pie = 6
+base_combo_count = 2.0
+move_speed_anim = 400.0
+base_crit_rate = 0.2
+base_luck = 1
+base_avoid = 0.0
+base_dr = 0.0
+base_resistance = 0.0
+base_reflect = 0.0
+base_pursuit = 0
+base_parry = 0.0
+base_drain = 0.0
+base_crit_dmg = 0.0
+base_penetration = 0.0
+base_shield = 0
+base_barriers = 0
+max_health = 80.0
+card_id = "unit_003"
+card_name = "Unit 003"
+description = "A fast scout that moves diagonally."
+cost = {
+"soul": 15
+}
+display_name = "Scout"
+max_playable_count = 0
+default_skills = Array[Resource]([ExtResource("7_s1"), ExtResource("8_s2"), ExtResource("9_s3")])

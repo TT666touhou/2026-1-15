@@ -1,0 +1,13 @@
+[gd_resource type="Resource" script_class="EquipmentDatabase" load_steps=6 format=3 uid="uid://ns6xsm7w5put"]
+
+[ext_resource type="Script" uid="uid://j3mkl5jfwq5g" path="res://Scripts/Items/BaseItemResource.gd" id="1_7n0n7"]
+[ext_resource type="Resource" uid="uid://m4ju3itjfxgj" path="res://Resources/Equipment/Weapon_Sword.tres" id="1_sword"]
+[ext_resource type="Resource" uid="uid://dt2hjsp34q4gx" path="res://Resources/Equipment/Armor_Plate.tres" id="2_armor"]
+[ext_resource type="Resource" uid="uid://cfflct0d45lt3" path="res://Resources/Equipment/Accessory_Amulet.tres" id="3_acc"]
+[ext_resource type="Script" uid="uid://igntgu6dbhp1" path="res://Scripts/Items/EquipmentDatabase.gd" id="5_db_script"]
+
+[resource]
+script = ExtResource("5_db_script")
+weapons = Array[ExtResource("1_7n0n7")]([ExtResource("1_sword")])
+armors = Array[ExtResource("1_7n0n7")]([ExtResource("2_armor")])
+accessories = Array[ExtResource("1_7n0n7")]([ExtResource("3_acc")])

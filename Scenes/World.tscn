@@ -1,0 +1,372 @@
+[gd_scene load_steps=41 format=4 uid="uid://0ete046rt74c"]
+
+[ext_resource type="TileSet" uid="uid://fu5tewckuk4p" path="res://Tilesheet/ColoredTransparentPacked.tres" id="1"]
+[ext_resource type="TileSet" uid="uid://b1bitenv" path="res://Tilesheet/1bit_environment.tres" id="1_1bit"]
+[ext_resource type="Script" uid="uid://3mdluplcpbaa" path="res://Scripts/MapLoader.gd" id="2"]
+[ext_resource type="Texture2D" uid="uid://ceqrqmjxupqa7" path="res://Tilesheet/1bit_assetpack/1bit_assetpack/environment/tilemap_full.png" id="2_irg3d"]
+[ext_resource type="PackedScene" path="res://Scenes/Card/hand.tscn" id="3"]
+[ext_resource type="Script" uid="uid://dlpiosr371sw" path="res://Scripts/Map/TileVariation.gd" id="3_y8a40"]
+[ext_resource type="Script" uid="uid://dpwf6ofa0hxkp" path="res://Scripts/Grid/Grid.gd" id="6"]
+[ext_resource type="PackedScene" path="res://Scenes/UI/StatusBarUI.tscn" id="10"]
+[ext_resource type="PackedScene" path="res://Scenes/UI/MainTopBar.tscn" id="15"]
+[ext_resource type="Script" uid="uid://2ryo8hx4hhts" path="res://Scripts/Selection/GridSelector.gd" id="20"]
+[ext_resource type="Script" uid="uid://bjylahw5oal86" path="res://Scripts/Grid/GridPathfinder.gd" id="24"]
+[ext_resource type="Script" uid="uid://7kwee18qynbg" path="res://Scripts/Selection/Highlighter2D.gd" id="25"]
+[ext_resource type="Script" uid="uid://cwx1hg47nnmns" path="res://Scripts/Grid/GridLines.gd" id="26"]
+[ext_resource type="Script" uid="uid://cdm62dfqbryd5" path="res://Scripts/UI/MovementRangeIndicator.gd" id="27"]
+[ext_resource type="Script" uid="uid://cqmr3nqbbbco2" path="res://Scripts/Managers/PlayerResourceLedger.gd" id="30"]
+[ext_resource type="Script" uid="uid://b6bf3fl8nko33" path="res://Scripts/UI/MenuButton.gd" id="31"]
+[ext_resource type="Texture2D" uid="uid://igs8giojsm55" path="res://Tilesheet/colored-transparent_packed.png" id="32"]
+[ext_resource type="Script" uid="uid://csclqvjfs84" path="res://Scripts/UI/EndTurnButton.gd" id="33"]
+[ext_resource type="Script" uid="uid://bcmnl5jcgl138" path="res://Scripts/UI/DeckPileUI.gd" id="36"]
+[ext_resource type="Script" uid="uid://beyw1scg0s7mh" path="res://Scripts/Input/GridInputLayer.gd" id="38"]
+[ext_resource type="PackedScene" path="res://Scenes/UI/DebugResourceButton.tscn" id="39"]
+[ext_resource type="Script" uid="uid://cih2bv0i6lk6o" path="res://Scripts/UI/BattleUI.gd" id="41"]
+[ext_resource type="PackedScene" path="res://Scenes/UI/DisposalZone.tscn" id="43"]
+[ext_resource type="Script" uid="uid://bkdhg4l2ofkcm" path="res://Scripts/UI/HoverInfoController.gd" id="44"]
+[ext_resource type="Script" uid="uid://b8r80sd1w8jp8" path="res://Scripts/UI/TurnDebugInfo.gd" id="45"]
+[ext_resource type="PackedScene" path="res://Scenes/UI/DebugRoomLoader.tscn" id="46"]
+[ext_resource type="PackedScene" path="res://Scenes/UI/DebugGridToggler.tscn" id="48"]
+[ext_resource type="PackedScene" path="res://Scenes/UI/Skills/SkillBarNode.tscn" id="50"]
+[ext_resource type="Script" uid="uid://c1c1b78o2qsjm" path="res://Scripts/UI/Skills/SkillPreviewController.gd" id="51"]
+[ext_resource type="PackedScene" path="res://Scenes/UI/Skills/SkillManagerUI.tscn" id="52"]
+[ext_resource type="PackedScene" path="res://Scenes/UI/DebugStatusButton.tscn" id="100"]
+[ext_resource type="Resource" path="res://Resources/Status/Status_DefenseUp.tres" id="101"]
+[ext_resource type="Resource" path="res://Resources/Status/Status_Poison.tres" id="102"]
+[ext_resource type="Resource" path="res://Resources/Status/Status_Regen.tres" id="103"]
+[ext_resource type="Resource" path="res://Resources/Status/Status_Vulnerable.tres" id="104"]
+[ext_resource type="Script" uid="uid://ckuhers5dw1k" path="res://Scripts/UI/DebugKillTransitionButton.gd" id="105"]
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_n1aqv"]
+atlas = ExtResource("2_irg3d")
+region = Rect2(64, 96, 16, 16)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_d2jk0"]
+atlas = ExtResource("2_irg3d")
+region = Rect2(128, 96, 16, 16)
+
+[sub_resource type="Resource" id="Resource_5dli4"]
+script = ExtResource("3_y8a40")
+tile_visual = SubResource("AtlasTexture_d2jk0")
+metadata/_custom_type_script = "uid://dlpiosr371sw"
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_button"]
+bg_color = Color(0.1, 0.1, 0.1, 1)
+border_width_left = 2
+border_width_top = 2
+border_width_right = 2
+border_width_bottom = 2
+border_color = Color(1, 1, 1, 1)
+corner_radius_top_left = 4
+corner_radius_top_right = 4
+corner_radius_bottom_right = 4
+corner_radius_bottom_left = 4
+
+[node name="World2" type="Node2D"]
+script = ExtResource("2")
+resources_layer_path = NodePath("Entities/ResourcesLayer")
+base_tile_visual = SubResource("AtlasTexture_n1aqv")
+variations = Array[ExtResource("3_y8a40")]([SubResource("Resource_5dli4")])
+
+[node name="Grid" type="Node" parent="."]
+script = ExtResource("6")
+
+[node name="GridLines" type="Node2D" parent="."]
+script = ExtResource("26")
+
+[node name="GridPathfinder" type="Node" parent="."]
+script = ExtResource("24")
+
+[node name="PlayerResourceLedger" type="Node" parent="."]
+script = ExtResource("30")
+
+[node name="BackgroundGround" type="TileMapLayer" parent="."]
+texture_filter = 1
+texture_repeat = 1
+tile_map_data = PackedByteArray("AAADAP//AAAHAAUAAAAAAP//AAAEAAUAAAABAP//AAAGAAUAAAACAP//AAAIAAUAAAAEAP//AAAEAAUAAAAFAP//AAAGAAUAAAAGAP//AAAIAAUAAAA=")
+tile_set = ExtResource("1_1bit")
+
+[node name="Ground" type="TileMapLayer" parent="."]
+texture_filter = 1
+texture_repeat = 1
+tile_map_data = PackedByteArray("AAABAAIAAAAEAAYAAAACAAIAAAAEAAYAAAACAAMAAAAIAAYAAAADAAMAAAAEAAYAAAAEAAMAAAAEAAYAAAAFAAMAAAAEAAYAAAAGAAMAAAAEAAYAAAAFAAIAAAAEAAYAAAAGAAIAAAAEAAYAAAAEAAIAAAAEAAYAAAADAAIAAAAEAAYAAAACAAQAAAAIAAYAAAADAAQAAAAEAAYAAAAGAAEAAAAEAAYAAAAGAAAAAAAEAAYAAAAFAAAAAAAEAAYAAAAEAAEAAAAEAAYAAAADAAEAAAAEAAYAAAABAAEAAAAEAAYAAAACAAEAAAAEAAYAAAAEAAQAAAAEAAYAAAAFAAEAAAAIAAYAAAAFAAQAAAAEAAYAAAAGAAQAAAAEAAYAAAAAAAEAAAAEAAYAAAAAAAIAAAAEAAYAAAAAAAMAAAAEAAYAAAAAAAQAAAAEAAYAAAABAAMAAAAEAAYAAAABAAQAAAAEAAYAAAABAAUAAAAEAAYAAAACAAUAAAAEAAYAAAAAAAUAAAAEAAYAAAADAAUAAAAEAAYAAAAEAAUAAAAEAAYAAAAFAAUAAAAIAAYAAAAGAAUAAAAEAAYAAAAAAAYAAAAEAAYAAAABAAYAAAAIAAYAAAACAAYAAAAEAAYAAAADAAYAAAAEAAYAAAAEAAYAAAAEAAYAAAAFAAYAAAAEAAYAAAAGAAYAAAAEAAYAAAAAAAAAAAAEAAYAAAABAAAAAAAIAAYAAAACAAAAAAAEAAYAAAADAAAAAAAEAAYAAAAEAAAAAAAEAAYAAAA=")
+tile_set = ExtResource("1_1bit")
+
+[node name="MovementRangeIndicator" type="TileMapLayer" parent="."]
+tile_set = ExtResource("1")
+
+[node name="Entities" type="Node2D" parent="."]
+
+[node name="BasesLayer" type="Node2D" parent="Entities"]
+
+[node name="BuildingsLayer" type="Node2D" parent="Entities"]
+
+[node name="UnitsLayer" type="Node2D" parent="Entities"]
+
+[node name="ResourcesLayer" type="Node2D" parent="Entities"]
+
+[node name="GridSelector" type="Node" parent="."]
+script = ExtResource("20")
+selection_layer_path = NodePath("../SelectionHighlight")
+enable_debug_log = true
+
+[node name="MovementRangeIndicatorController" type="Node" parent="."]
+script = ExtResource("27")
+indicator_layer_path = NodePath("../MovementRangeIndicator")
+enable_debug_log = true
+
+[node name="SelectionHighlight" type="Node2D" parent="."]
+z_index = 100
+script = ExtResource("25")
+
+[node name="SkillPreviewController" type="Node2D" parent="."]
+script = ExtResource("51")
+
+[node name="Camera2D" type="Camera2D" parent="."]
+position = Vector2(16, 56)
+zoom = Vector2(4, 4)
+
+[node name="UI" type="CanvasLayer" parent="."]
+
+[node name="GridInputLayer" type="Control" parent="UI"]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+script = ExtResource("38")
+
+[node name="HoverInfoController" type="Control" parent="UI"]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+script = ExtResource("44")
+
+[node name="BattleUI" type="Control" parent="UI"]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+script = ExtResource("41")
+
+[node name="MainTopBar" parent="UI" instance=ExtResource("15")]
+
+[node name="Hand" parent="UI" instance=ExtResource("3")]
+anchors_preset = 7
+anchor_left = 0.5
+anchor_right = 0.5
+offset_left = -480.0
+offset_top = -112.0
+offset_right = 800.0
+grow_vertical = 0
+hand_card_size = Vector2(120, 180)
+hand_bottom_offset = 60.0
+
+[node name="UnitSkillBar" parent="UI" instance=ExtResource("50")]
+offset_left = -200.0
+offset_top = -100.0
+offset_right = 200.0
+
+[node name="DeckPileButton" type="Button" parent="UI"]
+anchors_preset = 3
+anchor_left = 1.0
+anchor_top = 1.0
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = -140.0
+offset_top = -200.0
+offset_right = -20.0
+offset_bottom = -20.0
+grow_horizontal = 0
+grow_vertical = 0
+theme_override_styles/normal = SubResource("StyleBoxFlat_button")
+theme_override_styles/pressed = SubResource("StyleBoxFlat_button")
+theme_override_styles/hover = SubResource("StyleBoxFlat_button")
+text = "DECK"
+script = ExtResource("36")
+hand_reference = NodePath("../Hand")
+deck_view_path = NodePath("../DeckView")
+
+[node name="PlayArea" type="Control" parent="UI" groups=["play_area"]]
+layout_mode = 3
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -300.0
+offset_top = -150.0
+offset_right = 300.0
+offset_bottom = 150.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+
+[node name="PlayHandButton" type="Button" parent="UI"]
+anchors_preset = 2
+anchor_top = 1.0
+anchor_bottom = 1.0
+offset_left = 340.0
+offset_top = -260.0
+offset_right = 460.0
+offset_bottom = -210.0
+grow_vertical = 0
+theme_override_styles/normal = SubResource("StyleBoxFlat_button")
+theme_override_styles/pressed = SubResource("StyleBoxFlat_button")
+theme_override_styles/hover = SubResource("StyleBoxFlat_button")
+text = "PLAY HAND"
+
+[node name="DisposalZone" parent="UI" instance=ExtResource("43")]
+anchors_preset = 2
+anchor_top = 1.0
+anchor_bottom = 1.0
+offset_left = 340.0
+offset_top = -200.0
+offset_right = 460.0
+offset_bottom = -20.0
+grow_vertical = 0
+
+[node name="TopRightToolbar" type="HBoxContainer" parent="UI"]
+anchors_preset = 1
+anchor_left = 1.0
+anchor_right = 1.0
+offset_left = -400.0
+offset_top = 10.0
+offset_right = -20.0
+offset_bottom = 50.0
+grow_horizontal = 0
+theme_override_constants/separation = 10
+alignment = 2
+
+[node name="TurnDebugInfo" type="HBoxContainer" parent="UI/TopRightToolbar"]
+layout_mode = 2
+script = ExtResource("45")
+
+[node name="DebugResourceButton" parent="UI/TopRightToolbar" instance=ExtResource("39")]
+layout_mode = 2
+
+[node name="DebugRoomLoader" parent="UI/TopRightToolbar" instance=ExtResource("46")]
+layout_mode = 2
+
+[node name="EndTurnButton" type="Button" parent="UI/TopRightToolbar"]
+layout_mode = 2
+focus_mode = 0
+theme_override_styles/normal = SubResource("StyleBoxFlat_button")
+theme_override_styles/pressed = SubResource("StyleBoxFlat_button")
+theme_override_styles/hover = SubResource("StyleBoxFlat_button")
+text = "Force End Turn"
+script = ExtResource("33")
+
+[node name="MenuButton" type="TextureButton" parent="UI/TopRightToolbar"]
+custom_minimum_size = Vector2(32, 32)
+layout_mode = 2
+ignore_texture_size = true
+stretch_mode = 0
+script = ExtResource("31")
+
+[node name="Sprite2D" type="Sprite2D" parent="UI/TopRightToolbar/MenuButton"]
+texture_filter = 1
+texture_repeat = 1
+position = Vector2(16, 16)
+texture = ExtResource("32")
+region_enabled = true
+region_rect = Rect2(752, 272, 16, 16)
+
+[node name="StatusBarUI" parent="UI" instance=ExtResource("10")]
+layout_mode = 3
+anchors_preset = 0
+
+[node name="DebugLayer" type="CanvasLayer" parent="UI"]
+layer = 10
+
+[node name="DebugMenuPanel" type="PanelContainer" parent="UI/DebugLayer"]
+custom_minimum_size = Vector2(130, 0)
+anchors_preset = 6
+anchor_left = 1.0
+anchor_top = 0.5
+anchor_right = 1.0
+anchor_bottom = 0.5
+offset_left = -140.0
+offset_top = -300.0
+offset_right = -10.0
+offset_bottom = 50.0
+grow_horizontal = 0
+grow_vertical = 2
+theme_override_styles/panel = SubResource("StyleBoxFlat_button")
+
+[node name="Margin" type="MarginContainer" parent="UI/DebugLayer/DebugMenuPanel"]
+layout_mode = 2
+theme_override_constants/margin_left = 5
+theme_override_constants/margin_top = 10
+theme_override_constants/margin_right = 5
+theme_override_constants/margin_bottom = 10
+
+[node name="VBox" type="VBoxContainer" parent="UI/DebugLayer/DebugMenuPanel/Margin"]
+layout_mode = 2
+theme_override_constants/separation = 5
+
+[node name="Label" type="Label" parent="UI/DebugLayer/DebugMenuPanel/Margin/VBox"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 14
+text = "DEBUG TOOLS"
+horizontal_alignment = 1
+
+[node name="HSeparator2" type="HSeparator" parent="UI/DebugLayer/DebugMenuPanel/Margin/VBox"]
+layout_mode = 2
+
+[node name="Scroll" type="ScrollContainer" parent="UI/DebugLayer/DebugMenuPanel/Margin/VBox"]
+layout_mode = 2
+size_flags_vertical = 3
+vertical_scroll_mode = 2
+
+[node name="Content" type="VBoxContainer" parent="UI/DebugLayer/DebugMenuPanel/Margin/VBox/Scroll"]
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_constants/separation = 8
+
+[node name="DebugGridToggler" parent="UI/DebugLayer/DebugMenuPanel/Margin/VBox/Scroll/Content" instance=ExtResource("48")]
+layout_mode = 2
+
+[node name="HSeparator" type="HSeparator" parent="UI/DebugLayer/DebugMenuPanel/Margin/VBox/Scroll/Content"]
+layout_mode = 2
+
+[node name="DebugRegenButton" parent="UI/DebugLayer/DebugMenuPanel/Margin/VBox/Scroll/Content" instance=ExtResource("100")]
+layout_mode = 2
+text = "+ Regen"
+status_resource = ExtResource("103")
+
+[node name="DebugPoisonButton" parent="UI/DebugLayer/DebugMenuPanel/Margin/VBox/Scroll/Content" instance=ExtResource("100")]
+layout_mode = 2
+text = "+ Poison"
+status_resource = ExtResource("102")
+
+[node name="DebugVulnerableButton" parent="UI/DebugLayer/DebugMenuPanel/Margin/VBox/Scroll/Content" instance=ExtResource("100")]
+layout_mode = 2
+text = "+ Vuln"
+status_resource = ExtResource("104")
+
+[node name="DebugDefenseUpButton" parent="UI/DebugLayer/DebugMenuPanel/Margin/VBox/Scroll/Content" instance=ExtResource("100")]
+layout_mode = 2
+text = "+ DefUp"
+status_resource = ExtResource("101")
+
+[node name="DebugKillTransitionButton" type="Button" parent="UI/DebugLayer/DebugMenuPanel/Margin/VBox/Scroll/Content"]
+layout_mode = 2
+theme_override_styles/normal = SubResource("StyleBoxFlat_button")
+theme_override_styles/pressed = SubResource("StyleBoxFlat_button")
+theme_override_styles/hover = SubResource("StyleBoxFlat_button")
+text = "Kill & Transition"
+script = ExtResource("105")
+
+[node name="SkillManagerUI" parent="UI/DebugLayer" instance=ExtResource("52")]
+visible = false
+
+[editable path="UI/MainTopBar"]

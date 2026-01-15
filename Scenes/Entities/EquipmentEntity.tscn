@@ -1,0 +1,38 @@
+[gd_scene load_steps=5 format=3]
+
+[ext_resource type="Script" path="res://Scripts/Items/EquipmentEntity.gd" id="1_script"]
+[ext_resource type="Texture2D" path="res://Tilesheet/colored-transparent_packed.png" id="2_o3i4b"]
+[ext_resource type="Script" path="res://Scripts/Items/EquipmentDragProxy.gd" id="3_proxy"]
+[ext_resource type="Script" path="res://Scripts/Entities/UnitVisuals.gd" id="4_visuals"]
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_ring"]
+atlas = ExtResource("2_o3i4b")
+region = Rect2(480, 288, 16, 16)
+
+[node name="EquipmentEntity" type="CharacterBody2D"]
+script = ExtResource("1_script")
+
+[node name="Sprite2D" type="Sprite2D" parent="."]
+texture_filter = 1
+texture = SubResource("AtlasTexture_ring")
+
+[node name="UnitVisuals" type="Node" parent="."]
+script = ExtResource("4_visuals")
+sprite_path = NodePath("../Sprite2D")
+
+[node name="Control" type="Control" parent="."]
+custom_minimum_size = Vector2(16, 16)
+layout_mode = 3
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -8.0
+offset_top = -8.0
+offset_right = 8.0
+offset_bottom = 8.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+script = ExtResource("3_proxy")

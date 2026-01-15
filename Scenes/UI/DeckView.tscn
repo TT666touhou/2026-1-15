@@ -1,0 +1,118 @@
+[gd_scene load_steps=3 format=3]
+
+[ext_resource type="Script" path="res://Scripts/UI/DeckView.gd" id="1_script"]
+
+[sub_resource type="StyleBoxEmpty" id="StyleBoxEmpty_1"]
+
+[node name="DeckView" type="Control"]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+z_index = 1000
+mouse_filter = 2
+script = ExtResource("1_script")
+
+[node name="BackgroundBlocking" type="ColorRect" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+color = Color(0, 0, 0, 1)
+
+[node name="ContentPanel" type="PanelContainer" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+theme_override_styles/panel = SubResource("StyleBoxEmpty_1")
+
+[node name="Margin" type="MarginContainer" parent="ContentPanel"]
+layout_mode = 2
+mouse_filter = 2
+theme_override_constants/margin_left = 50
+theme_override_constants/margin_top = 40
+theme_override_constants/margin_right = 50
+theme_override_constants/margin_bottom = 40
+
+[node name="VBox" type="VBoxContainer" parent="ContentPanel/Margin"]
+layout_mode = 2
+mouse_filter = 2
+theme_override_constants/separation = 20
+
+[node name="Header" type="HBoxContainer" parent="ContentPanel/Margin/VBox"]
+layout_mode = 2
+mouse_filter = 2
+theme_override_constants/separation = 20
+
+[node name="TitleLabel" type="Label" parent="ContentPanel/Margin/VBox/Header"]
+visible = false
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_font_sizes/font_size = 32
+text = "DECK LIBRARY"
+vertical_alignment = 1
+
+[node name="ModeSwitch" type="HBoxContainer" parent="ContentPanel/Margin/VBox/Header"]
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_constants/separation = 10
+
+[node name="BtnRemaining" type="Button" parent="ContentPanel/Margin/VBox/Header/ModeSwitch"]
+custom_minimum_size = Vector2(120, 0)
+layout_mode = 2
+toggle_mode = true
+text = "Remaining"
+
+[node name="BtnAll" type="Button" parent="ContentPanel/Margin/VBox/Header/ModeSwitch"]
+custom_minimum_size = Vector2(120, 0)
+layout_mode = 2
+toggle_mode = true
+text = "All Cards"
+
+[node name="Spacer" type="Control" parent="ContentPanel/Margin/VBox/Header"]
+layout_mode = 2
+size_flags_horizontal = 3
+
+[node name="CountLabel" type="Label" parent="ContentPanel/Margin/VBox/Header"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 24
+text = "0 / 0"
+horizontal_alignment = 2
+vertical_alignment = 1
+
+[node name="CloseButton" type="Button" parent="ContentPanel/Margin/VBox/Header"]
+custom_minimum_size = Vector2(40, 40)
+layout_mode = 2
+text = "X"
+
+[node name="ScrollContainer" type="ScrollContainer" parent="ContentPanel/Margin/VBox"]
+layout_mode = 2
+size_flags_vertical = 3
+horizontal_scroll_mode = 0
+
+[node name="MarginContainer" type="MarginContainer" parent="ContentPanel/Margin/VBox/ScrollContainer"]
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 3
+theme_override_constants/margin_left = 20
+theme_override_constants/margin_top = 40
+theme_override_constants/margin_right = 20
+theme_override_constants/margin_bottom = 40
+
+[node name="CardGrid" type="GridContainer" parent="ContentPanel/Margin/VBox/ScrollContainer/MarginContainer"]
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 3
+theme_override_constants/h_separation = 20
+theme_override_constants/v_separation = 20
+columns = 6
+
+[connection signal="pressed" from="ContentPanel/Margin/VBox/Header/CloseButton" to="." method="_on_close_button_pressed"]

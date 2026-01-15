@@ -1,0 +1,39 @@
+[gd_resource type="Resource" script_class="UnitSkillData" load_steps=5 format=3]
+[ext_resource type="Resource" path="res://Resources/Skills/TestSkills/Effect_Damage_10.tres" id="1_effect"]
+[ext_resource type="Script" path="res://Scripts/SkillSystem/TargetingDefinition.gd" id="2_target"]
+[ext_resource type="Script" path="res://Scripts/SkillSystem/UnitSkillData.gd" id="3_skill"]
+
+[sub_resource type="Resource" id="Resource_target"]
+script = ExtResource("2_target")
+scope_type = 0
+aoe_radius = 0
+origin_is_self = false
+target_filter = 1
+can_target_empty = true
+pattern_7x7 = Array[bool]([])
+
+[sub_resource type="Resource" id="Resource_effect"]
+script = ExtResource("2_target")
+scope_type = 9
+aoe_radius = 1
+origin_is_self = true
+target_filter = 1
+can_target_empty = false
+pattern_7x7 = Array[bool]([])
+
+[resource]
+script = ExtResource("3_skill")
+skill_name = "影襲"
+description = "移動技能：在落點造成 100% 技巧 X 型傷害，不結束回合"
+execution_mode = 2
+targeting_type = 0
+cooldown_turns = 2
+scaling_configs = Array[Dictionary]([{
+"stat": "dex",
+"weight": 1.0
+}])
+scaling_multiplier = 1.0
+targeting = SubResource("Resource_target")
+effects = Array[Resource]([ExtResource("1_effect")])
+is_move_skill = true
+post_move_targeting = SubResource("Resource_effect")

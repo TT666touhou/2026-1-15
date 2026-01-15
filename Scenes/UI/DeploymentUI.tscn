@@ -1,0 +1,112 @@
+[gd_scene load_steps=4 format=3 uid="uid://dv65ssw0ufrn7"]
+
+[ext_resource type="Script" uid="uid://basec800652wh" path="res://Scripts/UI/DeploymentUI.gd" id="1_script"]
+[ext_resource type="Texture2D" uid="uid://0modheirbetv" path="res://Tilesheet/kenney_fantasy-ui-borders/Vector/fantasy-ui-borders.svg" id="2_vnffd"]
+[ext_resource type="PackedScene" path="res://Scenes/UI/ResourceHUD.tscn" id="3_resource_hud"]
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_opaque"]
+bg_color = Color(0.05, 0.05, 0.05, 1)
+
+[node name="DeploymentUI" type="Control"]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+script = ExtResource("1_script")
+
+[node name="LeftPanel" type="Panel" parent="."]
+layout_mode = 1
+anchors_preset = 9
+anchor_bottom = 1.0
+offset_right = 320.0
+grow_vertical = 2
+theme_override_styles/panel = SubResource("StyleBoxFlat_opaque")
+
+[node name="BackgroundBorder" type="NinePatchRect" parent="LeftPanel"]
+texture_filter = 1
+texture_repeat = 1
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+texture = ExtResource("2_vnffd")
+region_rect = Rect2(736, 226, 48, 48)
+patch_margin_left = 16
+patch_margin_top = 16
+patch_margin_right = 16
+patch_margin_bottom = 16
+
+[node name="VBox" type="VBoxContainer" parent="LeftPanel"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = 16.0
+offset_top = 16.0
+offset_right = -16.0
+offset_bottom = -16.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_constants/separation = 16
+
+[node name="ResourcePanel" type="Panel" parent="LeftPanel/VBox"]
+custom_minimum_size = Vector2(0, 48)
+layout_mode = 2
+theme_override_styles/panel = SubResource("StyleBoxFlat_opaque")
+
+[node name="Background" type="NinePatchRect" parent="LeftPanel/VBox/ResourcePanel"]
+texture_filter = 1
+texture_repeat = 1
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+texture = ExtResource("2_vnffd")
+region_rect = Rect2(860, 226, 48, 48)
+patch_margin_left = 16
+patch_margin_top = 16
+patch_margin_right = 16
+patch_margin_bottom = 16
+
+[node name="Margin" type="MarginContainer" parent="LeftPanel/VBox/ResourcePanel"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_constants/margin_left = 10
+theme_override_constants/margin_top = 5
+theme_override_constants/margin_right = 10
+theme_override_constants/margin_bottom = 5
+
+[node name="ResourceHUD" parent="LeftPanel/VBox/ResourcePanel/Margin" instance=ExtResource("3_resource_hud")]
+layout_mode = 2
+alignment = 1
+
+[node name="ScrollContainer" type="ScrollContainer" parent="LeftPanel/VBox"]
+layout_mode = 2
+size_flags_vertical = 3
+
+[node name="MemberList" type="VBoxContainer" parent="LeftPanel/VBox/ScrollContainer"]
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_constants/separation = 10
+
+[node name="LeaderContainer" type="PanelContainer" parent="LeftPanel/VBox"]
+visible = false
+layout_mode = 2
+
+[node name="DropIndicator" type="ColorRect" parent="."]
+visible = false
+layout_mode = 0
+offset_right = 280.0
+offset_bottom = 4.0
+mouse_filter = 2

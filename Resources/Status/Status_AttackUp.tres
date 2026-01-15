@@ -1,0 +1,14 @@
+[gd_resource type="Resource" script_class="StatusDefinition" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://Scripts/SkillSystem/StatusDefinition.gd" id="1_script"]
+
+[resource]
+script = ExtResource("1_script")
+id = "attack_up"
+display_name = "Attack Up"
+icon_scene_path = "res://Scenes/UI/Status/StatusIcon_AtkUp.tscn"
+duration_turns = 3
+params = {
+"stat": "str",
+"value": 0.5
+}

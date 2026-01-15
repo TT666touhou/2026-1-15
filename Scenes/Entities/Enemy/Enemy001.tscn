@@ -1,0 +1,55 @@
+[gd_scene load_steps=9 format=3]
+
+[ext_resource type="Texture2D" path="res://Tilesheet/colored-transparent_packed.png" id="1"]
+[ext_resource type="Resource" path="res://Footprints/Footprint_1x1.tres" id="2_footprint"]
+[ext_resource type="Script" path="res://Scripts/Entities/UnitMovementController.gd" id="6"]
+[ext_resource type="Script" path="res://Scripts/Entities/CardProvider.gd" id="12"]
+[ext_resource type="Script" path="res://Scripts/Entities/UnitVisuals.gd" id="13"]
+[ext_resource type="Script" path="res://Scripts/Entities/GridMover.gd" id="20"]
+[ext_resource type="Script" path="res://Scripts/Entities/GridEntity.gd" id="21"]
+[ext_resource type="Script" path="res://Scripts/Managers/StatusManager.gd" id="22_status"]
+[ext_resource type="PackedScene" path="res://Scenes/Managers/StatusDisplayManager.tscn" id="23_display"]
+
+[ext_resource type="PackedScene" uid="uid://df6i8j7y6k3m4" path="res://Scenes/UI/UnitMovementArrows.tscn" id="25_arrows"]
+
+[sub_resource type="RectangleShape2D" id="RectangleShape2D_enemy"]
+size = Vector2(16, 16)
+
+[node name="Enemy001" type="CharacterBody2D"]
+collision_layer = 0
+collision_mask = 0
+script = ExtResource("21")
+footprint_data = ExtResource("2_footprint")
+
+[node name="Sprite2D" type="Sprite2D" parent="."]
+texture_filter = 1
+texture_repeat = 1
+texture = ExtResource("1")
+region_enabled = true
+region_rect = Rect2(384, 80, 16, 16)
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="."]
+shape = SubResource("RectangleShape2D_enemy")
+
+[node name="UnitMovementController" type="Node" parent="."]
+script = ExtResource("6")
+
+[node name="GridMover" type="Node" parent="."]
+script = ExtResource("20")
+move_animation_duration = 0.3
+
+[node name="CardProvider" type="Node" parent="."]
+script = ExtResource("12")
+
+[node name="UnitVisuals" type="Node" parent="."]
+script = ExtResource("13")
+
+[node name="StatusManager" type="Node" parent="."]
+script = ExtResource("22_status")
+
+[node name="StatusDisplayManager" parent="." instance=ExtResource("23_display")]
+offset_top = -12.0
+offset_bottom = -12.0
+
+[node name="UnitMovementArrows" parent="." instance=ExtResource("25_arrows")]
+z_index = 5

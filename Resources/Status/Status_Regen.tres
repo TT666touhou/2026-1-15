@@ -1,0 +1,18 @@
+[gd_resource type="Resource" script_class="StatusDefinition" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://Scripts/SkillSystem/StatusDefinition.gd" id="1_status"]
+
+[resource]
+script = ExtResource("1_status")
+id = "Regen"
+display_name = "Regeneration"
+icon_scene_path = "res://Scenes/UI/Status/StatusIcon_Regen.tscn"
+is_debuff = false
+behavior_type = 2
+stacking_rule = 0
+duration_turns = 2
+params = {
+"effect_type": "heal",
+"value": 5.0
+}
+

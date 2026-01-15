@@ -1,0 +1,41 @@
+[gd_resource type="Resource" script_class="BaseItemResource" load_steps=9 format=3 uid="uid://m4ju3itjfxgj"]
+
+[ext_resource type="Texture2D" uid="uid://igs8giojsm55" path="res://Tilesheet/colored-transparent_packed.png" id="1_atlas"]
+[ext_resource type="Script" uid="uid://cums6yvi6wbcm" path="res://Scripts/Items/AffixDefinition.gd" id="2_affix_script"]
+[ext_resource type="Script" uid="uid://j3mkl5jfwq5g" path="res://Scripts/Items/BaseItemResource.gd" id="3_script"]
+
+[sub_resource type="Resource" id="SubResource_str"]
+script = ExtResource("2_affix_script")
+base_value = 2.0
+weight = 10.0
+
+[sub_resource type="Resource" id="SubResource_dex"]
+script = ExtResource("2_affix_script")
+stat_type = 1
+base_value = 2.0
+weight = 10.0
+
+[sub_resource type="Resource" id="SubResource_pen"]
+script = ExtResource("2_affix_script")
+stat_type = 14
+base_value = 0.05
+weight = 5.0
+min_ilvl = 10
+
+[sub_resource type="Resource" id="SubResource_cdm"]
+script = ExtResource("2_affix_script")
+stat_type = 13
+base_value = 0.1
+weight = 5.0
+min_ilvl = 15
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_sword"]
+atlas = ExtResource("1_atlas")
+region = Rect2(512, 128, 16, 16)
+
+[resource]
+script = ExtResource("3_script")
+item_names = Array[String](["戰士之劍"])
+slot = 0
+visual_icons = Array[Texture2D]([SubResource("AtlasTexture_sword")])
+affix_pool = Array[ExtResource("2_affix_script")]([SubResource("SubResource_str"), SubResource("SubResource_dex"), SubResource("SubResource_pen"), SubResource("SubResource_cdm")])

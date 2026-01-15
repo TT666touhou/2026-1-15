@@ -1,0 +1,18 @@
+[gd_scene load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://Scripts/Camera/SimpleCameraController.gd" id="1"]
+
+[node name="SimpleCamera" type="Camera2D"]
+script = ExtResource("1")
+current = true
+move_speed = 200.0
+enable_zoom = true
+min_zoom = 0.5
+max_zoom = 2.0
+zoom_speed = 0.1
+map_generator_path = NodePath("..")
+boundary_margin = 0.0
+auto_calculate_on_map_generated = true
+enable_boundaries = true
+enable_debug_log = false
+
