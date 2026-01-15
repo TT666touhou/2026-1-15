@@ -59,6 +59,12 @@ func _find_movement_indicator() -> void:
 		print("[GridSelector] Warning: MovementRangeIndicator not found in group.")
 
 func _input(event: InputEvent) -> void:
+	# 核心：當忙碌或輸入鎖定時，攔截所有滑鼠事件
+	if TurnManager and TurnManager.is_busy():
+		if event is InputEventMouseButton or event is InputEventMouseMotion:
+			get_viewport().set_input_as_handled()
+		return
+
 	# 核心優化：當處於按下或拖拽狀態時，使用 _input 攔截全域事件 (即使滑鼠在 UI 上)
 	if _input_state == InputState.IDLE: return
 	
@@ -75,6 +81,11 @@ func _input(event: InputEvent) -> void:
 	elif event is InputEventMouseMotion:
 		if _input_state == InputState.PRESSED:
 			if _press_start_pos.distance_to(event.position) > DRAG_THRESHOLD:
+				# --- 修改：停用玩家單位的拖動移動 ---
+				if selected_entity and selected_entity.faction and selected_entity.faction.is_controllable:
+					if not selected_entity is EquipmentEntity: # 假設裝備還是可以拖動
+						return
+				
 				_input_state = InputState.DRAGGING
 				_start_drag_visuals(event.position)
 				get_viewport().set_input_as_handled()
@@ -248,11 +259,23 @@ func _execute_move(target_cell: Vector2i) -> void:
 	var mover = selected_entity.get_node_or_null("GridMover")
 	if not mover: return
 	
+	if TurnManager: TurnManager.lock_input()
+	
 	if mover.has_signal("movement_completed"):
 		mover.movement_completed.connect(_on_move_finished, CONNECT_ONE_SHOT)
 	
 	_end_drag_visuals()
-	mover.move_to(target_cell, true) # 還原 true，代表流暢移動/忽略中間障礙檢測
+	
+	# 記錄目前格子，用於判斷是否真的有啟動移動
+	var start_cell = selected_entity.grid_position
+	mover.move_to(target_cell, false)
+	
+	# 安全檢查：如果 mover 因為路徑不通或其他原因根本沒啟動移動，則立即解鎖
+	if selected_entity.grid_position == start_cell and not mover.is_moving():
+		print("[GridSelector] Movement failed to start, unlocking input.")
+		if mover.movement_completed.is_connected(_on_move_finished):
+			mover.movement_completed.disconnect(_on_move_finished)
+		if TurnManager: TurnManager.unlock_input()
 
 func _on_move_finished(entity: GridEntity, final_pos: Vector2i) -> void:
 	print("[GridSelector] Move finished for ", entity.name, " to ", final_pos)
@@ -289,11 +312,13 @@ func _on_move_finished(entity: GridEntity, final_pos: Vector2i) -> void:
 				print("[GridSelector] Free roam mode, skipping turn advancement.")
 			else:
 				print("[GridSelector] Normal movement finished, advancing turn.")
-				TurnManager.advance_turn()
+				await TurnManager.advance_turn()
 	
 	# 固定流程：移動後一律清空選取，確保視覺指示器正確關閉
 	print("[GridSelector] Movement lifecycle finished, forcing clear_selection.")
 	clear_selection()
+	
+	if TurnManager: TurnManager.unlock_input() # 最後才解鎖
 
 # --- 視覺輔助 ---
 

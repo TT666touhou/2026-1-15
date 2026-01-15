@@ -26,9 +26,30 @@ var current_faction: FactionDefinition = null
 var turn_count: int = 1
 
 var is_free_roam_mode: bool = false
+var _is_input_locked: bool = false
 
 func _ready() -> void:
 	pass
+
+## 全域輸入鎖定
+func lock_input() -> void:
+	_is_input_locked = true
+	# print("[TurnManager] Input LOCKED")
+
+func unlock_input() -> void:
+	_is_input_locked = false
+	# print("[TurnManager] Input UNLOCKED")
+
+## 綜合忙碌狀態判定
+func is_busy() -> bool:
+	# 1. 內部手動鎖定
+	if _is_input_locked: return true
+	
+	# 2. 目前不是玩家回合 (除非在自由漫遊模式下，會由 _ensure_player_control 強制設為 PLAYER_TURN)
+	if current_state != State.PLAYER_TURN and current_state != State.DEPLOYMENT and not is_free_roam_mode:
+		return true
+		
+	return false
 
 ## 初始化戰鬥並進入部署階段
 func start_combat(factions: Array[FactionDefinition]) -> void:
@@ -90,27 +111,34 @@ func _run_enemy_ai_sequence() -> void:
 	# 1. 稍微延遲一點讓 UI 顯示「敵人回合」
 	await get_tree().create_timer(0.4).timeout
 	
-	# 2. 計算最佳移動
+	# 2. 計算最佳單一移動方案 (Greedy Single Move)
 	var move_data = EnemyAIController.calculate_best_move(get_tree(), current_faction)
 	
-	# 3. 如果找到有效移動且不等於目前位置，執行移動
+	# 3. 執行移動
 	if not move_data.is_empty():
 		var unit = move_data.unit
 		var target_cell = move_data.cell
 		
 		if unit.grid_position != target_cell:
-			print("[TurnManager] AI moving ", unit.name, " to ", target_cell)
+			print("[TurnManager] AI moving single unit ", unit.name, " to ", target_cell)
 			var mover = unit.get_node_or_null("GridMover")
-			if mover and mover.has_method("move_to"):
+			if mover:
+				lock_input() # AI 移動期間也鎖定，防止玩家誤操作
 				await mover.move_to(target_cell)
+				unlock_input()
+				# 移動完畢後稍微停頓
+				await get_tree().create_timer(0.2).timeout
 			else:
 				unit.set_grid_position(target_cell)
-			
-			# 移動完畢後稍微停頓
-			await get_tree().create_timer(0.2).timeout
+		else:
+			print("[TurnManager] AI decided to stay still.")
+			await get_tree().create_timer(0.4).timeout
+	else:
+		print("[TurnManager] No valid move found for AI.")
+		await get_tree().create_timer(0.4).timeout
 	
 	# 4. 進入結算階段 (執行攻擊)
-	advance_turn()
+	await advance_turn()
 
 func _decrement_all_skill_cooldowns() -> void:
 	var entities = get_tree().get_nodes_in_group("grid_entities")
@@ -123,8 +151,10 @@ func advance_turn() -> void:
 	if current_faction == null:
 		return
 		
-	# 執行攻擊結算 (Attack Phase) - 現在是 coroutine
+	# 執行攻擊結算 (Attack Phase)
+	lock_input()
 	await resolve_attacks()
+	unlock_input()
 	
 	# 如果在結算過程中觸發了 Free Roam (例如最後一個敵人死亡)，則停止回合推進
 	if is_free_roam_mode:

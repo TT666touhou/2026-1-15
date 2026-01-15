@@ -25,6 +25,7 @@
 [ext_resource type="PackedScene" path="res://Scenes/UI/DisposalZone.tscn" id="43"]
 [ext_resource type="Script" uid="uid://bkdhg4l2ofkcm" path="res://Scripts/UI/HoverInfoController.gd" id="44"]
 [ext_resource type="Script" uid="uid://b8r80sd1w8jp8" path="res://Scripts/UI/TurnDebugInfo.gd" id="45"]
+[ext_resource type="Script" path="res://Scripts/Managers/GroupInputManager.gd" id="49_input"]
 [ext_resource type="PackedScene" path="res://Scenes/UI/DebugRoomLoader.tscn" id="46"]
 [ext_resource type="PackedScene" path="res://Scenes/UI/DebugGridToggler.tscn" id="48"]
 [ext_resource type="PackedScene" path="res://Scenes/UI/Skills/SkillBarNode.tscn" id="50"]
@@ -109,6 +110,9 @@ tile_set = ExtResource("1")
 script = ExtResource("20")
 selection_layer_path = NodePath("../SelectionHighlight")
 enable_debug_log = true
+
+[node name="GroupInputManager" type="Node" parent="."]
+script = ExtResource("49_input")
 
 [node name="MovementRangeIndicatorController" type="Node" parent="."]
 script = ExtResource("27")

@@ -136,7 +136,13 @@ func update_obstacles() -> void:
 	for x in range(map_width):
 		for y in range(map_height):
 			var cell = Vector2i(x, y)
-			var is_occupied = grid.is_cell_occupied(cell)
+			var occupant = grid.get_occupant(cell)
+			var is_occupied = occupant != null
+			
+			# 特殊規則：我方單位不視為路徑規劃的障礙物 (允許穿過，但不能停在上面由 Mover 處理)
+			if occupant is GridEntity and occupant.faction and occupant.faction.is_controllable:
+				is_occupied = false
+				
 			a_star.set_point_solid(cell, is_occupied)
 
 func _on_cell_occupied_changed(cell: Vector2i, is_occupied: bool) -> void:
@@ -151,7 +157,14 @@ func _on_cell_occupied_changed(cell: Vector2i, is_occupied: bool) -> void:
 		if not a_star.region.has_point(cell):
 			return
 			
-		a_star.set_point_solid(cell, is_occupied)
+		# --- 特殊規則：我方單位不視為障礙物 ---
+		var final_solid = is_occupied
+		if is_occupied and grid.has_method("get_occupant"):
+			var occupant = grid.get_occupant(cell)
+			if occupant is GridEntity and occupant.faction and occupant.faction.is_controllable:
+				final_solid = false
+				
+		a_star.set_point_solid(cell, final_solid)
 
 func _get_astar_path(start: Vector2i, end: Vector2i) -> Array[Vector2i]:
 	"""使用 A* 查找路徑（僅用於驗證可達性）"""

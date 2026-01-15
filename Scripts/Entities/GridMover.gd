@@ -136,12 +136,16 @@ func _move_along_path(path: Array[Vector2i]) -> void:
 		return
 	
 	for next_cell in path:
-		# 檢查目標格子是否可達（不應該被其他實體佔用，除非是移動中的自己）
+		# 檢查目標格子是否可達（不應該被其他實體佔用，除非是移動中的自己或同步移動的我方單位）
 		if grid.is_cell_occupied(next_cell):
 			var occupant = grid.get_occupant(next_cell)
 			if occupant != entity:
-				print("[GridMover] Path blocked at cell ", next_cell, " by ", occupant)
-				break
+				# 關鍵：如果是同步移動的我方單位，則忽略佔用，避免互相卡死
+				if occupant is GridEntity and occupant.faction and occupant.faction.is_controllable:
+					pass # 允許穿過我方單位
+				else:
+					print("[GridMover] Path blocked at cell ", next_cell, " by ", occupant)
+					break
 		
 		# 使用 grid_to_world_center_footprint 修正多格單位位置
 		var target_pos = grid.grid_to_world_center_footprint(next_cell, entity.footprint_data) if entity.footprint_data else grid.grid_to_world_center(next_cell)
