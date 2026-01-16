@@ -13,10 +13,6 @@ class_name UnitCard
 
 # Combat Stats
 @export var attack_damage: int = 10
-@export var base_str: int = 10
-@export var base_dex: int = 10
-@export var base_int: int = 10
-@export var base_pie: int = 10
 @export var attack_depth: int = 1 # Attack range depth (1 = melee/adjacent)
 @export var base_combo_count: float = 1.0
 @export var move_speed_anim: float = 300.0 # Visual animation speed

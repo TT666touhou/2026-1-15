@@ -24,12 +24,12 @@ pattern_7x7 = Array[bool]([])
 [resource]
 script = ExtResource("3_skill")
 skill_name = "神聖十字"
-description = "移動後觸發：在地圖中央區域回復我方 200% 信仰生命值"
+description = "移動後觸發：在地圖中央區域回復我方 200% 攻擊力生命值"
 execution_mode = 1
 targeting_type = 1
 cooldown_turns = 2
 scaling_configs = Array[Dictionary]([{
-"stat": "pie",
+"stat": "attack",
 "weight": 1.0
 }])
 scaling_multiplier = 2.0

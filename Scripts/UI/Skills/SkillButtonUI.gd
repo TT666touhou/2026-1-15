@@ -147,7 +147,7 @@ func _update_visuals() -> void:
 
 func _render_mini_grid() -> void:
 	if not mini_range_grid or not skill_data: return
-	var target_to_show = skill_data.post_move_targeting if skill_data.post_move_targeting else skill_data.targeting
+	var target_to_show = skill_data.post_move_targeting if skill_data.post_move_targeting != null else skill_data.targeting
 	var is_pure_move = skill_data.execution_mode == UnitSkillData.ExecutionMode.MOVEMENT or skill_data.is_move_skill
 	var color = Color(1, 0.9, 0.2) if is_pure_move else Color(1.0, 0.4, 0.1)
 	SkillTooltipUI.render_skill_grid(mini_range_grid, target_to_show, color, is_pure_move, Vector2(4, 4))

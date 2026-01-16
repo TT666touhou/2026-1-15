@@ -44,10 +44,20 @@ func execute_faction_move(units: Array, direction: Vector2i) -> void:
 	# 1. 模擬獲取目標 (包含暫時 unregister 邏輯)
 	var unit_to_target = simulate_group_movement(units, direction, grid)
 	
+	# 準備排序後的單位列表，確保執行順序與模擬判定順序一致 (前排優先)
+	var sorted_units = units.duplicate()
+	sorted_units.sort_custom(func(a, b):
+		var dot_a = a.grid_position.x * direction.x + a.grid_position.y * direction.y
+		var dot_b = b.grid_position.x * direction.x + b.grid_position.y * direction.y
+		return dot_a > dot_b
+	)
+	
 	# 2. 啟動移動動畫
 	var moved_any = false
 	var active_movers = []
-	for unit in units:
+	
+	# 優化：按照 sorted_units (前排優先) 的順序啟動動畫
+	for unit in sorted_units:
 		if not unit_to_target.has(unit): continue
 		var target = unit_to_target[unit]
 		
@@ -75,12 +85,26 @@ func execute_faction_move(units: Array, direction: Vector2i) -> void:
 	else:
 		if TurnManager: TurnManager.unlock_input()
 
-## 公用方法：模擬群體移動落點 (核心邏輯)
-func simulate_group_movement(units: Array, direction: Vector2i, grid: Node) -> Dictionary:
+## 公用方法：模擬群體移動落點 (核心邏輯：多輪同步推進 + 詳細偵錯日誌)
+func simulate_group_movement(units: Array, direction: Vector2i, _grid: Node) -> Dictionary:
 	var unit_to_target = {}
-	var taken_cells = [] # 記錄所有單位「預計」落點，防止重疊
+	var unit_finished = {} # 記錄哪些單位已停止移動
 	
-	# 複製一份 Array 進行排序，不影響原始 Array 順序
+	print("\n[GroupMovement] === START SIMULATION dir: ", direction, " ===")
+	
+	# 初始化：所有單位從當前位置開始，標記為未完成
+	for unit in units:
+		unit_to_target[unit] = unit.grid_position
+		unit_finished[unit] = false
+		print("[GroupMovement] Initial Pos: ", unit.name, " at ", unit.grid_position)
+	
+	# --- 關鍵：計算前暫時清除所有參與單位的佔用，避免互卡 ---
+	for unit in units:
+		if unit.has_method("_unregister_cells"):
+			unit._unregister_cells()
+			print("[GroupMovement] Unregistered grid cells for: ", unit.name)
+	
+	# 排序：雖然現在是同步推進，但每輪內的判斷順序仍以「前方優先」較為穩定
 	var sorted_units = units.duplicate()
 	sorted_units.sort_custom(func(a, b):
 		var dot_a = a.grid_position.x * direction.x + a.grid_position.y * direction.y
@@ -88,33 +112,85 @@ func simulate_group_movement(units: Array, direction: Vector2i, grid: Node) -> D
 		return dot_a > dot_b
 	)
 	
-	# --- 關鍵：計算前暫時清除所有參與單位的佔用，避免互卡 ---
-	for unit in sorted_units:
-		if unit.has_method("_unregister_cells"):
-			unit._unregister_cells()
-	
-	# 第一階段：計算所有落點
-	for unit in sorted_units:
-		if not is_instance_valid(unit) or not unit.movement_range_data:
-			unit_to_target[unit] = unit.grid_position
-			continue
-			
-		var move_type = unit.movement_range_data.get_movement_type(direction)
-		if move_type == MovementRangeData.MovementType.BLOCKED:
-			unit_to_target[unit] = unit.grid_position
-			_add_footprint_to_taken_cells(unit.grid_position, unit.footprint_data, grid, taken_cells)
-			continue
-			
-		var target_cell = _calculate_target_for_group(unit, direction, move_type, sorted_units, taken_cells)
-		unit_to_target[unit] = target_cell
-		_add_footprint_to_taken_cells(target_cell, unit.footprint_data, grid, taken_cells)
+	var sort_names = []
+	for u in sorted_units: sort_names.append(u.name)
+	print("[GroupMovement] Sorted priority (Front to Back): ", sort_names)
 
-	# --- 計算完畢，立即恢復原本位置的佔用 ---
-	for unit in sorted_units:
+	# 核心迭代：一輪一輪推進
+	var moved_in_round = true
+	var round_num = 0
+	while moved_in_round and round_num < 100:
+		moved_in_round = false
+		round_num += 1
+		
+		# 每一輪中，每個未完成的單位嘗試走一步
+		for unit in sorted_units:
+			if unit_finished[unit]: continue
+			
+			var move_type = unit.movement_range_data.get_movement_type(direction)
+			var current_pos = unit_to_target[unit]
+			var next_pos = current_pos + direction
+			
+			# 檢查該單位是否還有移動額度 (ONE_STEP 只能走一步)
+			var already_moved_dist = (current_pos - unit.grid_position).length()
+			if move_type == MovementRangeData.MovementType.ONE_STEP and already_moved_dist >= 0.5:
+				unit_finished[unit] = true
+				print("[GroupMovement]   ", unit.name, " STOPPED: ONE_STEP limit reached at ", current_pos)
+				continue
+			
+			if move_type == MovementRangeData.MovementType.BLOCKED:
+				unit_finished[unit] = true
+				print("[GroupMovement]   ", unit.name, " STOPPED: Direction blocked by config at ", current_pos)
+				continue
+				
+			# 核心判斷：下一步是否可行
+			if _can_unit_step_to(unit, next_pos, units, unit_to_target, unit_finished):
+				unit_to_target[unit] = next_pos
+				moved_in_round = true
+			else:
+				unit_finished[unit] = true
+				print("[GroupMovement]   ", unit.name, " STOPPED at ", current_pos, " because next step ", next_pos, " is blocked.")
+
+	# --- 計算完畢，立即恢復原本位置的佔用 (由執行移動的邏輯後續更新真正的位置) ---
+	for unit in units:
 		if unit.has_method("_register_cells"):
 			unit._register_cells()
 			
+	print("[GroupMovement] === SIMULATION COMPLETE ===\n")
 	return unit_to_target
+
+## 內部判斷：單個步進是否可行
+func _can_unit_step_to(unit: GridEntity, target_cell: Vector2i, group: Array, current_targets: Dictionary, group_finished: Dictionary) -> bool:
+	var grid = unit.grid
+	if not grid or not grid.has_method("is_in_bounds") or not grid.has_method("get_cells_in_footprint"):
+		return false
+		
+	var cells_to_check = grid.get_cells_in_footprint(target_cell, unit.footprint_data)
+	for c in cells_to_check:
+		# 1. 邊界檢查
+		if not grid.is_in_bounds(c):
+			print("[GroupMovement]     ", unit.name, " block reason: OUT OF BOUNDS at ", c)
+			return false
+			
+		# 2. 檢查是否與「已停止」的隊友重疊
+		for other in group:
+			if other == unit: continue
+			if group_finished[other]:
+				# 如果隊友已經停下來了，檢查他的最終範圍是否擋住我
+				var other_final_cells = grid.get_cells_in_footprint(current_targets[other], other.footprint_data)
+				if c in other_final_cells:
+					print("[GroupMovement]     ", unit.name, " block reason: TEAMMATE ", other.name, " ALREADY STOPPED at ", c)
+					return false
+			
+		# 3. 檢查網格上的靜態佔用 (非隊友的佔用)
+		if grid.is_cell_occupied(c):
+			var occupant = grid.get_occupant(c)
+			if occupant != unit and not occupant in group:
+				var occ_name = occupant.name if "name" in occupant else "Unnamed"
+				print("[GroupMovement]     ", unit.name, " block reason: STATIC OCCUPANT (", occ_name, ") at ", c)
+				return false
+				
+	return true
 
 func _run_mover(mover: GridMover, target: Vector2i) -> void:
 	await mover.move_to(target)
@@ -132,61 +208,3 @@ func _wait_for_movers(movers: Array) -> void:
 		if not still_moving:
 			break
 		await get_tree().process_frame
-
-func _calculate_target_for_group(unit: GridEntity, dir: Vector2i, type: int, group: Array, taken_cells: Array) -> Vector2i:
-	var current = unit.grid_position
-	var grid = unit.grid
-	if not grid: return current
-	
-	if type == MovementRangeData.MovementType.ONE_STEP:
-		var next = current + dir
-		if _can_unit_fit_at_group(unit, next, group, taken_cells):
-			return next
-		return current
-		
-	elif type == MovementRangeData.MovementType.UNLIMITED:
-		var last_valid = current
-		var search_pos = current
-		var safety_count = 0
-		while safety_count < 100: # 安全計數器，防止無限循環
-			var next = search_pos + dir
-			if _can_unit_fit_at_group(unit, next, group, taken_cells):
-				last_valid = next
-				search_pos = next
-				safety_count += 1
-			else:
-				break
-		return last_valid
-	
-	return current
-
-func _can_unit_fit_at_group(unit: GridEntity, cell: Vector2i, group: Array, taken_cells: Array) -> bool:
-	var grid = unit.grid
-	if not grid or not grid.has_method("is_in_bounds") or not grid.has_method("get_cells_in_footprint"):
-		return false
-		
-	var cells_to_check = grid.get_cells_in_footprint(cell, unit.footprint_data)
-	for c in cells_to_check:
-		# 1. 邊界檢查
-		if not grid.is_in_bounds(c):
-			return false
-			
-		# 2. 檢查是否已被同組的其他單位「預訂」 (這是唯一的真實障礙物來源)
-		if c in taken_cells:
-			return false
-			
-		# 3. 檢查網格佔用 (此時參與移動的我方單位已在 simulation 前 unregister)
-		if grid.is_cell_occupied(c):
-			var occupant = grid.get_occupant(c)
-			if occupant != unit and not occupant in group:
-				return false
-	return true
-
-func _add_footprint_to_taken_cells(cell: Vector2i, footprint: Resource, grid: Node, taken_cells: Array) -> void:
-	var cells = [cell]
-	if footprint and grid.has_method("get_cells_in_footprint"):
-		cells = grid.get_cells_in_footprint(cell, footprint)
-	
-	for c in cells:
-		if not c in taken_cells:
-			taken_cells.append(c)

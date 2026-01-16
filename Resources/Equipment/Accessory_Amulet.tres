@@ -6,19 +6,19 @@
 
 [sub_resource type="Resource" id="SubResource_int"]
 script = ExtResource("2_affix_script")
-stat_type = 2
+stat_type = 0
 base_value = 2.0
 weight = 10.0
 
 [sub_resource type="Resource" id="SubResource_pie"]
 script = ExtResource("2_affix_script")
-stat_type = 3
+stat_type = 0
 base_value = 2.0
 weight = 10.0
 
 [sub_resource type="Resource" id="SubResource_hp"]
 script = ExtResource("2_affix_script")
-stat_type = 4
+stat_type = 1
 base_value = 20.0
 weight = 10.0
 

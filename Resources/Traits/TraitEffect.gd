@@ -42,10 +42,6 @@ enum StatType {
 	HEAL_PER_TURN,              # 每回合回復 (數值或比例) - 暫留
 	HP_MULTIPLIER,              # HP 倍率 (常駐)
 	COMBO_ADDITIVE,             # 連擊數加值 (常駐)
-	STR_MULTIPLIER,             # 力量倍率
-	DEX_MULTIPLIER,             # 技巧倍率
-	INT_MULTIPLIER,             # 智力倍率
-	PIE_MULTIPLIER,             # 信仰倍率
 	DR_ADDITIVE,                 # 減傷率加值 (0.1 = +10%)
 	RES_ADDITIVE,                # 抗性加值 (0.1 = +10%)
 	REF_ADDITIVE,                # 反射率加值 (0.1 = +10%)

@@ -24,12 +24,12 @@ pattern_7x7 = Array[bool]([])
 [resource]
 script = ExtResource("3_skill")
 skill_name = "末日審判"
-description = "立刻發動：對全圖敵人造成 100% 智力傷害"
+description = "立刻發動：對全圖敵人造成 100% 攻擊力傷害"
 execution_mode = 0
 targeting_type = 0
 cooldown_turns = 5
 scaling_configs = Array[Dictionary]([{
-"stat": "int",
+"stat": "attack",
 "weight": 1.0
 }])
 scaling_multiplier = 1.0

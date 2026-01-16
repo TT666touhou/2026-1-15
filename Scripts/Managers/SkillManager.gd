@@ -75,7 +75,7 @@ func execute_skill(source_entity: GridEntity, skill: Resource, origin_pos: Vecto
 	
 	for target in valid_targets:
 		# 命中判定 (除非技能標記為必中 is_accurate)
-		var is_accurate = skill.get("is_accurate") if "is_accurate" in skill else false
+		var is_accurate = bool(skill.get("is_accurate")) if "is_accurate" in skill else false
 		if not is_accurate and AttackManager.has_method("check_hit"):
 			if not AttackManager.check_hit(source_entity, target):
 				if target.has_method("show_avoid_text"):
@@ -111,16 +111,13 @@ func _get_weighted_stat_sum(source_entity: GridEntity, configs: Array) -> float:
 		return 1.0 # Fallback
 		
 	for config in configs:
-		var stat_name = config.get("stat", "str")
+		var stat_name = config.get("stat", "attack")
 		var weight = config.get("weight", 1.0)
 		var val = 0.0
 		match stat_name:
-			"attack", "str": val = source_entity.character_data.get_effective_str()
+			"attack", "str", "dex", "int", "pie": val = source_entity.character_data.get_effective_attack()
 			"hp": val = source_entity.character_data.get_effective_max_health()
 			"luck": val = source_entity.character_data.luck
-			"dex": val = source_entity.character_data.get_effective_dex()
-			"int": val = source_entity.character_data.get_effective_int()
-			"pie": val = source_entity.character_data.get_effective_pie()
 			_: val = 1.0
 		total += val * weight
 	return total
@@ -226,7 +223,7 @@ func get_cells_in_scope(targeting_data: Resource, center: Vector2i) -> Array[Vec
 
 ## 內部：驗證目標是否符合 Filter
 func is_target_valid(target: GridEntity, filter: int, source: GridEntity) -> bool:
-	var source_faction = source.faction if source else null
+	var source_faction = source.faction if source != null else null
 	if not target.faction or not source_faction: 
 		return true
 	
@@ -248,12 +245,35 @@ func _apply_single_effect(effect: EffectDefinition, target: GridEntity, source: 
 	
 	var base_val = effect.get("base_value")
 	if base_val == null: base_val = 1.0
-	var value = base_val * final_multiplier
+	
+	# 處理 ValueCalculation (數值來源)
+	var calculation_mode = effect.get("value_calculation")
+	var calculated_base = base_val
+	
+	match calculation_mode:
+		EffectDefinition.ValueCalculation.PERCENT_TARGET_ATK:
+			calculated_base = base_val * target.character_data.get_effective_attack()
+		EffectDefinition.ValueCalculation.PERCENT_TARGET_HP:
+			calculated_base = base_val * target.character_data.get_effective_max_health()
+		EffectDefinition.ValueCalculation.PERCENT_TARGET_LOST_HP:
+			var lost_hp = target.character_data.get_effective_max_health() - target.character_data.current_health
+			calculated_base = base_val * lost_hp
+		EffectDefinition.ValueCalculation.PERCENT_CASTER_ATK:
+			if source and source.character_data:
+				calculated_base = base_val * source.character_data.get_effective_attack()
+		EffectDefinition.ValueCalculation.POKER_POINTS:
+			# 暫位符：目前假設 POKER_POINTS 由外部 final_multiplier 處理
+			pass
+		_:
+			# FIXED 模式
+			calculated_base = base_val
+			
+	var value = calculated_base * final_multiplier
 	
 	match effect.effect_type:
 		EffectDefinition.EffectType.DAMAGE:
-			var ignore_b = effect.get("ignore_barrier") if "ignore_barrier" in effect else false
-			var ignore_s = effect.get("ignore_shield") if "ignore_shield" in effect else false
+			var ignore_b = bool(effect.get("ignore_barrier")) if "ignore_barrier" in effect else false
+			var ignore_s = bool(effect.get("ignore_shield")) if "ignore_shield" in effect else false
 			
 			# 傳入 source (發動者) 以套用貫穿 (Penetration) 效果
 			var actual_damage = target.apply_damage(int(value), ignore_b, ignore_s, source)

@@ -24,11 +24,7 @@ icon = SubResource("AtlasTexture_icon")
 footprint_data = ExtResource("3_footprint")
 movement_range_data = ExtResource("4_movement")
 spawn_animation = 1
-attack_damage = 15
-base_str = 18
-base_dex = 6
-base_int = 4
-base_pie = 12
+attack_damage = 18
 base_combo_count = 1.0
 move_speed_anim = 200.0
 base_crit_rate = 0.05
@@ -51,7 +47,7 @@ description = "A heavy unit with limited rear movement."
 cost = {
 "soul": 20
 }
-display_name = "Heavy Guard"
+display_name = "Knight"
 max_playable_count = 0
 character_trait = ExtResource("7_trait")
 default_skills = Array[Resource]([ExtResource("11_xskill"), ExtResource("8_s1"), ExtResource("9_s2"), ExtResource("10_s3")])

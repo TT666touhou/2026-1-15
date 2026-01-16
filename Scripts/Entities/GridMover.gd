@@ -7,6 +7,9 @@ class_name GridMover
 signal movement_started(entity: GridEntity, target_cell: Vector2i)
 signal movement_completed(entity: GridEntity, final_position: Vector2i)
 
+enum MoveStyle { STEP, DASH }
+
+@export var move_style: MoveStyle = MoveStyle.STEP
 @export var move_animation_duration: float = 0.2  # 移動動畫時間 (從 0.3 改為 0.2)
 
 var grid: Node  # Grid 類型（使用 Node 避免循環依賴）
@@ -43,8 +46,13 @@ func move_to(target_cell: Vector2i, instant: bool = false) -> void:
 	if grid.is_cell_occupied(target_cell):
 		var occupant = grid.get_occupant(target_cell)
 		if occupant != entity:
-			print("[GridMover] Target cell is occupied by another entity")
-			return
+			# 關鍵優化：如果是同步移動的我方單位，則允許啟動移動
+			# 因為 GroupMovementController 已經模擬過，保證最終落點不會重疊
+			if occupant is GridEntity and occupant.faction and occupant.faction.is_controllable:
+				print("[GridMover] Target cell occupied by teammate ", occupant.name, ", allowing move start.")
+			else:
+				print("[GridMover] Target cell is occupied by another entity: ", occupant)
+				return
 	
 	# 如果已經在目標位置，不需要移動
 	if entity.grid_position == target_cell:
@@ -119,7 +127,11 @@ func move_to(target_cell: Vector2i, instant: bool = false) -> void:
 	
 	print("[GridMover] Moving from ", entity.grid_position, " to ", target_cell, " via path: ", path)
 	
-	await _move_along_path(path)
+	if move_style == MoveStyle.DASH:
+		await _move_dash(path)
+	else:
+		await _move_along_path(path)
+		
 	_is_moving = false
 	
 	# 發送移動完成信號
@@ -190,6 +202,38 @@ func _move_along_path(path: Array[Vector2i]) -> void:
 			pathfinder.update_obstacles()
 		
 		print("[GridMover] Moved to cell ", next_cell, ". Grid position updated.")
+
+func _move_dash(path: Array[Vector2i]) -> void:
+	"""衝刺移動：直接衝向終點並帶有回彈感"""
+	if path.is_empty() or grid == null or entity == null:
+		return
+		
+	var final_cell = path[-1]
+	var target_pos = grid.grid_to_world_center_footprint(final_cell, entity.footprint_data) if entity.footprint_data != null else grid.grid_to_world_center(final_cell)
+	
+	var distance = entity.global_position.distance_to(target_pos)
+	var cell_size_ref = 16.0
+	if grid and "cell_size" in grid:
+		cell_size_ref = float(grid.cell_size.x)
+		
+	# 衝刺時間計算：使其總時間與 STEP 風格接近 (move_animation_duration)
+	var actual_duration = clamp((distance / cell_size_ref) * move_animation_duration, 0.2, 1.0)
+	
+	var tween = get_tree().create_tween()
+	# 使用 TRANS_BACK + EASE_OUT 產生衝過頭再煞車回彈的效果
+	tween.tween_property(entity, "global_position", target_pos, actual_duration)\
+		.set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
+	
+	await tween.finished
+	
+	# 更新最終邏輯位置
+	entity.set_grid_position(final_cell)
+	
+	# 通知 GridPathfinder 更新障礙物
+	if pathfinder != null and pathfinder.has_method("update_obstacles"):
+		pathfinder.update_obstacles()
+	
+	print("[GridMover] Dash movement completed to ", final_cell)
 
 func is_moving() -> bool:
 	"""是否正在移動"""

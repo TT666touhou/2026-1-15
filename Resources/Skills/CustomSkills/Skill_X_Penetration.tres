@@ -24,12 +24,12 @@ pattern_7x7 = Array[bool]([])
 [resource]
 script = ExtResource("3_skill")
 skill_name = "貫穿震擊"
-description = "【移動後觸發】對 X 型無限距離（10格）內的敵人造成 100% STR 穿透傷害"
+description = "【移動後觸發】對 X 型無限距離（10格）內的敵人造成 100% 攻擊力穿透傷害"
 execution_mode = 1
 targeting_type = 0
 cooldown_turns = 3
 scaling_configs = Array[Dictionary]([{
-"stat": "str",
+"stat": "attack",
 "weight": 1.0
 }])
 scaling_multiplier = 1.0

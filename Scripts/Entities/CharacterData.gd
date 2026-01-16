@@ -8,10 +8,6 @@ var status_manager_ref: Node = null # Reference to StatusManager
 var current_health: int
 var max_health: int # Base Max HP
 var attack_damage: int # Base Attack
-var base_str: int # Strength
-var base_dex: int # Dexterity
-var base_int: int # Intelligence
-var base_pie: int # Piety
 var shield: int = 0 # 護盾 (優先扣除)
 var barriers: int = 0 # 防護罩 (次數抵擋)
 var base_avoid: float = 0.0 # 基礎閃避
@@ -37,10 +33,7 @@ var stat_modifiers = {
 	"attack_multiplier": 1.0,
 	"hp_multiplier": 1.0,
 	"combo_additive": 0.0,
-	"str_multiplier": 1.0,
-	"dex_multiplier": 1.0,
-	"int_multiplier": 1.0,
-	"pie_multiplier": 1.0,
+	"attack_additive": 0,
 	"avoid_additive": 0.0,
 	"accuracy_additive": 0.0,
 	"dr_additive": 0.0,
@@ -51,11 +44,6 @@ var stat_modifiers = {
 	"dra_additive": 0.0,
 	"cdm_additive": 0.0,
 	"pen_additive": 0.0,
-	# Additive primary stats
-	"str_additive": 0,
-	"dex_additive": 0,
-	"int_additive": 0,
-	"pie_additive": 0,
 	"hp_additive": 0
 }
 
@@ -93,12 +81,6 @@ static func create(def: UnitCard) -> CharacterData:
 	instance.current_health = int(def.max_health)
 	instance.attack_damage = def.attack_damage
 	
-	# Initialize Primary Stats from UnitCard
-	instance.base_str = def.base_str if "base_str" in def else 10
-	instance.base_dex = def.base_dex if "base_dex" in def else 10
-	instance.base_int = def.base_int if "base_int" in def else 10
-	instance.base_pie = def.base_pie if "base_pie" in def else 10
-	
 	# New Stats from UnitCard
 	instance.base_avoid = float(def.base_avoid) if "base_avoid" in def else 0.0
 	instance.base_accuracy = float(def.base_accuracy) if "base_accuracy" in def else 1.0
@@ -131,31 +113,10 @@ func set_status_manager(manager: Node) -> void:
 # --- Effective Stats Getters ---
 
 func get_effective_attack() -> int:
-	return get_effective_str()
-
-func get_effective_str() -> int:
-	var base_mult = stat_modifiers.str_multiplier
+	var base_mult = stat_modifiers.attack_multiplier
 	if status_manager_ref and status_manager_ref.has_method("get_stat_multiplier"):
-		base_mult *= status_manager_ref.get_stat_multiplier("str")
-	return int(round((base_str + stat_modifiers.str_additive) * base_mult))
-
-func get_effective_dex() -> int:
-	var base_mult = stat_modifiers.dex_multiplier
-	if status_manager_ref and status_manager_ref.has_method("get_stat_multiplier"):
-		base_mult *= status_manager_ref.get_stat_multiplier("dex")
-	return int(round((base_dex + stat_modifiers.dex_additive) * base_mult))
-
-func get_effective_int() -> int:
-	var base_mult = stat_modifiers.int_multiplier
-	if status_manager_ref and status_manager_ref.has_method("get_stat_multiplier"):
-		base_mult *= status_manager_ref.get_stat_multiplier("int")
-	return int(round((base_int + stat_modifiers.int_additive) * base_mult))
-
-func get_effective_pie() -> int:
-	var base_mult = stat_modifiers.pie_multiplier
-	if status_manager_ref and status_manager_ref.has_method("get_stat_multiplier"):
-		base_mult *= status_manager_ref.get_stat_multiplier("pie")
-	return int(round((base_pie + stat_modifiers.pie_additive) * base_mult))
+		base_mult *= status_manager_ref.get_stat_multiplier("attack")
+	return int(round((attack_damage + stat_modifiers.attack_additive) * base_mult))
 
 func get_effective_avoid() -> float:
 	var total = base_avoid + stat_modifiers.avoid_additive
@@ -212,10 +173,6 @@ func recalculate_stats() -> void:
 	stat_modifiers.attack_multiplier = 1.0
 	stat_modifiers.hp_multiplier = 1.0
 	stat_modifiers.combo_additive = 0.0
-	stat_modifiers.str_multiplier = 1.0
-	stat_modifiers.dex_multiplier = 1.0
-	stat_modifiers.int_multiplier = 1.0
-	stat_modifiers.pie_multiplier = 1.0
 	stat_modifiers.avoid_additive = 0.0
 	stat_modifiers.accuracy_additive = 0.0
 	stat_modifiers.dr_additive = 0.0
@@ -227,10 +184,7 @@ func recalculate_stats() -> void:
 	stat_modifiers.cdm_additive = 0.0
 	stat_modifiers.pen_additive = 0.0
 	# Reset additive
-	stat_modifiers.str_additive = 0
-	stat_modifiers.dex_additive = 0
-	stat_modifiers.int_additive = 0
-	stat_modifiers.pie_additive = 0
+	stat_modifiers.attack_additive = 0
 	stat_modifiers.hp_additive = 0
 	
 	if PartyManager:
@@ -258,27 +212,20 @@ func _apply_single_modifier(mod: Resource) -> void:
 	var m_value = mod.get("value")
 	
 	match m_type:
-		0: stat_modifiers.str_additive += int(m_value) # STR_ADDITIVE
-		1: stat_modifiers.dex_additive += int(m_value) # DEX_ADDITIVE
-		2: stat_modifiers.int_additive += int(m_value) # INT_ADDITIVE
-		3: stat_modifiers.pie_additive += int(m_value) # PIE_ADDITIVE
-		4: stat_modifiers.hp_additive += int(m_value) # HP_ADDITIVE
-		19: stat_modifiers.hp_multiplier *= m_value # HP_MULTIPLIER
-		15: stat_modifiers.str_multiplier *= m_value # STR_MULTIPLIER
-		16: stat_modifiers.dex_multiplier *= m_value # DEX_MULTIPLIER
-		17: stat_modifiers.int_multiplier *= m_value # INT_MULTIPLIER
-		18: stat_modifiers.pie_multiplier *= m_value # PIE_MULTIPLIER
-		5: stat_modifiers.dr_additive += m_value # DR_ADDITIVE
-		6: stat_modifiers.avoid_additive += m_value # AVOID_ADDITIVE
-		7: stat_modifiers.accuracy_additive += m_value # ACCURACY_ADDITIVE
-		8: stat_modifiers.res_additive += m_value # RES_ADDITIVE
-		9: stat_modifiers.ref_additive += m_value # REF_ADDITIVE
-		10: stat_modifiers.pur_additive += int(m_value) # PUR_ADDITIVE
-		11: stat_modifiers.par_additive += m_value # PARRY_ADDITIVE
-		12: stat_modifiers.dra_additive += m_value # DRAIN_ADDITIVE
-		13: stat_modifiers.cdm_additive += m_value # CRIT_DMG_ADDITIVE
-		14: stat_modifiers.pen_additive += m_value # PEN_ADDITIVE
-		# 基礎屬性加值 (Additive) 需要在 getter 中額外加回
+		ModifierData.ModifierType.ATK_ADDITIVE: stat_modifiers.attack_additive += int(m_value)
+		ModifierData.ModifierType.HP_ADDITIVE: stat_modifiers.hp_additive += int(m_value)
+		ModifierData.ModifierType.HP_MULTIPLIER: stat_modifiers.hp_multiplier *= m_value
+		ModifierData.ModifierType.ATK_MULTIPLIER: stat_modifiers.attack_multiplier *= m_value
+		ModifierData.ModifierType.DR_ADDITIVE: stat_modifiers.dr_additive += m_value
+		ModifierData.ModifierType.AVOID_ADDITIVE: stat_modifiers.avoid_additive += m_value
+		ModifierData.ModifierType.ACCURACY_ADDITIVE: stat_modifiers.accuracy_additive += m_value
+		ModifierData.ModifierType.RES_ADDITIVE: stat_modifiers.res_additive += m_value
+		ModifierData.ModifierType.REF_ADDITIVE: stat_modifiers.ref_additive += m_value
+		ModifierData.ModifierType.PUR_ADDITIVE: stat_modifiers.pur_additive += int(m_value)
+		ModifierData.ModifierType.PARRY_ADDITIVE: stat_modifiers.par_additive += m_value
+		ModifierData.ModifierType.DRAIN_ADDITIVE: stat_modifiers.dra_additive += m_value
+		ModifierData.ModifierType.CRIT_DMG_ADDITIVE: stat_modifiers.cdm_additive += m_value
+		ModifierData.ModifierType.PEN_ADDITIVE: stat_modifiers.pen_additive += m_value
 
 func _apply_passive_effect(effect: TraitEffect) -> void:
 	if effect.trigger_type != TraitEffect.TriggerType.PASSIVE:
@@ -291,14 +238,6 @@ func _apply_passive_effect(effect: TraitEffect) -> void:
 			stat_modifiers.attack_multiplier *= effect.value
 		TraitEffect.StatType.COMBO_ADDITIVE:
 			stat_modifiers.combo_additive += effect.value
-		TraitEffect.StatType.STR_MULTIPLIER:
-			stat_modifiers.str_multiplier *= effect.value
-		TraitEffect.StatType.DEX_MULTIPLIER:
-			stat_modifiers.dex_multiplier *= effect.value
-		TraitEffect.StatType.INT_MULTIPLIER:
-			stat_modifiers.int_multiplier *= effect.value
-		TraitEffect.StatType.PIE_MULTIPLIER:
-			stat_modifiers.pie_multiplier *= effect.value
 		TraitEffect.StatType.DR_ADDITIVE:
 			stat_modifiers.dr_additive += effect.value
 		TraitEffect.StatType.RES_ADDITIVE:
@@ -332,12 +271,8 @@ func modify_shield(amount: int) -> void:
 func add_shield_scaled(stat_name: String, ratio: float) -> void:
 	var base_val = 0
 	match stat_name.to_lower():
-		"str": base_val = get_effective_str()
-		"dex": base_val = get_effective_dex()
-		"int": base_val = get_effective_int()
-		"pie": base_val = get_effective_pie()
 		"max_hp", "hp": base_val = get_effective_max_health()
-		"attack": base_val = get_effective_attack()
+		"attack", "str", "dex", "int", "pie": base_val = get_effective_attack()
 	
 	var amount = int(base_val * ratio)
 	modify_shield(amount)

@@ -2,10 +2,7 @@ extends Resource
 class_name ModifierData
 
 enum ModifierType {
-	STR_ADDITIVE,
-	DEX_ADDITIVE,
-	INT_ADDITIVE,
-	PIE_ADDITIVE,
+	ATK_ADDITIVE,
 	HP_ADDITIVE,
 	DR_ADDITIVE,
 	AVOID_ADDITIVE,
@@ -17,10 +14,7 @@ enum ModifierType {
 	DRAIN_ADDITIVE,
 	CRIT_DMG_ADDITIVE,
 	PEN_ADDITIVE,
-	STR_MULTIPLIER,
-	DEX_MULTIPLIER,
-	INT_MULTIPLIER,
-	PIE_MULTIPLIER,
+	ATK_MULTIPLIER,
 	HP_MULTIPLIER
 }
 
@@ -37,10 +31,7 @@ func get_modifier_text() -> String:
 	var is_percent = false
 	
 	match type:
-		ModifierType.STR_ADDITIVE: val_str = "STR"
-		ModifierType.DEX_ADDITIVE: val_str = "DEX"
-		ModifierType.INT_ADDITIVE: val_str = "INT"
-		ModifierType.PIE_ADDITIVE: val_str = "PIE"
+		ModifierType.ATK_ADDITIVE: val_str = "ATK"
 		ModifierType.HP_ADDITIVE: val_str = "HP"
 		ModifierType.PUR_ADDITIVE: val_str = "PUR"
 		
@@ -72,17 +63,8 @@ func get_modifier_text() -> String:
 			val_str = "PEN"
 			is_percent = true
 			
-		ModifierType.STR_MULTIPLIER: 
-			val_str = "STR %"
-			is_percent = true
-		ModifierType.DEX_MULTIPLIER: 
-			val_str = "DEX %"
-			is_percent = true
-		ModifierType.INT_MULTIPLIER: 
-			val_str = "INT %"
-			is_percent = true
-		ModifierType.PIE_MULTIPLIER: 
-			val_str = "PIE %"
+		ModifierType.ATK_MULTIPLIER: 
+			val_str = "ATK %"
 			is_percent = true
 		ModifierType.HP_MULTIPLIER: 
 			val_str = "HP %"

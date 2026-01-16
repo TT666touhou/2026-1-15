@@ -22,11 +22,7 @@ icon = SubResource("AtlasTexture_icon")
 footprint_data = ExtResource("3_footprint")
 movement_range_data = ExtResource("4_movement")
 spawn_animation = 2
-attack_damage = 8
-base_str = 8
-base_dex = 16
-base_int = 10
-base_pie = 6
+attack_damage = 16
 base_combo_count = 2.0
 move_speed_anim = 400.0
 base_crit_rate = 0.2
@@ -49,6 +45,6 @@ description = "A fast scout that moves diagonally."
 cost = {
 "soul": 15
 }
-display_name = "Scout"
+display_name = "Wizard"
 max_playable_count = 0
 default_skills = Array[Resource]([ExtResource("7_s1"), ExtResource("8_s2"), ExtResource("9_s3")])

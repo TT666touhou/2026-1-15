@@ -153,5 +153,5 @@ func _pick_weighted_affix(pool: Array[AffixDefinition]) -> AffixDefinition:
 	return pool[0]
 
 func _is_percent_stat(type: ModifierData.ModifierType) -> bool:
-	return type >= ModifierData.ModifierType.DR_ADDITIVE and type <= ModifierData.ModifierType.PEN_ADDITIVE or type >= ModifierData.ModifierType.STR_MULTIPLIER
+	return type >= ModifierData.ModifierType.DR_ADDITIVE
 

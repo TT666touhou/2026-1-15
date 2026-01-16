@@ -29,4 +29,4 @@ difficulty = 0
 "overrides": {},
 "pos": Vector2i(1, 1)
 }])
-player_spawn_points = Array[Vector2i]([Vector2i(0, 2), Vector2i(0, 4), Vector2i(0, 5)])
+player_spawn_points = Array[Vector2i]([Vector2i(0, 2), Vector2i(0, 3), Vector2i(0, 4), Vector2i(0, 5)])

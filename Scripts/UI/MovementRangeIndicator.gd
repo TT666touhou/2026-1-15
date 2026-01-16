@@ -37,7 +37,10 @@ func _show_range_indicator(cells: Array, entity: Node) -> void:
 	# 保持層級在地面之上
 	indicator_layer.z_index = 5
 	
-	print("[MovementRangeIndicator] Updating: ", entity.name if entity else "Unknown", " | Cells: ", cells.size())
+	var entity_name = "Unknown"
+	if entity != null:
+		entity_name = str(entity.name)
+	print("[MovementRangeIndicator] Updating: ", entity_name, " | Cells: ", cells.size())
 	
 	# 清除舊的高亮
 	indicator_layer.clear()

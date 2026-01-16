@@ -23,7 +23,7 @@ enum TargetingType {
 @export var is_accurate: bool = false # 若為 true，則跳過命中判定 (必中)
 
 @export_group("Scaling")
-@export var scaling_configs: Array[Dictionary] = [{"stat": "str", "weight": 1.0}]
+@export var scaling_configs: Array[Dictionary] = [{"stat": "attack", "weight": 1.0}]
 @export var scaling_multiplier: float = 1.0
 
 @export_group("Targeting & Effects")
@@ -74,7 +74,7 @@ func get_dynamic_description() -> String:
 		
 		if not effect_texts.is_empty():
 			# 如果有效果，顯示「接著」
-			var targeting_to_use = post_move_targeting if post_move_targeting else targeting
+			var targeting_to_use = post_move_targeting if post_move_targeting != null else targeting
 			var target_desc = ""
 			if targeting_to_use:
 				target_desc = targeting_to_use.get_targeting_text(targeting_type)
@@ -92,7 +92,7 @@ func get_dynamic_description() -> String:
 				mode_prefix = "【移動後觸發】"
 		
 		# 優先讀取 post_move_targeting (實際效果範圍)，若無則讀取基礎 targeting (選取範圍)
-		var targeting_to_use = post_move_targeting if post_move_targeting else targeting
+		var targeting_to_use = post_move_targeting if post_move_targeting != null else targeting
 		var target_desc = ""
 		if targeting_to_use:
 			target_desc = targeting_to_use.get_targeting_text(targeting_type)
@@ -127,10 +127,7 @@ func _get_formatted_scaling_text(base_val: float) -> String:
 
 func _get_stat_display_name(stat_key: String) -> String:
 	match stat_key:
-		"attack", "str": return "[color=#ff6666]力量[/color]"
+		"attack", "str", "dex", "int", "pie": return "[color=#ff6666]攻擊力[/color]"
 		"hp": return "最大生命值"
 		"luck": return "幸運"
-		"dex": return "[color=#66ff66]技巧[/color]"
-		"int": return "[color=#6666ff]智力[/color]"
-		"pie": return "[color=#ffff66]信仰[/color]"
 	return stat_key

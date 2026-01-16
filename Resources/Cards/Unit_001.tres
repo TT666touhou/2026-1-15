@@ -29,10 +29,7 @@ icon = SubResource("AtlasTexture_icon")
 footprint_data = ExtResource("3_footprint")
 movement_range_data = ExtResource("4_movement")
 max_health = 100.0
-base_str = 10
-base_dex = 10
-base_int = 10
-base_pie = 10
+attack_damage = 10
 base_avoid = 0.0
 base_dr = 0.0
 base_resistance = 0.0
@@ -54,4 +51,4 @@ description = "A basic unit."
 cost = {
 "soul": 10
 }
-display_name = "Soldier"
+display_name = "Archer"

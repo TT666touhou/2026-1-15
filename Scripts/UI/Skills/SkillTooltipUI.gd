@@ -47,7 +47,7 @@ func _update_range_display(skill: UnitSkillData) -> void:
 		effect_container.visible = false
 		
 		# 核心修正：強制展示 post_move_targeting 作為效果範圍
-		var target_to_show = skill.post_move_targeting if skill.post_move_targeting else skill.targeting
+		var target_to_show = skill.post_move_targeting if skill.post_move_targeting != null else skill.targeting
 		
 		# 根據模式決定標題與顏色
 		if skill.execution_mode == UnitSkillData.ExecutionMode.MOVEMENT:

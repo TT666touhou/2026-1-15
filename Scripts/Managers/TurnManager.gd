@@ -242,6 +242,11 @@ func resolve_attacks() -> void:
 		
 	# 2. 依序執行每個攻擊事件
 	for event in combat_plan:
+		# --- 關鍵檢查：如果房間已經清空 (例如 BOSS 死亡進入 Free Roam)，立即停止所有後續攻擊 ---
+		if is_free_roam_mode:
+			print("[TurnManager] Room cleared (Free Roam), stopping remaining attack events.")
+			break
+
 		var target = event.target
 		if target == null or not is_instance_valid(target):
 			continue
@@ -262,6 +267,7 @@ func resolve_attacks() -> void:
 		var attacker_stats: Dictionary = {} # { Attacker: { "base_damage": int, "hits": int } }
 		
 		for attacker in event.attackers:
+			if is_free_roam_mode: break
 			if not is_instance_valid(attacker):
 				continue
 				
@@ -307,7 +313,7 @@ func resolve_attacks() -> void:
 			}
 			
 			# 4. 更新目標 UI
-			if target.has_method("update_combo_display"):
+			if is_instance_valid(target) and target.has_method("update_combo_display"):
 				target.update_combo_display(current_total_hits)
 				
 			# 5. 顯示攻擊預告數值 (基礎值)
@@ -330,6 +336,7 @@ func resolve_attacks() -> void:
 			var base_dmg = stats["base_damage"]
 			
 			# 計算 Trait 加成
+			if not is_instance_valid(target): continue
 			var trait_bonus = AttackManager.calculate_trait_bonus(attacker, target, current_total_hits)
 			
 			if trait_bonus > 1.001: # 浮點數容差
@@ -349,6 +356,8 @@ func resolve_attacks() -> void:
 		if trait_applied:
 			# 若有數值更新，稍微停頓讓玩家看清
 			await get_tree().create_timer(0.3).timeout
+
+		if is_free_roam_mode: break
 
 		# --- 階段二：執行攻擊與結算 ---
 		
@@ -394,11 +403,14 @@ func resolve_attacks() -> void:
 		# --- 鎖定死亡 ---
 		if is_instance_valid(target) and target.has_method("start_combo_sequence"):
 			target.start_combo_sequence()
+		elif not is_instance_valid(target):
+			continue # 如果目標已經在蓄力期間死亡（例如 BOSS 觸發的全滅），則跳過執行
 		
 		# --- 分段造成傷害 (Multi-Hit) 與 追擊 (Pursuit) ---
 		# 將總傷害按比例分配給每個攻擊者的每一擊
 		if current_total_hits > 0:
 			for attacker in event.attackers:
+				if is_free_roam_mode: break
 				if not is_instance_valid(attacker) or not attacker_stats.has(attacker):
 					continue
 					
@@ -414,7 +426,9 @@ func resolve_attacks() -> void:
 				var remainder = attacker_final_total % hits
 				
 				for i in range(hits):
+					if is_free_roam_mode: break
 					if not is_instance_valid(target): break
+					if target.character_data and target.character_data.current_health <= 0: break
 					
 					# 命中判定
 					var hit_success = true
@@ -427,7 +441,8 @@ func resolve_attacks() -> void:
 						
 						if dmg > 0:
 							# 1. 先造成基礎傷害
-							target.apply_damage(dmg, false, false, attacker)
+							if is_instance_valid(target):
+								target.apply_damage(dmg, false, false, attacker)
 							
 							# 2. 觸發吸血 (Drain)
 							if attacker.character_data:
@@ -445,7 +460,7 @@ func resolve_attacks() -> void:
 							# 4. 觸發追擊 (套用攻擊者的貫穿效果)
 							if attacker.character_data:
 								var pur_dmg = attacker.character_data.get_effective_pursuit()
-								if pur_dmg > 0:
+								if pur_dmg > 0 and is_instance_valid(target):
 									target.apply_damage(pur_dmg, false, false, attacker, true)
 							
 							# 原有的連發感延遲 (扣除已等待的 0.05s)
@@ -455,10 +470,14 @@ func resolve_attacks() -> void:
 						if target.has_method("show_avoid_text"):
 							target.show_avoid_text()
 						await get_tree().create_timer(0.1).timeout
+				
+				if is_free_roam_mode: break
 		else:
 			# Fallback (should not happen if hits > 0)
 			if is_instance_valid(target):
 				target.apply_damage(final_damage)
+			
+		if is_free_roam_mode: break
 			
 		# 等待受傷動畫與恢復
 		await get_tree().create_timer(0.6).timeout

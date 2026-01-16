@@ -7,10 +7,7 @@ class_name DeploymentMemberCard
 @onready var hp_label: RichTextLabel = $HBox/InfoBox/StatsBox/HPBarContainer/HPLabel
 @onready var hp_bar: ProgressBar = $HBox/InfoBox/StatsBox/HPBarContainer/HPBar
 @onready var barrier_container: HBoxContainer = $HBox/InfoBox/StatsBox/BarrierContainer
-@onready var str_label: Label = $HBox/InfoBox/StatsGrid/StrLabel
-@onready var dex_label: Label = $HBox/InfoBox/StatsGrid/DexLabel
-@onready var int_label: Label = $HBox/InfoBox/StatsGrid/IntLabel
-@onready var pie_label: Label = $HBox/InfoBox/StatsGrid/PieLabel
+@onready var atk_label: Label = $HBox/InfoBox/StatsGrid/AtkLabel
 @onready var avd_label: Label = $HBox/InfoBox/StatsGrid/AvdLabel
 @onready var acc_label: Label = $HBox/InfoBox/StatsGrid/AccLabel
 @onready var dr_label: Label = $HBox/InfoBox/StatsGrid/DRLabel
@@ -158,10 +155,7 @@ func _update_stats(_unused = null) -> void:
 	# Use Effective Stats
 	var current_hp = character_data.current_health
 	var max_hp = character_data.get_effective_max_health()
-	var eff_str = character_data.get_effective_str()
-	var eff_dex = character_data.get_effective_dex()
-	var eff_int = character_data.get_effective_int()
-	var eff_pie = character_data.get_effective_pie()
+	var eff_atk = character_data.get_effective_attack()
 	var eff_combo = character_data.get_effective_combo()
 	
 	# New Stats
@@ -196,10 +190,7 @@ func _update_stats(_unused = null) -> void:
 	_update_barriers(barriers)
 	
 	# Primary Stats
-	str_label.text = "STR: %d" % eff_str
-	dex_label.text = "DEX: %d" % eff_dex
-	int_label.text = "INT: %d" % eff_int
-	pie_label.text = "PIE: %d" % eff_pie
+	atk_label.text = "ATK: %d" % eff_atk
 	
 	# 處理精簡模式
 	var is_simplified = false

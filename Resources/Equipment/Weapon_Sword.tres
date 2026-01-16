@@ -11,20 +11,20 @@ weight = 10.0
 
 [sub_resource type="Resource" id="SubResource_dex"]
 script = ExtResource("2_affix_script")
-stat_type = 1
+stat_type = 0
 base_value = 2.0
 weight = 10.0
 
 [sub_resource type="Resource" id="SubResource_pen"]
 script = ExtResource("2_affix_script")
-stat_type = 14
+stat_type = 11
 base_value = 0.05
 weight = 5.0
 min_ilvl = 10
 
 [sub_resource type="Resource" id="SubResource_cdm"]
 script = ExtResource("2_affix_script")
-stat_type = 13
+stat_type = 10
 base_value = 0.1
 weight = 5.0
 min_ilvl = 15

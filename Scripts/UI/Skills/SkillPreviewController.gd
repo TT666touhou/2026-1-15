@@ -24,7 +24,7 @@ func update_preview(unit: GridEntity, skill: Resource, target_cell: Vector2i) ->
 	var targeting_type = skill.get("targeting_type")
 	
 	# 核心規則：預覽必須與執行引擎同步，強制使用 post_move_targeting 作為效果預覽
-	var effective_target = post_targeting if post_targeting else targeting
+	var effective_target = post_targeting if post_targeting != null else targeting
 	
 	# 決定「效果中心點」
 	var origin = target_cell

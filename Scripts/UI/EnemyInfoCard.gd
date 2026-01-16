@@ -5,10 +5,7 @@ extends PanelContainer
 @onready var hp_label: RichTextLabel = $HBox/InfoBox/StatsBox/HPBarContainer/HPLabel
 @onready var hp_bar: ProgressBar = $HBox/InfoBox/StatsBox/HPBarContainer/HPBar
 @onready var barrier_container: HBoxContainer = $HBox/InfoBox/StatsBox/BarrierContainer
-@onready var str_label: Label = $HBox/InfoBox/StatsGrid/StrLabel
-@onready var dex_label: Label = $HBox/InfoBox/StatsGrid/DexLabel
-@onready var int_label: Label = $HBox/InfoBox/StatsGrid/IntLabel
-@onready var pie_label: Label = $HBox/InfoBox/StatsGrid/PieLabel
+@onready var atk_label: Label = $HBox/InfoBox/StatsGrid/AtkLabel
 @onready var combo_label: Label = $HBox/InfoBox/ComboLabel
 
 var current_entity: GridEntity = null
@@ -62,10 +59,7 @@ func update_info(entity: GridEntity) -> void:
 		name_label.text = entity.name
 		hp_label.text = "HP: ?"
 		hp_bar.value = 0
-		str_label.text = ""
-		dex_label.text = ""
-		int_label.text = ""
-		pie_label.text = ""
+		atk_label.text = ""
 		combo_label.text = ""
 
 func _process(_delta: float) -> void:
@@ -105,26 +99,20 @@ func _refresh_ui_from_data(char_data: CharacterData) -> void:
 	_update_barriers(barriers)
 	
 	# Primary Stats
-	var eff_str = char_data.get_effective_str()
-	var eff_dex = char_data.get_effective_dex()
-	var eff_int = char_data.get_effective_int()
-	var eff_pie = char_data.get_effective_pie()
+	var eff_atk = char_data.get_effective_attack()
 	var eff_combo = char_data.get_effective_combo()
 	
-	str_label.text = "STR: %d" % eff_str
-	dex_label.text = "DEX: %d" % eff_dex
-	int_label.text = "INT: %d" % eff_int
-	pie_label.text = "PIE: %d" % eff_pie
+	atk_label.text = "ATK: %d" % eff_atk
 	
 	# Combo
 	var floor_combo = int(floor(eff_combo))
 	combo_label.text = "Combo: %d (%.1f)" % [floor_combo, eff_combo]
 	
-	# Highlight STR if boosted
-	if eff_str > char_data.base_str:
-		str_label.add_theme_color_override("font_color", Color(0.4, 1.0, 0.4)) # Green
-	elif eff_str < char_data.base_str:
-		str_label.add_theme_color_override("font_color", Color(1, 0.4, 0.4)) # Red
+	# Highlight ATK if boosted
+	if eff_atk > char_data.attack_damage:
+		atk_label.add_theme_color_override("font_color", Color(0.4, 1.0, 0.4)) # Green
+	elif eff_atk < char_data.attack_damage:
+		atk_label.add_theme_color_override("font_color", Color(1, 0.4, 0.4)) # Red
 
 func _update_barriers(count: int) -> void:
 	if not barrier_container: return

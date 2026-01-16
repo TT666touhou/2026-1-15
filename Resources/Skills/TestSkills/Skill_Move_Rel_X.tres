@@ -24,12 +24,12 @@ pattern_7x7 = Array[bool]([])
 [resource]
 script = ExtResource("3_skill")
 skill_name = "影襲"
-description = "移動技能：在落點造成 100% 技巧 X 型傷害，不結束回合"
+description = "移動技能：在落點造成 100% 攻擊力 X 型傷害，不結束回合"
 execution_mode = 2
 targeting_type = 0
 cooldown_turns = 2
 scaling_configs = Array[Dictionary]([{
-"stat": "dex",
+"stat": "attack",
 "weight": 1.0
 }])
 scaling_multiplier = 1.0

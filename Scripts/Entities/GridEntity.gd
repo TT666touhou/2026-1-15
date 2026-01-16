@@ -223,7 +223,7 @@ func play_attack_animation_towards(direction: Vector2i) -> void:
 
 func apply_damage(amount: int, ignore_barrier: bool = false, ignore_shield: bool = false, attacker: GridEntity = null, is_pursuit: bool = false) -> int:
 	"""直接造成傷害 (不處理動畫，動畫由 take_damage 觸發)"""
-	var attacker_data = attacker.character_data if attacker else null
+	var attacker_data = attacker.character_data if attacker != null else null
 	return take_damage(amount, ignore_barrier, ignore_shield, attacker_data, is_pursuit)
 
 func show_damage_number(amount: int) -> void:
@@ -629,7 +629,7 @@ func _on_reflect_triggered(attacker_data: CharacterData, amount: int, reflector_
 		if attacker_entity and attacker_entity.has_method("apply_damage"):
 			# 反射傷害無視防護罩與護盾 (ignore_barrier=true, ignore_shield=true)
 			# 傳入反射者資料 (reflector_data) 以套用其貫穿效果
-			attacker_entity.apply_damage(amount, true, true, reflector_data.status_manager_ref.get_parent() if reflector_data.status_manager_ref else null)
+			attacker_entity.apply_damage(amount, true, true, reflector_data.status_manager_ref.get_parent() if reflector_data.status_manager_ref != null else null)
 
 func _on_parry_triggered() -> void:
 	show_parry_text()
