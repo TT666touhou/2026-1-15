@@ -34,14 +34,20 @@ func update_info(entity: GridEntity) -> void:
 		
 	# 1. Update Icon
 	var sprite = entity.get_node_or_null("Sprite2D")
-	if sprite:
-		# Create AtlasTexture from sprite properties to display correctly
+	if sprite and sprite is Sprite2D:
 		var atlas_tex = AtlasTexture.new()
 		atlas_tex.atlas = sprite.texture
+		
 		if sprite.region_enabled:
 			atlas_tex.region = sprite.region_rect
+		elif sprite.hframes > 1 or sprite.vframes > 1:
+			# Calculate region for the first frame (frame 0)
+			var w = sprite.texture.get_width() / sprite.hframes
+			var h = sprite.texture.get_height() / sprite.vframes
+			atlas_tex.region = Rect2(0, 0, w, h)
 		else:
 			atlas_tex.region = Rect2(0, 0, sprite.texture.get_width(), sprite.texture.get_height())
+			
 		icon_rect.texture = atlas_tex
 	
 	# 2. Update Character Data
@@ -58,6 +64,7 @@ func update_info(entity: GridEntity) -> void:
 	else:
 		name_label.text = entity.name
 		hp_label.text = "HP: ?"
+		hp_bar.visible = true
 		hp_bar.value = 0
 		atk_label.text = ""
 		combo_label.text = ""

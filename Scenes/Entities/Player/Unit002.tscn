@@ -10,6 +10,8 @@
 [ext_resource type="Script" path="res://Scripts/Managers/StatusManager.gd" id="22_status"]
 [ext_resource type="PackedScene" path="res://Scenes/Managers/StatusDisplayManager.tscn" id="23_display"]
 [ext_resource type="PackedScene" path="res://Scenes/UI/UnitMovementArrows.tscn" id="25_arrows"]
+[ext_resource type="ParticleProcessMaterial" path="res://Resources/Shared/MovementParticlesMaterial.tres" id="26_material"]
+[ext_resource type="Texture2D" path="res://Resources/Shared/ParticlePixel.tres" id="27_texture"]
 
 [sub_resource type="RectangleShape2D" id="RectangleShape2D_kbo38"]
 size = Vector2(16, 16)
@@ -73,6 +75,15 @@ offset_bottom = -12.0
 
 [node name="UnitMovementArrows" parent="." instance=ExtResource("25_arrows")]
 z_index = 5
+
+[node name="MoveParticles" type="GPUParticles2D" parent="."]
+texture_filter = 1
+emitting = false
+amount = 12
+process_material = ExtResource("26_material")
+texture = ExtResource("27_texture")
+lifetime = 0.4
+local_coords = false
 
 [node name="AnimationPlayer" type="AnimationPlayer" parent="."]
 libraries = {

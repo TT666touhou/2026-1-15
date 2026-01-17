@@ -1,0 +1,34 @@
+[gd_resource type="ParticleProcessMaterial" load_steps=5 format=3]
+
+[sub_resource type="Gradient" id="Gradient_explosion"]
+interpolation_mode = 0
+offsets = PackedFloat32Array(0, 0.2, 0.6, 0.8, 0.9)
+colors = PackedColorArray(0.745294, 0.650588, 0.592941, 1, 0.679412, 0.580588, 0.564118, 1, 0.457059, 0.428235, 0.502353, 1, 0.312941, 0.345883, 0.448824, 1, 0.098823, 0.102941, 0.144118, 1)
+
+[sub_resource type="GradientTexture1D" id="GradientTexture1D_color"]
+gradient = SubResource("Gradient_explosion")
+
+[sub_resource type="Curve" id="Curve_scale"]
+_data = [Vector2(0, 0.2), 0.0, 10.0, 0, 0, Vector2(0.1, 1.0), 0.0, 0.0, 0, 0, Vector2(0.5, 1.0), 0.0, 0.0, 0, 0, Vector2(1, 0), -4.0, 0.0, 0, 0]
+point_count = 4
+
+[sub_resource type="CurveTexture" id="CurveTexture_scale"]
+curve = SubResource("Curve_scale")
+
+[resource]
+particle_flag_disable_z = true
+emission_shape = 3
+emission_box_extents = Vector3(8, 1, 0)
+direction = Vector3(0, -1, 0)
+spread = 90.0
+gravity = Vector3(0, 0, 0)
+initial_velocity_min = 30.0
+initial_velocity_max = 75.0
+damping_min = 100.0
+damping_max = 100.0
+scale_min = 0.15
+scale_max = 0.375
+hue_variation_min = -0.02
+hue_variation_max = 0.02
+scale_curve = SubResource("CurveTexture_scale")
+color_ramp = SubResource("GradientTexture1D_color")

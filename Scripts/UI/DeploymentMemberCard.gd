@@ -113,7 +113,19 @@ func setup(data: CharacterData) -> void:
 	if def:
 		name_label.text = def.display_name
 		if def.icon:
-			icon_rect.texture = def.icon
+			# 如果是 AtlasTexture 則直接使用
+			if def.icon is AtlasTexture:
+				icon_rect.texture = def.icon
+			else:
+				# 如果是原始 Texture 且尺寸較大，則嘗試擷取第一格 (16x16)
+				if def.icon.get_width() > 16 or def.icon.get_height() > 16:
+					var atlas_tex = AtlasTexture.new()
+					atlas_tex.atlas = def.icon
+					atlas_tex.region = Rect2(0, 0, 16, 16)
+					icon_rect.texture = atlas_tex
+					print("[DeploymentMemberCard] Auto-atlased raw icon for: ", def.display_name)
+				else:
+					icon_rect.texture = def.icon
 			
 		# Setup Leader Skill info
 		if def.character_trait:

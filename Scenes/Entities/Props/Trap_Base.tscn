@@ -1,0 +1,70 @@
+[gd_scene load_steps=9 format=3]
+
+[ext_resource type="Script" path="res://Scripts/Entities/TrapEntity.gd" id="1"]
+[ext_resource type="Script" path="res://Scripts/Entities/UnitVisuals.gd" id="2"]
+[ext_resource type="Texture2D" path="res://Tilesheet/1bit_assetpack/selfmade/spikes.png" id="3"]
+[ext_resource type="Resource" path="res://Footprints/Footprint_1x1.tres" id="4"]
+[ext_resource type="Script" path="res://Scripts/Entities/CardProvider.gd" id="5"]
+
+[sub_resource type="Animation" id="Animation_idle"]
+resource_name = "idle"
+length = 0.1
+loop_mode = 1
+tracks/0/type = "value"
+tracks/0/imported = false
+tracks/0/enabled = true
+tracks/0/path = NodePath("Sprite2D:frame")
+tracks/0/interp = 1
+tracks/0/loop_wrap = true
+tracks/0/keys = {
+"times": PackedFloat32Array(0),
+"transitions": PackedFloat32Array(1),
+"update": 1,
+"values": [0]
+}
+
+[sub_resource type="Animation" id="Animation_trigger"]
+resource_name = "trigger"
+length = 0.6
+step = 0.05
+tracks/0/type = "value"
+tracks/0/imported = false
+tracks/0/enabled = true
+tracks/0/path = NodePath("Sprite2D:frame")
+tracks/0/interp = 1
+tracks/0/loop_wrap = true
+tracks/0/keys = {
+"times": PackedFloat32Array(0, 0.05, 0.1, 0.15, 0.25, 0.45),
+"transitions": PackedFloat32Array(1, 1, 1, 1, 1, 1),
+"update": 1,
+"values": [0, 1, 2, 3, 4, 5]
+}
+
+[sub_resource type="AnimationLibrary" id="AnimationLibrary_trap"]
+_data = {
+"idle": SubResource("Animation_idle"),
+"trigger": SubResource("Animation_trigger")
+}
+
+[node name="Trap_Base" type="CharacterBody2D"]
+collision_layer = 0
+collision_mask = 0
+script = ExtResource("1")
+footprint_data = ExtResource("4")
+
+[node name="Sprite2D" type="Sprite2D" parent="."]
+texture_filter = 1
+texture = ExtResource("3")
+hframes = 6
+
+[node name="UnitVisuals" type="Node" parent="."]
+script = ExtResource("2")
+
+[node name="CardProvider" type="Node" parent="."]
+script = ExtResource("5")
+
+[node name="AnimationPlayer" type="AnimationPlayer" parent="."]
+libraries = {
+"": SubResource("AnimationLibrary_trap")
+}
+autoplay = "idle"

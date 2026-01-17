@@ -301,42 +301,62 @@ func _play_spawn_sequence(players: Array[GridEntity], enemies: Array[GridEntity]
 			return a.grid_position.y < b.grid_position.y
 		return a.grid_position.x < b.grid_position.x
 	
-	# 拆分敵人清單中的「真實敵人」與「裝備」
+	# 拆分敵人清單中的「真實敵人」與「環境物/裝備」
 	var real_enemies: Array[GridEntity] = []
-	var equipment_items: Array[GridEntity] = []
+	var environment_items: Array[GridEntity] = []
 	
 	for e in enemies:
-		if e is EquipmentEntity:
-			equipment_items.append(e)
+		if e is EquipmentEntity or e is PropEntity or e is TrapEntity:
+			environment_items.append(e)
 		else:
 			real_enemies.append(e)
 			
 	players.sort_custom(sort_func)
 	real_enemies.sort_custom(sort_func)
-	equipment_items.sort_custom(sort_func)
+	environment_items.sort_custom(sort_func)
 	
 	var full_sequence: Array[GridEntity] = []
-	full_sequence.append_array(equipment_items)
+	full_sequence.append_array(environment_items)
 	full_sequence.append_array(players)
 	full_sequence.append_array(real_enemies)
 	
 	# 依序執行動畫
-	for unit in full_sequence:
+	# 1. 環境物件：全部同時進場
+	var env_promises = []
+	for unit in environment_items:
 		if is_instance_valid(unit):
-			# 強制顯示單位，確保在轉場中被設為 invisible 的單位能恢復
 			unit.visible = true
-			
 			if unit.has_method("play_entry_animation"):
-				unit.play_entry_animation(0.0) # 立即開始
-				
-				# 等待動畫結束信號
+				unit.play_entry_animation(0.0)
+				if unit.has_signal("entry_animation_finished"):
+					env_promises.append(unit.entry_animation_finished)
+			else:
+				if unit.has_node("Sprite2D"):
+					unit.get_node("Sprite2D").modulate.a = 1.0
+	
+	# 等待所有環境物件進場 (如果有信號的話)
+	for promise in env_promises:
+		await promise
+	
+	# 如果環境物件很多，給予一個極短的緩衝時間
+	if not environment_items.is_empty():
+		await get_tree().create_timer(0.2).timeout
+
+	# 2. 玩家與敵人：維持逐一進場 (以維持打擊感)
+	var combatants: Array[GridEntity] = []
+	combatants.append_array(players)
+	combatants.append_array(real_enemies)
+	
+	for unit in combatants:
+		if is_instance_valid(unit):
+			unit.visible = true
+			if unit.has_method("play_entry_animation"):
+				unit.play_entry_animation(0.0)
 				if unit.has_signal("entry_animation_finished"):
 					await unit.entry_animation_finished
 				else:
-					# Fallback: 如果沒有信號，等待一個固定時間
 					await get_tree().create_timer(0.3).timeout
 			else:
-				# 如果沒有動畫方法，至少確保它是完全顯示的
 				if unit.has_node("Sprite2D"):
 					unit.get_node("Sprite2D").modulate.a = 1.0
 

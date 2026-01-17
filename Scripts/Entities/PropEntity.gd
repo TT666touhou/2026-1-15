@@ -4,6 +4,7 @@ class_name PropEntity
 func _ready() -> void:
 	# GridEntity handles grid registration in its _ready()
 	super._ready()
+	z_index = 1
 	
 	# Props typically don't show combat UI elements
 	if combo_indicator:

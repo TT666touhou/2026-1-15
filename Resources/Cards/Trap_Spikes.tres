@@ -1,0 +1,21 @@
+[gd_resource type="Resource" script_class="TrapCard" load_steps=5 format=3]
+
+[ext_resource type="Resource" path="res://Resources/Factions/Faction_Neutral.tres" id="1"]
+[ext_resource type="Resource" path="res://Footprints/Footprint_1x1.tres" id="2"]
+[ext_resource type="PackedScene" path="res://Scenes/Entities/Props/Trap_Base.tscn" id="3"]
+[ext_resource type="Script" path="res://Resources/Cards/TrapCard.gd" id="4"]
+
+[resource]
+script = ExtResource("4")
+trap_scene = ExtResource("3")
+faction = ExtResource("1")
+footprint_data = ExtResource("2")
+attack_damage = 20
+card_id = "trap_spikes"
+card_name = "Spike Trap"
+display_name = "Spike Trap"
+description = "Deals 20 damage when stepped on."
+spawn_animation = 2
+cost = {}
+max_playable_count = 0
+max_health = 100.0

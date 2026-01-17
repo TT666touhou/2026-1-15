@@ -143,12 +143,17 @@ func instantiate_room(template: RoomTemplate) -> Array[GridEntity]:
 					if "unit_scene" in card: scene_to_spawn = card.get("unit_scene")
 					elif "building_scene" in card: scene_to_spawn = card.get("building_scene")
 					elif "prop_scene" in card: scene_to_spawn = card.get("prop_scene")
+					elif "trap_scene" in card: scene_to_spawn = card.get("trap_scene")
 				
 				if scene_to_spawn:
 					instance = scene_to_spawn.instantiate()
 					var card_provider = instance.get_node_or_null("CardProvider")
 					if card_provider:
 						card_provider.card = card
+					
+					# 陷阱特殊初始化
+					if instance.has_method("setup_trap"):
+						instance.setup_trap(card)
 		
 		if instance:
 			# 先加入場景 (確保 _ready 執行)

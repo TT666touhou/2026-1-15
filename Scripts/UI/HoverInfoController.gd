@@ -3,12 +3,14 @@ extends Control
 @export var offset_from_mouse: Vector2 = Vector2(20, -20)
 
 var _card_instance: Control = null
+var _trap_card_instance: Control = null
 var _equip_panel_instance: Control = null
 var _grid: Node = null
 var _last_hovered_entity_id: int = -1 # Track instance ID to force updates
 var _is_ui_hovering: bool = false # 標記目前是否由 UI 元素觸發懸停顯示
 
 const EnemyInfoCardScene = preload("res://Scenes/UI/EnemyInfoCard.tscn")
+const TrapInfoCardScene = preload("res://Scenes/UI/TrapInfoCard.tscn")
 var EquipmentInfoPanelScene = null
 
 func _ready() -> void:
@@ -31,6 +33,12 @@ func _ready() -> void:
 		_card_instance.visible = false
 		_card_instance.mouse_filter = Control.MOUSE_FILTER_IGNORE
 		
+	if TrapInfoCardScene:
+		_trap_card_instance = TrapInfoCardScene.instantiate()
+		add_child(_trap_card_instance)
+		_trap_card_instance.visible = false
+		_trap_card_instance.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		
 	if EquipmentInfoPanelScene:
 		_equip_panel_instance = EquipmentInfoPanelScene.instantiate()
 		add_child(_equip_panel_instance)
@@ -49,6 +57,8 @@ func _reparent_to_top_layer() -> void:
 	
 	if _card_instance:
 		_card_instance.reparent(layer)
+	if _trap_card_instance:
+		_trap_card_instance.reparent(layer)
 	if _equip_panel_instance:
 		_equip_panel_instance.reparent(layer)
 		
@@ -86,25 +96,54 @@ func _get_entity_under_mouse() -> GridEntity:
 		mouse_pos = camera.get_global_mouse_position()
 		
 	var cell = _grid.world_to_grid(mouse_pos)
+	
+	# Priority 1: Units/Buildings
 	var entity = _grid.get_occupant(cell) as GridEntity
+	
+	# Priority 2: Traps
+	if entity == null and _grid.has_method("get_trap"):
+		entity = _grid.get_trap(cell) as GridEntity
+		if entity:
+			print("[HoverInfoController] Found TRAP at ", cell, ": ", entity.name)
+	
+	if entity:
+		# Add minimal log for debugging visibility
+		pass
 	
 	return entity
 
 func _update_display_logic(entity: GridEntity) -> void:
-	if not _card_instance or not _equip_panel_instance: return
+	if not _card_instance or not _trap_card_instance or not _equip_panel_instance: 
+		print("[HoverInfoController] ERROR: Card instances missing!")
+		return
 	
 	var current_id = entity.get_instance_id()
 	var is_new_entity = (current_id != _last_hovered_entity_id)
+	
+	if is_new_entity:
+		print("[HoverInfoController] New entity hovered: ", entity.name, " (", entity.get_class(), ")")
 	
 	# 1. 檢查是否為裝備實體
 	if entity is EquipmentEntity:
 		var data = entity.get_equipment_data()
 		if is_new_entity or not _equip_panel_instance.visible:
+			print("[HoverInfoController] Showing Equipment Card")
 			_last_hovered_entity_id = current_id
 			show_data_info(data, false) # 地圖實體不鎖定，讓 _process 持續偵測
 		return
 		
-	# 2. 檢查是否為敵對單位
+	# 2. 檢查是否為敵對單位或陷阱
+	if entity is TrapEntity:
+		if is_new_entity or not _trap_card_instance.visible:
+			print("[HoverInfoController] Showing Trap Card")
+			_last_hovered_entity_id = current_id
+			if _trap_card_instance.has_method("update_info"):
+				_trap_card_instance.update_info(entity)
+			_trap_card_instance.visible = true
+			_card_instance.visible = false
+			_equip_panel_instance.visible = false
+		return
+
 	var show_enemy_info = false
 	if entity.faction:
 		if entity.faction.resource_path.to_lower().contains("enemy"):
@@ -114,10 +153,12 @@ func _update_display_logic(entity: GridEntity) -> void:
 			
 	if show_enemy_info:
 		if is_new_entity or not _card_instance.visible:
+			print("[HoverInfoController] Showing Enemy Card")
 			_last_hovered_entity_id = current_id
 			if _card_instance.has_method("update_info"):
 				_card_instance.update_info(entity)
 			_card_instance.visible = true
+			_trap_card_instance.visible = false
 			_equip_panel_instance.visible = false
 	else:
 		_hide_all()
@@ -126,6 +167,8 @@ func _update_position() -> void:
 	var active_panel = null
 	if _card_instance and _card_instance.visible:
 		active_panel = _card_instance
+	elif _trap_card_instance and _trap_card_instance.visible:
+		active_panel = _trap_card_instance
 	elif _equip_panel_instance and _equip_panel_instance.visible:
 		active_panel = _equip_panel_instance
 		
@@ -153,6 +196,7 @@ func _hide_all() -> void:
 	_is_ui_hovering = false
 	_last_hovered_entity_id = -1
 	if _card_instance: _card_instance.visible = false
+	if _trap_card_instance: _trap_card_instance.visible = false
 	if _equip_panel_instance: _equip_panel_instance.visible = false
 
 # 公開 API：讓 UI 元素直接顯示資料

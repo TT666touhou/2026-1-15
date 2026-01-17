@@ -43,6 +43,9 @@ func _ready() -> void:
 	else:
 		push_error("[GridEntity] Failed to preload ComboIndicatorUI.tscn")
 
+	# 預設 Z Index (單位/敵人較高，陷阱/裝飾較低)
+	z_index = 5
+	
 	# 註冊到 BoardManager
 	if BoardManager:
 		BoardManager.register_entity(self)
@@ -514,11 +517,27 @@ func play_entry_animation(delay: float = 0.0) -> void:
 		entry_animation_finished.emit.call_deferred()
 		return
 	
-	# 預設為類型 0 (DROP)
-	var anim_type = 0 
+	# 嘗試從多個來源獲取動畫類型 (UnitCard, PropCard, TrapCard)
+	var anim_type = 0 # 預設 DROP
+	var source_name = "DEFAULT_FALLBACK"
+	
 	if character_data and character_data.unit_def:
-		if character_data.unit_def.get("spawn_animation") != null:
-			anim_type = character_data.unit_def.spawn_animation
+		anim_type = character_data.unit_def.spawn_animation
+		source_name = "CharacterData.unit_def"
+	else:
+		# 如果沒有角色資料，嘗試從 CardProvider 獲取
+		var card_provider = get_node_or_null("CardProvider")
+		if card_provider:
+			var card = card_provider.get("card")
+			if card and "spawn_animation" in card:
+				anim_type = card.spawn_animation
+				source_name = "CardProvider.card"
+			else:
+				source_name = "CardProvider (NO_CARD_OR_NO_ANIM_FIELD)"
+		else:
+			source_name = "NO_CARD_PROVIDER"
+	
+	print("[GridEntity] play_entry_animation for ", name, " | anim_type: ", anim_type, " | Source: ", source_name)
 	
 	if delay > 0:
 		await get_tree().create_timer(delay).timeout
@@ -550,7 +569,7 @@ func set_editor_highlight(enabled: bool) -> void:
 		# 取消選取：恢復原狀
 		if sprite:
 			sprite.self_modulate = Color.WHITE
-		z_index = 0
+		z_index = 5
 
 func take_damage(amount: int, ignore_barrier: bool = false, ignore_shield: bool = false, attacker: CharacterData = null, is_pursuit: bool = false) -> int:
 	var status_mgr = get_node_or_null("StatusManager")

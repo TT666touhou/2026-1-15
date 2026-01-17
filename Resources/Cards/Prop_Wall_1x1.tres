@@ -12,5 +12,6 @@ card_id = "prop_wall_1x1"
 card_name = "Wall"
 display_name = "Wall (1x1)"
 description = "A solid wall that blocks movement."
+spawn_animation = 2
 cost = {}
 max_health = 0.0

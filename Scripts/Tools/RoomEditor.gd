@@ -251,6 +251,7 @@ func _place_entity(cell: Vector2i, card: BaseCard, overrides: Dictionary = {}) -
 	if "unit_scene" in card: scene_to_spawn = card.get("unit_scene")
 	elif "building_scene" in card: scene_to_spawn = card.get("building_scene")
 	elif "prop_scene" in card: scene_to_spawn = card.get("prop_scene")
+	elif "trap_scene" in card: scene_to_spawn = card.get("trap_scene")
 
 	if scene_to_spawn:
 		var instance = scene_to_spawn.instantiate()
@@ -259,6 +260,10 @@ func _place_entity(cell: Vector2i, card: BaseCard, overrides: Dictionary = {}) -
 		if instance.has_method("set_grid_position"):
 			instance.grid = grid
 			instance.grid_position = cell
+			
+			if instance.has_method("setup_trap"):
+				instance.setup_trap(card)
+			
 			instance.global_position = grid.grid_to_world_center_footprint(cell, footprint)
 			
 			placed_entities[instance] = {

@@ -13,6 +13,9 @@ signal cell_occupied_changed(cell: Vector2i, is_occupied: bool)
 # 佔用狀態：{Vector2i: Node} - 格子座標 -> 實體
 var _occupied_cells: Dictionary = {}
 
+# 陷阱層：{Vector2i: Node} - 格子座標 -> 陷阱實體
+var _traps: Dictionary = {}
+
 # 額外有效格子：{Vector2i: bool} - 用於存儲地圖範圍外的特殊有效格子
 var _extra_valid_cells: Dictionary = {}
 
@@ -101,6 +104,19 @@ func clear_cell(cell: Vector2i) -> void:
 func get_occupant(cell: Vector2i) -> Node:
 	"""獲取佔用格子的實體"""
 	return _occupied_cells.get(cell, null)
+
+func set_trap_occupied(cell: Vector2i, trap: Node) -> void:
+	"""設置陷阱佔用"""
+	if is_in_bounds(cell):
+		_traps[cell] = trap
+
+func clear_trap(cell: Vector2i) -> void:
+	"""清除陷阱佔用"""
+	_traps.erase(cell)
+
+func get_trap(cell: Vector2i) -> Node:
+	"""獲取該格子的陷阱"""
+	return _traps.get(cell, null)
 
 func get_cells_in_rect(cell: Vector2i, size: Vector2i) -> Array[Vector2i]:
 	"""取得矩形區域內的所有格子座標"""

@@ -7,6 +7,7 @@ class_name UnitVisuals
 var _original_scale: Vector2 = Vector2.ONE
 var _original_pos: Vector2 = Vector2.ZERO
 var _tween: Tween
+var _hit_particles: GPUParticles2D
 
 signal spawn_animation_finished
 
@@ -23,6 +24,9 @@ func _ready() -> void:
 			if sprite:
 				_original_scale = sprite.scale
 				_original_pos = sprite.position
+	
+	# 初始化受擊粒子
+	_setup_hit_particles.call_deferred()
 
 func play_tick_animation() -> void:
 	if sprite == null: return
@@ -58,6 +62,11 @@ func play_tick_animation() -> void:
 func play_damage_animation() -> void:
 	if sprite == null: return
 	
+	# 觸發粒子
+	if _hit_particles:
+		_hit_particles.global_position = sprite.global_position
+		_hit_particles.restart()
+	
 	# 1. 強制重置狀態 (防止上次動畫未結束導致偏移疊加)
 	if _tween and _tween.is_valid():
 		_tween.kill()
@@ -77,7 +86,7 @@ func play_damage_animation() -> void:
 	
 	# --- 位置抖動 (Shake) ---
 	# 並行軌道 2: 位置變化 (衰減正弦波模式)
-	var shake_strength = 8.0
+	var shake_strength = 4.0
 	var step_time = 0.05
 	
 	# Step 1: 右移 (受擊瞬間)
@@ -142,13 +151,16 @@ func play_spawn_animation(type_int: int) -> void:
 	# 獲取視覺根節點的引用 (可能是 Sprite 或其他)
 	if not sprite: return
 	
+	# 移除鎖定，遵從傳入的動畫類型
+	var final_type = type_int
+	
 	# 重置狀態 (確保視覺歸位)
 	sprite.position = _original_pos
 	sprite.scale = _original_scale
 	sprite.rotation = 0.0
 	sprite.modulate.a = 1.0
 	
-	match type_int:
+	match final_type:
 		0: # DROP
 			sprite.position.y = _original_pos.y - 300
 			sprite.modulate.a = 0.0
@@ -183,10 +195,61 @@ func play_spawn_animation(type_int: int) -> void:
 			
 	# 當動畫結束時發送信號
 	if _tween:
+		# 在動畫進行中監聽特定時刻觸發落地特效
+		# 對於 DROP (0)，在接近結束時 (0.6s 總長) 觸發
+		if type_int == 0:
+			_tween.finished.connect(play_landing_effect)
+		# 對於 LEAP (1)，在接近結束時 (0.5s 總長) 觸發
+		elif type_int == 1:
+			_tween.finished.connect(play_landing_effect)
+			
 		_tween.finished.connect(func(): spawn_animation_finished.emit())
 	else:
 		# 如果是 NONE 或動畫建立失敗，延遲發送以避免同步調用導致的死鎖
 		spawn_animation_finished.emit.call_deferred()
+
+func play_landing_effect() -> void:
+	"""播放角色落地時的方形煙塵特效"""
+	var tex = load("res://Resources/Shared/RetroSquare.tres")
+	var mat_res = load("res://Resources/Shared/LandingExplosionProcess.tres")
+	if not tex or not mat_res: return
+	
+	var land_particles = GPUParticles2D.new()
+	land_particles.name = "LandingParticles"
+	
+	# 獲取角色尺寸 (footprint_size)
+	var size_vec = Vector2i(1, 1)
+	var parent = get_parent()
+	if parent and parent.has_method("get_footprint_size"):
+		size_vec = parent.get_footprint_size()
+	
+	var footprint_scale_x: float = float(size_vec.x)
+	
+	# 動態調整材質參數 (建立獨特實例)
+	var mat = mat_res.duplicate()
+	var box_w: float = 8.0 * footprint_scale_x
+	mat.emission_box_extents = Vector3(box_w, 2.0, 0.0)
+	
+	land_particles.process_material = mat
+	land_particles.texture = tex
+	land_particles.amount = int(12 * footprint_scale_x)
+	land_particles.lifetime = 0.5
+	land_particles.explosiveness = 1.0
+	land_particles.one_shot = true
+	land_particles.emitting = true
+	land_particles.local_coords = false
+	land_particles.z_index = 10
+	land_particles.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
+	
+	add_child(land_particles)
+	# 修正位置：使用全域座標並精確對齊單位底部
+	var y_offset: float = (float(size_vec.y) / 2.0) * 16.0
+	land_particles.global_position = sprite.global_position + Vector2(0, y_offset)
+	
+	# 自動清理
+	get_tree().create_timer(land_particles.lifetime + 0.1).timeout.connect(
+		func(): land_particles.queue_free()
+	)
 
 var _preview_tween: Tween
 
@@ -224,3 +287,96 @@ func stop_preview_shake() -> void:
 		reset_tween.tween_property(sprite, "position", _original_pos, 0.1)
 		reset_tween.parallel().tween_property(sprite, "scale", _original_scale, 0.1)
 		reset_tween.parallel().tween_property(sprite, "modulate", Color.WHITE, 0.1)
+
+func _setup_hit_particles() -> void:
+	if not sprite or not sprite.texture: return
+	
+	_hit_particles = GPUParticles2D.new()
+	_hit_particles.name = "HitParticles"
+	add_child(_hit_particles)
+	
+	# 基礎配置
+	_hit_particles.texture = load("res://Resources/Shared/ParticlePixel.tres")
+	_hit_particles.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
+	_hit_particles.emitting = false
+	_hit_particles.one_shot = true
+	_hit_particles.amount = 24
+	_hit_particles.lifetime = 0.6
+	_hit_particles.explosiveness = 1.0
+	_hit_particles.local_coords = false # 粒子彈出後留在世界座標，不隨角色抖動
+	_hit_particles.z_index = 10 # 確保在單位上方
+	
+	var mat = ParticleProcessMaterial.new()
+	mat.particle_flag_disable_z = true
+	mat.spread = 180.0
+	mat.gravity = Vector3(0.0, 500.0, 0.0) # 重力向下
+	mat.initial_velocity_min = 80.0
+	mat.initial_velocity_max = 160.0
+	mat.damping_min = 30.0
+	mat.damping_max = 50.0
+	
+	# 縮放曲線：由大變小消失
+	var curve = Curve.new()
+	curve.add_point(Vector2(0, 1), 0, 0)
+	curve.add_point(Vector2(1, 0), -2.0, 0)
+	var curve_tex = CurveTexture.new()
+	curve_tex.curve = curve
+	mat.scale_curve = curve_tex
+	
+	# 提取色盤
+	var img = sprite.texture.get_image()
+	if not img: return
+	
+	# 考慮 region_rect (如果開啟的話) 或 hframes/vframes (如果是動畫序列)
+	var rect = sprite.region_rect if sprite.region_enabled else Rect2(0, 0, img.get_width(), img.get_height())
+	
+	# 如果有 hframes/vframes，我們只取第一幀來採樣 (通常第一幀具備角色主要顏色)
+	if sprite.hframes > 1 or sprite.vframes > 1:
+		var frame_w = rect.size.x / sprite.hframes
+		var frame_h = rect.size.y / sprite.vframes
+		rect = Rect2(rect.position.x, rect.position.y, frame_w, frame_h)
+	
+	var counts = {}
+	var total_samples = 0
+	
+	# 抽樣掃描 (間隔 2 像素以節省效能)
+	for y in range(rect.position.y, rect.end.y, 2):
+		for x in range(rect.position.x, rect.end.x, 2):
+			if x >= img.get_width() or y >= img.get_height(): continue
+			var c = img.get_pixel(x, y)
+			if c.a > 0.8: # 只取不透明色
+				counts[c] = counts.get(c, 0) + 1
+				total_samples += 1
+	
+	if total_samples > 0:
+		var grad = Gradient.new()
+		grad.interpolation_mode = Gradient.GRADIENT_INTERPOLATE_CONSTANT
+		
+		var sorted_colors = counts.keys()
+		sorted_colors.sort_custom(func(a, b): return counts[a] > counts[b])
+		
+		# 根據顏色佔比分配漸層區段 (Proportional Gradient)
+		var current_offset = 0.0
+		for i in range(min(sorted_colors.size(), 8)): # 最多取前 8 種主要顏色
+			var c = sorted_colors[i]
+			var weight = float(counts[c]) / total_samples
+			
+			if i == 0:
+				grad.set_color(0, c)
+				grad.set_offset(0, 0.0)
+			elif i == 1:
+				# 這裡要注意，如果 offset 很小，可能會跟第 0 個點重合
+				# 但因為我們是 CONSTANT 插值，所以沒關係
+				grad.set_color(1, c)
+				grad.set_offset(1, max(0.01, current_offset))
+			else:
+				grad.add_point(current_offset, c)
+			
+			current_offset += weight
+			if current_offset >= 1.0: break
+			
+		var grad_tex = GradientTexture1D.new()
+		grad_tex.gradient = grad
+		mat.color_initial_ramp = grad_tex
+	
+	_hit_particles.process_material = mat

@@ -16,6 +16,7 @@ var grid: Node  # Grid 類型（使用 Node 避免循環依賴）
 var pathfinder: Node  # GridPathfinder 類型（使用 Node 避免循環依賴）
 var entity: GridEntity
 var _is_moving: bool = false
+var _trail_particles: GPUParticles2D
 
 func _ready() -> void:
 	entity = get_parent() as GridEntity
@@ -25,6 +26,16 @@ func _ready() -> void:
 	
 	grid = get_tree().get_first_node_in_group("grid")
 	pathfinder = get_tree().get_first_node_in_group("grid_pathfinder")
+	
+	# 尋找粒子節點
+	_trail_particles = entity.get_node_or_null("MoveParticles")
+	if _trail_particles:
+		# 自動調整粒子位置到腳底
+		# 1x1 單位 (size 1) 往下 8 像素，2x2 單位 (size 2) 往下 16 像素
+		var footprint_size = entity.get_footprint_size()
+		var y_offset = footprint_size.y * 8
+		_trail_particles.position = Vector2(0, y_offset)
+		print("[GridMover] Auto-positioned particles for ", entity.name, " offset Y: ", y_offset)
 	
 	if grid == null or pathfinder == null:
 		push_warning("[GridMover] Grid or GridPathfinder not found")
@@ -64,6 +75,8 @@ func move_to(target_cell: Vector2i, instant: bool = false) -> void:
 	
 	# 開始移動
 	_is_moving = true
+	if _trail_particles:
+		_trail_particles.emitting = true
 	movement_started.emit(entity, target_cell)
 	
 	if instant:
@@ -99,6 +112,17 @@ func move_to(target_cell: Vector2i, instant: bool = false) -> void:
 		# 使用 grid_to_world_center_footprint 修正多格單位位置
 		entity.global_position = grid.grid_to_world_center_footprint(target_cell, entity.footprint_data) if entity.footprint_data else grid.grid_to_world_center(target_cell)
 		
+		# --- 觸發陷阱偵測 (瞬間移動) ---
+		if grid.has_method("get_trap"):
+			var occupied_cells = entity.get_occupied_cells()
+			var triggered_traps = {} 
+			for c in occupied_cells:
+				var trap = grid.get_trap(c)
+				if trap and trap.has_method("on_stepped_on"):
+					if not triggered_traps.has(trap):
+						triggered_traps[trap] = true
+						trap.on_stepped_on(entity)
+
 		# 更新障礙物
 		if pathfinder != null and pathfinder.has_method("update_obstacles"):
 			pathfinder.update_obstacles()
@@ -127,12 +151,12 @@ func move_to(target_cell: Vector2i, instant: bool = false) -> void:
 	
 	print("[GridMover] Moving from ", entity.grid_position, " to ", target_cell, " via path: ", path)
 	
-	if move_style == MoveStyle.DASH:
-		await _move_dash(path)
-	else:
-		await _move_along_path(path)
+	# 強制使用行走 (STEP) 動畫，忽略 DASH 設定
+	await _move_along_path(path)
 		
 	_is_moving = false
+	if _trail_particles:
+		_trail_particles.emitting = false
 	
 	# 發送移動完成信號
 	movement_completed.emit(entity, entity.grid_position)
@@ -197,6 +221,18 @@ func _move_along_path(path: Array[Vector2i]) -> void:
 		# 更新網格位置和佔用 (這會自動處理舊位置清除與新位置註冊)
 		entity.set_grid_position(next_cell)
 		
+		# --- 觸發陷阱偵測 ---
+		if grid.has_method("get_trap"):
+			var occupied_cells = entity.get_occupied_cells()
+			# 使用 Dictionary 確保同一個陷阱在一次移動步進中只觸發一次 (針對多格單位)
+			var triggered_traps = {} 
+			for c in occupied_cells:
+				var trap = grid.get_trap(c)
+				if trap and trap.has_method("on_stepped_on"):
+					if not triggered_traps.has(trap):
+						triggered_traps[trap] = true
+						trap.on_stepped_on(entity)
+		
 		# 通知 GridPathfinder 更新障礙物
 		if pathfinder != null and pathfinder.has_method("update_obstacles"):
 			pathfinder.update_obstacles()
@@ -246,3 +282,5 @@ func _cancel_movement() -> void:
 		if tween.is_valid():
 			tween.kill()
 	_is_moving = false
+	if _trail_particles:
+		_trail_particles.emitting = false

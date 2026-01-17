@@ -28,5 +28,23 @@ difficulty = 0
 "card_path": "res://Resources/Cards/Prop_Wall_1x1.tres",
 "overrides": {},
 "pos": Vector2i(1, 1)
+}, {
+"card_path": "res://Resources/Cards/Trap_Spikes.tres",
+"overrides": {
+"attack_damage": 10
+},
+"pos": Vector2i(1, 3)
+}, {
+"card_path": "res://Resources/Cards/Trap_Spikes.tres",
+"overrides": {
+"attack_damage": 10
+},
+"pos": Vector2i(1, 4)
+}, {
+"card_path": "res://Resources/Cards/Trap_Spikes.tres",
+"overrides": {
+"attack_damage": 10
+},
+"pos": Vector2i(1, 5)
 }])
 player_spawn_points = Array[Vector2i]([Vector2i(0, 2), Vector2i(0, 3), Vector2i(0, 4), Vector2i(0, 5)])
