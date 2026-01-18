@@ -77,8 +77,8 @@ func _ready() -> void:
 			# 單格實體：直接使用
 			grid_position = grid.world_to_grid(global_position)
 	
-	# 註冊所有佔用的格子
-	_register_cells()
+	# 註冊所有佔用的格子 (移至 set_grid_position 或由 MapLoader 觸發，避免預設 (0,0) 幽靈佔用)
+	# _register_cells()
 	_init_health_bar_from_footprint()
 	_update_ui_positions()
 
@@ -734,24 +734,17 @@ func play_death_animation() -> void:
 func set_grid_position(cell: Vector2i) -> void:
 	if grid == null or footprint_data == null:
 		return
-	if not grid.has_method("clear_cells_footprint") or not grid.has_method("grid_to_world_center_footprint"):
-		return
-	if grid_position == cell:
+	if not grid.has_method("clear_cell") or not grid.has_method("grid_to_world_center_footprint"):
 		return
 		
-	# 強化：先獲取當前所有佔用格，確保完整清除舊位置
-	var old_cells = get_occupied_cells()
+	# 無論座標是否相同，只要調用此函式就確保先清除舊佔用 (特別是針對初次設定從 (0,0) 移走的情況)
+	_unregister_cells()
 	
 	grid_position = cell
 	
-	# 清除舊格子 (直接操作 Grid 以確保安全)
-	for c in old_cells:
-		if grid.has_method("clear_cell"):
-			# 只清除原本屬於自己的佔用
-			if grid.get_occupant(c) == self:
-				grid.clear_cell(c)
-	
+	# 重新註冊新位置
 	_register_cells()
+	
 	global_position = grid.grid_to_world_center_footprint(cell, footprint_data)
 
 	var dm = get_node_or_null("/root/DungeonManager")

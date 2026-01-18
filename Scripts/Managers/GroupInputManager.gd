@@ -4,6 +4,8 @@ class_name GroupMovementController
 ## 群體移動輸入管理器
 ## 負責處理鍵盤輸入並控制所有我方單位的同步移動
 
+@export var auto_advance_on_move: bool = false # 移動後是否自動結束回合的可選項
+
 const DIRECTION_MAP = {
 	KEY_Q: Vector2i(-1, -1), KEY_W: Vector2i(0, -1), KEY_E: Vector2i(1, -1),
 	KEY_A: Vector2i(-1, 0),                          KEY_D: Vector2i(1, 0),
@@ -61,13 +63,15 @@ func execute_faction_move(units: Array, direction: Vector2i) -> void:
 		if not unit_to_target.has(unit): continue
 		var target = unit_to_target[unit]
 		
-		if target != unit.grid_position:
-			var mover = unit.get_node_or_null("GridMover")
-			if mover:
-				moved_any = true
-				active_movers.append(mover)
-				_run_mover(mover, target)
-			else:
+		# 無論是否真的改變網格位置，只要呼叫 mover 都要傳遞方向以便檢查前方敵人
+		var mover = unit.get_node_or_null("GridMover")
+		if mover:
+			moved_any = true
+			active_movers.append(mover)
+			# 平行啟動移動，不使用引起錯誤的 Lambda 呼叫
+			mover.move_to(target, false, direction)
+		else:
+			if target != unit.grid_position:
 				unit.set_grid_position(target)
 				moved_any = true
 	
@@ -75,11 +79,23 @@ func execute_faction_move(units: Array, direction: Vector2i) -> void:
 		# 等待所有移動動畫完成 (平行執行)
 		await _wait_for_movers(active_movers)
 		
-		# 結束回合 (僅在戰鬥模式且非漫遊模式下由調用者或此處判斷，此處統一由 GroupMovementController 判斷玩家輸入觸發的行為)
-		# 注意：如果是 AI 調用的，TurnManager 會在調用後自己處理 advance_turn
+		# 檢查是否有任何單位觸發了撞擊
+		var rammed_any = false
+		for mover in active_movers:
+			if is_instance_valid(mover) and mover.last_move_rammed:
+				rammed_any = true
+				break
+		
+		# 結束回合
 		if TurnManager and TurnManager.is_player_turn() and not TurnManager.is_free_roam_mode:
-			print("[GroupMovementController] Player moves completed, advancing turn.")
-			await TurnManager.advance_turn() # 確保等待回合結算與攻擊動畫完成
+			if auto_advance_on_move and not rammed_any:
+				print("[GroupMovementController] Player moves completed, advancing turn.")
+				await TurnManager.advance_turn() # 確保等待回合結算與攻擊動畫完成
+			else:
+				if rammed_any:
+					print("[GroupMovementController] Ram attack occurred, skipping advance_turn.")
+				else:
+					print("[GroupMovementController] Auto-advance is OFF, skipping advance_turn.")
 		
 		if TurnManager: TurnManager.unlock_input() # 最後才解鎖，確保整個流程結束
 	else:

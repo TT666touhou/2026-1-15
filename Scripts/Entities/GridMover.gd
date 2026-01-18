@@ -17,6 +17,7 @@ var pathfinder: Node  # GridPathfinder 類型（使用 Node 避免循環依賴�
 var entity: GridEntity
 var _is_moving: bool = false
 var _trail_particles: GPUParticles2D
+var last_move_rammed: bool = false # 記錄最近一次移動是否觸發撞擊
 
 func _ready() -> void:
 	entity = get_parent() as GridEntity
@@ -45,13 +46,18 @@ func _ready() -> void:
 	if not grid.has_method("grid_to_world_center") or not pathfinder.has_method("find_path"):
 		push_warning("[GridMover] Grid or GridPathfinder missing required methods")
 
-func move_to(target_cell: Vector2i, instant: bool = false) -> void:
-	"""移動到目標格子（無移動範圍限制）"""
+func move_to(target_cell: Vector2i, instant: bool = false, intended_direction: Vector2i = Vector2i.ZERO) -> bool:
+	"""
+	移動到目標格子（無移動範圍限制）
+	回傳：是否觸發了撞擊 (Ram Attack)
+	"""
 	if pathfinder == null or entity == null or grid == null:
-		return
+		return false
 	
 	if not pathfinder.has_method("find_path") or not grid.has_method("is_cell_occupied"):
-		return
+		return false
+	
+	last_move_rammed = false # 重置狀態
 	
 	# 如果目標格子已被佔用（且不是自己），則不移動
 	if grid.is_cell_occupied(target_cell):
@@ -63,12 +69,19 @@ func move_to(target_cell: Vector2i, instant: bool = false) -> void:
 				print("[GridMover] Target cell occupied by teammate ", occupant.name, ", allowing move start.")
 			else:
 				print("[GridMover] Target cell is occupied by another entity: ", occupant)
-				return
+				# 雖然被擋住，但仍然檢查是否可以撞擊
+				if intended_direction != Vector2i.ZERO:
+					last_move_rammed = await _check_and_trigger_ram(intended_direction)
+					return last_move_rammed
+				return false
 	
-	# 如果已經在目標位置，不需要移動
+	# 如果已經在目標位置，不需要移動，但可能需要觸發撞擊
 	if entity.grid_position == target_cell:
 		print("[GridMover] Already at target cell")
-		return
+		if intended_direction != Vector2i.ZERO:
+			last_move_rammed = await _check_and_trigger_ram(intended_direction)
+			return last_move_rammed
+		return false
 	
 	if _is_moving:
 		_cancel_movement()
@@ -105,7 +118,7 @@ func move_to(target_cell: Vector2i, instant: bool = false) -> void:
 		if is_blocked:
 			print("[GridMover] Instant move blocked at ", target_cell)
 			_is_moving = false
-			return
+			return false
 
 		# 更新位置 (set_grid_position 會處理 Footprint 註銷與註冊)
 		entity.set_grid_position(target_cell)
@@ -130,15 +143,19 @@ func move_to(target_cell: Vector2i, instant: bool = false) -> void:
 		_is_moving = false
 		movement_completed.emit(entity, target_cell)
 		print("[GridMover] Instant movement completed. Final position: ", target_cell)
-		return
+		return false
 
 	# 計算路徑（在移動前，暫時清除當前位置的佔用以允許路徑查找）
 	# 注意：這不會真正清除 Grid 的佔用，只是為了路徑查找
 	var path = pathfinder.find_path(entity.grid_position, target_cell)
 	if path.is_empty():
 		print("[GridMover] No path found from ", entity.grid_position, " to ", target_cell)
+		# 雖然沒路徑，但可能前方就是敵人
+		var rammed = false
+		if intended_direction != Vector2i.ZERO:
+			rammed = await _check_and_trigger_ram(intended_direction)
 		_is_moving = false
-		return
+		return rammed
 	
 	# 移除起點（第一個點是起點，不需要移動到起點）
 	if path.size() > 0:
@@ -146,13 +163,20 @@ func move_to(target_cell: Vector2i, instant: bool = false) -> void:
 	
 	if path.is_empty():
 		print("[GridMover] Path is empty after removing start point")
+		var rammed = false
+		if intended_direction != Vector2i.ZERO:
+			rammed = await _check_and_trigger_ram(intended_direction)
 		_is_moving = false
-		return
+		return rammed
 	
 	print("[GridMover] Moving from ", entity.grid_position, " to ", target_cell, " via path: ", path)
 	
 	# 強制使用行走 (STEP) 動畫，忽略 DASH 設定
 	await _move_along_path(path)
+	
+	# 檢查移動最後一步是否觸發撞擊
+	if intended_direction != Vector2i.ZERO:
+		last_move_rammed = await _check_and_trigger_ram(intended_direction)
 		
 	_is_moving = false
 	if _trail_particles:
@@ -162,6 +186,7 @@ func move_to(target_cell: Vector2i, instant: bool = false) -> void:
 	movement_completed.emit(entity, entity.grid_position)
 	
 	print("[GridMover] Movement completed. Final position: ", entity.grid_position)
+	return last_move_rammed
 
 func _move_along_path(path: Array[Vector2i]) -> void:
 	"""沿路徑移動"""
@@ -193,7 +218,9 @@ func _move_along_path(path: Array[Vector2i]) -> void:
 			
 		var distance = entity.global_position.distance_to(target_pos)
 		# 距離越長，時間越多 (例如斜向約 22.6px 會比直向 16px 慢)
-		var actual_duration = (distance / cell_size_ref) * move_animation_duration
+		# 加入速度屬性影響：時間 = (距離 / 參考) * 基礎時間 / 速度倍率
+		var speed_mult = _get_speed_multiplier()
+		var actual_duration = (distance / cell_size_ref) * move_animation_duration / speed_mult
 		
 		# --- 進階移動動畫 (跳躍感與非等速) ---
 		var tween = get_tree().create_tween()
@@ -270,6 +297,73 @@ func _move_dash(path: Array[Vector2i]) -> void:
 		pathfinder.update_obstacles()
 	
 	print("[GridMover] Dash movement completed to ", final_cell)
+
+# --- 撞擊攻擊 (Ram Attack) 相關方法 ---
+
+func _check_and_trigger_ram(dir: Vector2i) -> bool:
+	"""檢查前方是否為敵人並觸發撞擊"""
+	var next_cell = entity.grid_position + dir
+	
+	# 1. 邊界檢查：如果出界，不觸發撞擊
+	if not grid.has_method("is_in_bounds") or not grid.is_in_bounds(next_cell):
+		return false
+		
+	# 2. 佔用檢查
+	if grid.has_method("is_cell_occupied") and grid.is_cell_occupied(next_cell):
+		var occupant = grid.get_occupant(next_cell)
+		# 3. 實體與陣營檢查：必須是敵對實體才觸發
+		if occupant is GridEntity and occupant.faction != null and entity.faction != null:
+			if occupant.faction != entity.faction:
+				await _execute_ram_attack(occupant, dir)
+				return true
+	return false
+
+func _execute_ram_attack(target: GridEntity, dir: Vector2i) -> void:
+	"""執行撞擊攻擊的視覺與傷害"""
+	print("[GridMover] RAM ATTACK: ", entity.name, " -> ", target.name)
+	
+	# 獲取單步移動的參考時間 (受速度影響)
+	var speed_mult = _get_speed_multiplier()
+	var duration = move_animation_duration / speed_mult
+	
+	# 1. 播放攻擊動畫
+	if entity.has_method("play_attack_animation_towards"):
+		entity.play_attack_animation_towards(dir)
+	
+	# 2. 加入物理上的「撞擊感」：向目標方向稍微位移再彈回
+	# 這會讓動畫時間與移動一步的節奏完全一致
+	var original_pos = entity.global_position
+	var grid_offset = Vector2(dir) * 4.0 # 撞擊位移量 (4像素)
+	
+	var tween = get_tree().create_tween()
+	tween.set_parallel(false) # 序列執行：去再回
+	
+	# 前半段：撞向敵人
+	tween.tween_property(entity, "global_position", original_pos + grid_offset, duration * 0.3)\
+		.set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
+	
+	# 在撞擊最深處執行傷害邏輯
+	tween.tween_callback(func():
+		var damage = 1
+		if entity.character_data:
+			damage = entity.character_data.get_effective_attack()
+		
+		if target.has_method("apply_damage"):
+			target.apply_damage(damage, false, false, entity)
+	)
+	
+	# 後半段：彈回原位
+	tween.tween_property(entity, "global_position", original_pos, duration * 0.7)\
+		.set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
+	
+	# 等待整個 Tween 完成，這確保了攻擊總時長 = move_animation_duration
+	await tween.finished
+
+func _get_speed_multiplier() -> float:
+	"""獲取當前實體的有效移動速度倍率"""
+	if entity and entity.character_data:
+		return entity.character_data.get_effective_movement_speed()
+	return 1.0
 
 func is_moving() -> bool:
 	"""是否正在移動"""

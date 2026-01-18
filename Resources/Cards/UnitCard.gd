@@ -15,6 +15,7 @@ class_name UnitCard
 @export var attack_damage: int = 10
 @export var attack_depth: int = 1 # Attack range depth (1 = melee/adjacent)
 @export var base_combo_count: float = 1.0
+@export var base_movement_speed: float = 1.0 # 移動速度倍率 (影響動畫時長)
 @export var move_speed_anim: float = 300.0 # Visual animation speed
 
 # New Stats (Crit & Luck)
