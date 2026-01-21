@@ -26,6 +26,7 @@ PartyManager="*res://Scripts/Managers/PartyManager.gd"
 AttackManager="*res://Scripts/Managers/AttackManager.gd"
 DungeonManager="*res://Scripts/Managers/DungeonManager.gd"
 SkillManager="*res://Scripts/Managers/SkillManager.gd"
+ComboManager="*res://Scripts/Managers/ComboManager.gd"
 EquipmentGenerator="*res://Scripts/Items/EquipmentGenerator.gd"
 
 [display]

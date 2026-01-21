@@ -143,13 +143,15 @@ func play_attack_animation(target_dir: Vector2) -> void:
 		.set_trans(Tween.TRANS_ELASTIC).set_ease(Tween.EASE_OUT)
 
 func play_spawn_animation(type_int: int) -> void:
+	# 獲取視覺根節點的引用 (可能是 Sprite 或其他)
+	if not sprite: 
+		spawn_animation_finished.emit.call_deferred()
+		return
+		
 	# 停止當前任何 Tween
 	if _tween and _tween.is_valid():
 		_tween.kill()
 	_tween = create_tween()
-	
-	# 獲取視覺根節點的引用 (可能是 Sprite 或其他)
-	if not sprite: return
 	
 	# 移除鎖定，遵從傳入的動畫類型
 	var final_type = type_int
@@ -194,18 +196,16 @@ func play_spawn_animation(type_int: int) -> void:
 			pass
 			
 	# 當動畫結束時發送信號
-	if _tween:
+	if _tween and _tween.is_valid() and final_type != 3: # NONE (3) 不使用 Tween
 		# 在動畫進行中監聽特定時刻觸發落地特效
-		# 對於 DROP (0)，在接近結束時 (0.6s 總長) 觸發
 		if type_int == 0:
 			_tween.finished.connect(play_landing_effect)
-		# 對於 LEAP (1)，在接近結束時 (0.5s 總長) 觸發
 		elif type_int == 1:
 			_tween.finished.connect(play_landing_effect)
 			
 		_tween.finished.connect(func(): spawn_animation_finished.emit())
 	else:
-		# 如果是 NONE 或動畫建立失敗，延遲發送以避免同步調用導致的死鎖
+		if _tween: _tween.kill() # 清除空 Tween
 		spawn_animation_finished.emit.call_deferred()
 
 func play_landing_effect() -> void:

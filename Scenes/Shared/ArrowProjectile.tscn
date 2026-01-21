@@ -1,0 +1,15 @@
+[gd_scene load_steps=3 format=3 uid="uid://bo8usrjknjr6m"]
+
+[ext_resource type="Script" uid="uid://ccgmnxpfweaky" path="res://Scripts/Entities/ArrowProjectile.gd" id="1_script"]
+[ext_resource type="Texture2D" uid="uid://bb7mhvepdtubi" path="res://Tilesheet/1bit_assetpack/selfmade/ARROW.png" id="2_lho1o"]
+
+[node name="ArrowProjectile" type="Node2D"]
+script = ExtResource("1_script")
+
+[node name="Sprite2D" type="Sprite2D" parent="."]
+texture_filter = 1
+texture = ExtResource("2_lho1o")
+region_enabled = true
+region_rect = Rect2(0, 0, 16, 16)
+
+[node name="AnimationPlayer" type="AnimationPlayer" parent="."]

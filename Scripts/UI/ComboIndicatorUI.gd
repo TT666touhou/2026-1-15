@@ -2,13 +2,24 @@ extends Control
 class_name ComboIndicatorUI
 
 @onready var panel_container: PanelContainer = $PanelContainer
-@onready var value_label: Label = $PanelContainer/HBoxContainer/ValueLabel
+@onready var value_label: Label = $PanelContainer/VBoxContainer/HBoxContainer/ValueLabel
+@onready var progress_bar: ProgressBar = $PanelContainer/VBoxContainer/ProgressBar
 
 var _tween: Tween
+var _base_scale: Vector2 = Vector2(0.125, 0.125)
+var _window_time: float = 0.8
 
 func _ready() -> void:
 	visible = false
-	# Ensure correct positioning relative to parent if needed
+	# 記錄初始縮放
+	_base_scale = scale
+	
+	# 連線到全局 ComboManager
+	if is_inside_tree():
+		var cm = get_node_or_null("/root/ComboManager")
+		if cm:
+			cm.combo_updated.connect(show_combo)
+	
 	# Default pivot to bottom-center for pop-up animation
 	panel_container.pivot_offset = Vector2(panel_container.size.x / 2, panel_container.size.y)
 	panel_container.position.x = -panel_container.size.x / 2.0
@@ -22,13 +33,24 @@ func _ready() -> void:
 		# Show a test combo so it's visible immediately
 		show_combo(2)
 
-func show_combo(count: int) -> void:
+func _process(delta: float) -> void:
+	if visible and progress_bar.value > 0:
+		progress_bar.value -= delta
+		if progress_bar.value <= 0:
+			_on_combo_timeout()
+
+func show_combo(count: int, window_time: float = 0.8) -> void:
 	if count <= 0:
 		hide_combo()
 		return
 		
+	_window_time = window_time
 	var old_text = value_label.text
 	value_label.text = str(count)
+	
+	# 重置進度條
+	progress_bar.max_value = _window_time
+	progress_bar.value = _window_time
 	
 	# 強制容器更新尺寸以獲得正確的中心點
 	panel_container.reset_size()
@@ -42,6 +64,10 @@ func show_combo(count: int) -> void:
 	elif old_text != str(count):
 		# 只有數字真的變動時才播放彈跳動畫，避免每幀重設 scale
 		_play_bounce_animation()
+
+func _on_combo_timeout() -> void:
+	hide_combo()
+	# 全局模式下不再主動重置父節點，由 ComboManager 自己處理逾時
 
 func hide_combo() -> void:
 	visible = false

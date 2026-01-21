@@ -30,11 +30,12 @@ func _initialize() -> void:
 	map_height = grid.map_height
 	cell_size = grid.cell_size
 	
-	# 創建 AStarGrid2D（支持8方向移動）
+	# 創建 AStarGrid2D（支援斜向移動）
 	a_star = AStarGrid2D.new()
 	a_star.region = Rect2(0, 0, map_width, map_height)
 	a_star.cell_size = Vector2i(cell_size.x, cell_size.y)
-	a_star.diagonal_mode = AStarGrid2D.DIAGONAL_MODE_ALWAYS
+	# 使用 DIAGONAL_MODE_AT_LEAST_ONE_WALKABLE 確保斜向移動不會穿牆
+	a_star.diagonal_mode = AStarGrid2D.DIAGONAL_MODE_AT_LEAST_ONE_WALKABLE
 	a_star.update()
 	
 	# 更新障礙物
@@ -48,7 +49,7 @@ func _initialize() -> void:
 	print("[GridPathfinder] Initialized: ", map_width, "x", map_height)
 
 func find_path(start: Vector2i, end: Vector2i) -> Array[Vector2i]:
-	"""計算路徑（嚴格8方向，西洋棋皇后風格）"""
+	"""計算路徑（8 方向）"""
 	if grid == null or a_star == null:
 		return []
 	
@@ -67,7 +68,7 @@ func find_path(start: Vector2i, end: Vector2i) -> Array[Vector2i]:
 	if a_star_path.is_empty():
 		return []  # 無法到達
 	
-	# 重構為嚴格8方向路徑
+	# 重構為 8 方向路徑
 	return _rebuild_path_8_directions(start, end)
 
 func get_movement_range(start: Vector2i, max_distance: int) -> Array[Vector2i]:
@@ -83,16 +84,7 @@ func get_movement_range(start: Vector2i, max_distance: int) -> Array[Vector2i]:
 	var distances: Dictionary = {start: 0}
 	
 	# 8方向移動
-	var directions = [
-		Vector2i(0, -1),   # 上
-		Vector2i(0, 1),    # 下
-		Vector2i(-1, 0),   # 左
-		Vector2i(1, 0),    # 右
-		Vector2i(-1, -1),  # 左上
-		Vector2i(1, -1),   # 右上
-		Vector2i(-1, 1),   # 左下
-		Vector2i(1, 1)     # 右下
-	]
+	var directions = _get_8_directions()
 	
 	while not queue.is_empty():
 		var current = queue.pop_front()
@@ -186,12 +178,12 @@ func _get_astar_path(start: Vector2i, end: Vector2i) -> Array[Vector2i]:
 	
 	return path
 
-func _rebuild_path_8_directions(start: Vector2i, end: Vector2i) -> Array[Vector2i]:
-	"""重構路徑為嚴格8方向（西洋棋皇后風格）
+func _rebuild_path_4_directions(start: Vector2i, end: Vector2i) -> Array[Vector2i]:
+	"""重構路徑為嚴格4方向（WASD風格）
 	
 	算法：
 	1. 從起點開始
-	2. 選擇8個方向中，能最接近目標且可達的方向
+	2. 選擇4個方向中，能最接近目標且可達的方向
 	3. 沿該方向移動，直到：
 	   - 到達目標
 	   - 遇到障礙物
@@ -200,7 +192,7 @@ func _rebuild_path_8_directions(start: Vector2i, end: Vector2i) -> Array[Vector2
 	"""
 	var path: Array[Vector2i] = [start]
 	var current = start
-	var directions = _get_8_directions()
+	var directions = _get_4_directions()
 	var visited: Dictionary = {start: true}
 	var max_iterations = 1000  # 防止無限循環
 	
@@ -208,7 +200,7 @@ func _rebuild_path_8_directions(start: Vector2i, end: Vector2i) -> Array[Vector2
 		var best_direction: Vector2i = Vector2i.ZERO
 		var best_distance_sq = current.distance_squared_to(end)
 		
-		# 嘗試所有8個方向
+		# 嘗試所有4個方向
 		for dir in directions:
 			var next_cell = current + dir
 			
@@ -251,7 +243,7 @@ func _rebuild_path_8_directions(start: Vector2i, end: Vector2i) -> Array[Vector2
 	return path
 
 func _extend_in_direction(start: Vector2i, direction: Vector2i, target: Vector2i, visited: Dictionary) -> Array[Vector2i]:
-	"""沿指定方向延伸，直到遇到障礙物或到達目標（西洋棋皇后風格）
+	"""沿指定方向延伸，直到遇到障礙物或到達目標
 	
 	返回：從 start 開始，沿 direction 延伸的所有可達格子
 	"""
@@ -296,15 +288,72 @@ func _extend_in_direction(start: Vector2i, direction: Vector2i, target: Vector2i
 	
 	return path
 
-func _get_8_directions() -> Array[Vector2i]:
-	"""返回8個基本方向"""
+func _rebuild_path_8_directions(start: Vector2i, end: Vector2i) -> Array[Vector2i]:
+	"""重構路徑為 8 方向
+	
+	算法與 4 方向類似，但方向列表包含斜向。
+	"""
+	var path: Array[Vector2i] = [start]
+	var current = start
+	var directions = _get_8_directions()
+	var visited: Dictionary = {start: true}
+	var max_iterations = 1000
+	
+	while current != end and path.size() < max_iterations:
+		var best_direction: Vector2i = Vector2i.ZERO
+		var best_distance_sq = current.distance_squared_to(end)
+		
+		# 嘗試所有 8 個方向
+		for dir in directions:
+			var next_cell = current + dir
+			
+			if not grid.is_in_bounds(next_cell):
+				continue
+			if next_cell in visited:
+				continue
+			if a_star.is_point_solid(next_cell):
+				continue
+			
+			var distance_sq = next_cell.distance_squared_to(end)
+			if distance_sq < best_distance_sq:
+				best_distance_sq = distance_sq
+				best_direction = dir
+		
+		if best_direction == Vector2i.ZERO:
+			break
+		
+		var direction_path = _extend_in_direction(current, best_direction, end, visited)
+		for cell in direction_path:
+			if cell != current:
+				path.append(cell)
+				visited[cell] = true
+				current = cell
+				if current == end:
+					return path
+		
+		if current == path[-1]:
+			break
+	
+	return path
+
+func _get_4_directions() -> Array[Vector2i]:
+	"""返回4個基本方向"""
 	return [
 		Vector2i(0, -1),   # 上
 		Vector2i(0, 1),    # 下
 		Vector2i(-1, 0),   # 左
-		Vector2i(1, 0),    # 右
-		Vector2i(-1, -1),  # 左上
-		Vector2i(1, -1),   # 右上
-		Vector2i(-1, 1),   # 左下
-		Vector2i(1, 1)     # 右下
+		Vector2i(1, 0)     # 右
+	]
+
+func _get_8_directions() -> Array[Vector2i]:
+	"""返回8個方向（含斜向）"""
+	return [
+		Vector2i(0, -1),   # 北
+		Vector2i(0, 1),    # 南
+		Vector2i(-1, 0),   # 西
+		Vector2i(1, 0),    # 東
+		Vector2i(-1, -1),  # 西北
+		Vector2i(1, -1),   # 東北
+		Vector2i(-1, 1),   # 西南
+		Vector2i(1, 1)     # 東南
 	]

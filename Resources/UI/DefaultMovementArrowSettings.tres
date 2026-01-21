@@ -10,5 +10,5 @@ region = Rect2(8, 8, 48, 48)
 [resource]
 script = ExtResource("1_settings")
 arrow_texture = SubResource("AtlasTexture_atr8m")
-arrow_scale = 0.05
-inset_distance = 1.8
+arrow_scale = 0.1
+inset_distance = 2.0

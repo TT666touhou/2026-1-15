@@ -17,7 +17,7 @@ func _on_load_pressed() -> void:
 		return
 		
 	if DungeonManager:
-		DungeonManager.load_room_by_name(room_name)
+		await DungeonManager.load_room_by_name(room_name)
 	else:
 		push_error("[DebugRoomLoader] DungeonManager not found")
 

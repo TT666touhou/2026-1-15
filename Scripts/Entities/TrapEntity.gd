@@ -9,11 +9,6 @@ func _ready() -> void:
 	super._ready()
 	z_index = 1
 	add_to_group("traps")
-	
-	if combo_indicator:
-		combo_indicator.visible = false
-	if health_bar:
-		health_bar.visible = false
 
 func setup_trap(card: TrapCard) -> void:
 	"""從卡片初始化陷阱"""
@@ -23,6 +18,10 @@ func setup_trap(card: TrapCard) -> void:
 		faction = card.faction
 	if card.footprint_data:
 		footprint_data = card.footprint_data
+
+func should_register_combo() -> bool:
+	"""陷阱不列入連擊計數"""
+	return false
 
 func play_preview_animation() -> void:
 	"""僅播放視覺效果，不造成傷害"""
@@ -59,8 +58,12 @@ func on_stepped_on(stepper: GridEntity) -> void:
 	"""當單位踩上陷阱時觸發"""
 	if stepper and stepper.has_method("take_damage"):
 		print("[TrapEntity] Triggered on ", stepper.name, " for ", trap_atk, " damage")
-		stepper.take_damage(trap_atk)
+		# 注意：take_damage 可能是非同步的
+		_call_take_damage_async(stepper)
 		_play_trigger_visuals()
+
+func _call_take_damage_async(stepper: GridEntity) -> void:
+	await stepper.take_damage(trap_atk)
 
 func _play_trigger_visuals() -> void:
 	# 播放尖刺彈出動畫

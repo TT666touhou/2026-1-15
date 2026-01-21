@@ -1,0 +1,13 @@
+[gd_resource type="Resource" script_class="TurretCard" load_steps=3 format=3]
+
+[ext_resource type="Script" path="res://Resources/Cards/TurretCard.gd" id="1_script"]
+[ext_resource type="PackedScene" path="res://Scenes/Entities/Turret.tscn" id="2_scene"]
+
+[resource]
+script = ExtResource("1_script")
+turret_scene = ExtResource("2_scene")
+attack_damage = 25
+card_id = "turret_001"
+card_name = "Turret"
+display_name = "Reflective Turret"
+description = "Fires an arrow in the opposite direction when rammed."

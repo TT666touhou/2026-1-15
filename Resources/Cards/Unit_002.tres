@@ -26,6 +26,7 @@ movement_range_data = ExtResource("4_movement")
 spawn_animation = 1
 attack_damage = 18
 base_combo_count = 1.0
+base_movement_speed = 3.0
 move_speed_anim = 200.0
 base_crit_rate = 0.05
 base_luck = 0

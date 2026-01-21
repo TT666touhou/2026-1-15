@@ -126,7 +126,8 @@ func _execute_direct_skill(button: SkillButtonUI) -> void:
 	if not is_instance_valid(unit): return
 	
 	print("[SkillBarUI] Confirming Direct Skill: ", skill.skill_name)
-	if SkillManager.execute_skill(unit, skill, unit.grid_position):
+	# execute_skill 現在是非同步的 (coroutine)
+	if await SkillManager.execute_skill(unit, skill, unit.grid_position):
 		button.reset_to_idle()
 		# 重新加載技能狀態（冷卻等）
 		_populate_skills_internal(button.character_data, unit)
@@ -139,11 +140,12 @@ func trigger_armed_skill(unit: GridEntity, final_pos: Vector2i) -> void:
 		var char_data = btn.character_data
 		
 		print("[SkillBarUI] Triggering Armed Skill: ", skill.skill_name)
-		SkillManager.execute_skill(unit, skill, final_pos)
+		# execute_skill 現在是非同步的 (coroutine)
+		await SkillManager.execute_skill(unit, skill, final_pos)
 		
 		# 根據類型決定是否結束回合
 		if skill.execution_mode == UnitSkillData.ExecutionMode.MOVE_TRIGGER:
-			if TurnManager: TurnManager.advance_turn()
+			if TurnManager: await TurnManager.advance_turn()
 		
 		if is_instance_valid(btn):
 			btn.reset_to_idle()

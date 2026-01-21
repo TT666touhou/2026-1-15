@@ -20,6 +20,7 @@ const ARROW_SHADER = preload("res://Scenes/Shared/Shaders/double_arrow.gdshader"
 
 @onready var parent_entity: GridEntity = get_parent()
 var _arrows: Dictionary = {}
+var _current_attack_progress: float = 0.0
 
 func _ready() -> void:
 	if not parent_entity:
@@ -77,6 +78,15 @@ func _setup_arrows() -> void:
 		mat.shader = ARROW_SHADER
 		sprite.material = mat
 		
+		# 新增：開啟遮罩功能，並建立填充矩形
+		sprite.clip_children = CanvasItem.CLIP_CHILDREN_AND_DRAW
+		
+		var fill = ColorRect.new()
+		fill.name = "FillProgress"
+		fill.color = Color.RED
+		fill.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		sprite.add_child(fill)
+		
 		add_child(sprite)
 		_arrows[dir_name] = {
 			"sprite": sprite,
@@ -93,8 +103,51 @@ func _update_visuals() -> void:
 		var s = data["sprite"] as Sprite2D
 		s.texture = settings.arrow_texture
 		s.scale = Vector2(settings.arrow_scale, settings.arrow_scale)
-		s.modulate = settings.arrow_color
+		
+		# 根據進度決定底層顏色
+		if _current_attack_progress > 0.001:
+			s.modulate = Color.WHITE # 攻擊時底層變回純白 (紅色由 FillProgress 提供)
+		else:
+			s.modulate = Color.WHITE # 平時維持白色
+			
 		s.rotation = atan2(data["dir"].y, data["dir"].x) + PI/2
+
+func set_attack_progress(progress: float, direction: Vector2i = Vector2i.ZERO) -> void:
+	"""外部介面：設置攻擊預警進度 (使用精確的像素裁剪法)"""
+	_current_attack_progress = progress
+	
+	for dir_name in _arrows:
+		var arrow_data = _arrows[dir_name]
+		var sprite = arrow_data["sprite"] as Sprite2D
+		var fill = sprite.get_node_or_null("FillProgress") as ColorRect
+		
+		# 如果指定了方向，則只有該方向會填滿
+		var is_target_dir = (direction == Vector2i.ZERO or arrow_data["dir"] == direction)
+		
+		if fill:
+			if not is_target_dir:
+				fill.visible = false
+				continue
+				
+			# 獲取實際的貼圖尺寸 (如果是 AtlasTexture 會自動處理 region)
+			var rect_size = Vector2(16, 16) # 預設 fallback
+			if sprite.texture:
+				if sprite.texture is AtlasTexture:
+					rect_size = sprite.texture.region.size
+				else:
+					rect_size = sprite.texture.get_size()
+			
+			var w = rect_size.x
+			var h = rect_size.y
+			
+			# 根據進度計算高度 (由底部向上填滿)
+			# 注意：Sprite 的中心點在 (0,0)，所以 Rect 的位置需要補償
+			fill.size = Vector2(w, h * progress)
+			fill.position = Vector2(-w/2, (h/2) - (h * progress))
+			fill.visible = progress > 0.001
+			
+	# 如果有進度，強制顯示所有非 BLOCKED 箭頭
+	update_display()
 
 # 更新箭頭位置 (從 settings 讀取)
 func _update_arrow_positions() -> void:
@@ -118,7 +171,23 @@ func _update_arrow_positions() -> void:
 
 # 更新顯示邏輯 (從 settings 讀取)
 func update_display() -> void:
-	var data = parent_entity.movement_range_data if parent_entity else null
+	var data: MovementRangeData = null
+	if parent_entity:
+		data = parent_entity.movement_range_data
+		
+	# 如果正在攻擊預警，強制顯示所有非 BLOCKED 的箭頭
+	# 如果沒有數據 (例如砲台)，則顯示所有定義的方向
+	if _current_attack_progress > 0.001:
+		for dir_name in _arrows:
+			var sprite = _arrows[dir_name]["sprite"]
+			if data:
+				var move_type = data.get(dir_name)
+				sprite.visible = move_type > 0
+			else:
+				# 沒有數據時 (如砲台)，預設顯示所有 8 方向 (可根據需求過濾)
+				sprite.visible = true
+		return
+
 	if not data or _arrows.is_empty() or settings == null:
 		for arrow_data in _arrows.values():
 			arrow_data["sprite"].visible = false
@@ -128,7 +197,12 @@ func update_display() -> void:
 		var sprite = _arrows[dir_name]["sprite"]
 		var move_type = data.get(dir_name)
 		
-		sprite.visible = move_type > 0
+		# 敵方單位常駐顯示攻擊範圍 (不透明)
+		if parent_entity and parent_entity.faction and not parent_entity.faction.is_controllable:
+			sprite.visible = move_type > 0
+		else:
+			# 玩家單位只在選取時顯示 (由 GridSelector 外部控制，或此處保持預設)
+			sprite.visible = move_type > 0
 		
 		if move_type == 2: # UNLIMITED
 			sprite.material.set_shader_parameter("is_unlimited", true)

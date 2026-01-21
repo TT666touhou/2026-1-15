@@ -41,7 +41,7 @@ base_barriers = 0
 max_health = 80.0
 card_id = "unit_003"
 card_name = "Unit 003"
-description = "A fast scout that moves diagonally."
+description = "A powerful wizard that moves in any cardinal direction without limit."
 cost = {
 "soul": 15
 }

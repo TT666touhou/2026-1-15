@@ -265,7 +265,8 @@ func _process_over_time_effects() -> void:
 							print("[StatusManager] Regen applied: ", value)
 					else: # damage
 						if _parent_entity.has_method("take_damage"):
-							# 注意：中毒傷害通常不觸發受傷動畫或浮動文字，或者需要特殊處理
-							# 這裡直接用 take_damage 簡單處理，但可能需要規避易傷加成 (視設計而定)
-							_parent_entity.take_damage(value)
+							# 注意：中毒傷害通常不觸發受傷動畫或浮動文字
+							# 這裡使用一個 Lambda 來非同步執行，以免阻塞回合結算，同時符合 Godot 4 對 coroutine 的呼叫要求
+							var do_damage = func(): await _parent_entity.take_damage(value)
+							do_damage.call()
 							print("[StatusManager] Poison applied: ", value)

@@ -5,40 +5,90 @@ class_name GroupMovementController
 ## 負責處理鍵盤輸入並控制所有我方單位的同步移動
 
 @export var auto_advance_on_move: bool = false # 移動後是否自動結束回合的可選項
+@export var repeat_delay: float = 0.3 # 按住後的延遲
+@export var repeat_interval: float = 0.05 # 重複間隔 (設短一點，主要由 mover.is_busy 控速)
+
+var _repeat_timer: float = 0.0
 
 const DIRECTION_MAP = {
-	KEY_Q: Vector2i(-1, -1), KEY_W: Vector2i(0, -1), KEY_E: Vector2i(1, -1),
-	KEY_A: Vector2i(-1, 0),                          KEY_D: Vector2i(1, 0),
-	KEY_Z: Vector2i(-1, 1),  KEY_X: Vector2i(0, 1),  KEY_C: Vector2i(1, 1)
+	KEY_W: Vector2i(0, -1),
+	KEY_A: Vector2i(-1, 0),
+	KEY_S: Vector2i(0, 1),
+	KEY_D: Vector2i(1, 0),
+	KEY_Q: Vector2i(-1, -1),
+	KEY_E: Vector2i(1, -1),
+	KEY_Z: Vector2i(-1, 1),
+	KEY_C: Vector2i(1, 1)
 }
 
 func _ready() -> void:
 	add_to_group("group_input_manager")
 
 func _unhandled_input(event: InputEvent) -> void:
+	# 僅在全局忙碌（如回合切換、大招播放）時完全阻斷輸入
 	if not TurnManager or TurnManager.is_busy():
 		return
 		
+	# 第一下點擊仍然保持即時響應
 	if event is InputEventKey and event.pressed and not event.is_echo():
 		if DIRECTION_MAP.has(event.keycode):
 			_execute_group_move(DIRECTION_MAP[event.keycode])
+			_repeat_timer = -repeat_delay # 設置負值，讓 _process 延後開始重複
 
-func _execute_group_move(direction: Vector2i) -> void:
+func _process(delta: float) -> void:
+	# 僅在全局忙碌（如回合切換、大招播放）時完全阻斷輸入
+	if not TurnManager or TurnManager.is_busy():
+		_repeat_timer = 0
+		return
+		
+	var dir = _get_current_input_direction()
+	if dir == Vector2i.ZERO:
+		_repeat_timer = 0
+		return
+		
+	_repeat_timer += delta
+	if _repeat_timer >= repeat_interval:
+		# 這裡重複嘗試移動
+		# 注意：_execute_group_move 內部會檢查 mover.is_busy()
+		# 所以只要單位還在動，這裡就不會觸發新的移動
+		if _execute_group_move(dir):
+			_repeat_timer = 0 # 只有成功觸發移動（有單位可動）才重置計時器
+
+func _get_current_input_direction() -> Vector2i:
+	# 優先判定 WASD 組合出的方向
+	var x = int(Input.is_key_pressed(KEY_D)) - int(Input.is_key_pressed(KEY_A))
+	var y = int(Input.is_key_pressed(KEY_S)) - int(Input.is_key_pressed(KEY_W))
+	
+	if x != 0 or y != 0:
+		return Vector2i(x, y)
+		
+	# 檢查其他鍵 (QEZC)
+	for key in [KEY_Q, KEY_E, KEY_Z, KEY_C]:
+		if Input.is_key_pressed(key):
+			return DIRECTION_MAP[key]
+			
+	return Vector2i.ZERO
+
+func _execute_group_move(direction: Vector2i) -> bool:
 	var entities = get_tree().get_nodes_in_group("grid_entities")
 	var player_units = entities.filter(func(u): 
-		return u is GridEntity and u.faction and u.faction.is_controllable
+		if not (u is GridEntity and u.faction and u.faction.is_controllable):
+			return false
+		# 關鍵：過濾掉正在忙碌中的單位
+		var mover = u.get_node_or_null("GridMover")
+		return mover == null or not mover.is_busy()
 	)
 	
 	if player_units.is_empty():
-		return
+		return false
 		
-	await execute_faction_move(player_units, direction)
+	# 不再使用 await，允許連續按下按鍵
+	execute_faction_move(player_units, direction)
+	return true
 
 ## 公用方法：執行指定單位的陣營同步移動
 func execute_faction_move(units: Array, direction: Vector2i) -> void:
 	if units.is_empty(): return
-	
-	if TurnManager: TurnManager.lock_input()
 	
 	var grid = units[0].grid
 	if not grid: return
@@ -55,51 +105,18 @@ func execute_faction_move(units: Array, direction: Vector2i) -> void:
 	)
 	
 	# 2. 啟動移動動畫
-	var moved_any = false
-	var active_movers = []
-	
-	# 優化：按照 sorted_units (前排優先) 的順序啟動動畫
+	# 注意：這裡不再 await，指令發出後立即返回
 	for unit in sorted_units:
 		if not unit_to_target.has(unit): continue
 		var target = unit_to_target[unit]
 		
-		# 無論是否真的改變網格位置，只要呼叫 mover 都要傳遞方向以便檢查前方敵人
 		var mover = unit.get_node_or_null("GridMover")
 		if mover:
-			moved_any = true
-			active_movers.append(mover)
-			# 平行啟動移動，不使用引起錯誤的 Lambda 呼叫
-			mover.move_to(target, false, direction)
+			# 使用 _run_mover 包裝以便在結束時檢查回合推進
+			_run_mover(mover, target, direction)
 		else:
 			if target != unit.grid_position:
 				unit.set_grid_position(target)
-				moved_any = true
-	
-	if moved_any:
-		# 等待所有移動動畫完成 (平行執行)
-		await _wait_for_movers(active_movers)
-		
-		# 檢查是否有任何單位觸發了撞擊
-		var rammed_any = false
-		for mover in active_movers:
-			if is_instance_valid(mover) and mover.last_move_rammed:
-				rammed_any = true
-				break
-		
-		# 結束回合
-		if TurnManager and TurnManager.is_player_turn() and not TurnManager.is_free_roam_mode:
-			if auto_advance_on_move and not rammed_any:
-				print("[GroupMovementController] Player moves completed, advancing turn.")
-				await TurnManager.advance_turn() # 確保等待回合結算與攻擊動畫完成
-			else:
-				if rammed_any:
-					print("[GroupMovementController] Ram attack occurred, skipping advance_turn.")
-				else:
-					print("[GroupMovementController] Auto-advance is OFF, skipping advance_turn.")
-		
-		if TurnManager: TurnManager.unlock_input() # 最後才解鎖，確保整個流程結束
-	else:
-		if TurnManager: TurnManager.unlock_input()
 
 ## 公用方法：模擬群體移動落點 (核心邏輯：多輪同步推進 + 詳細偵錯日誌)
 func simulate_group_movement(units: Array, direction: Vector2i, _grid: Node) -> Dictionary:
@@ -182,45 +199,92 @@ func _can_unit_step_to(unit: GridEntity, target_cell: Vector2i, group: Array, cu
 		return false
 		
 	var cells_to_check = grid.get_cells_in_footprint(target_cell, unit.footprint_data)
+	
+	# 獲取所有我方單位，用來檢查那些「正在移動中」的單位預計落點
+	var all_entities = get_tree().get_nodes_in_group("grid_entities")
+	var busy_units = all_entities.filter(func(e):
+		if not (e is GridEntity and e.faction and e.faction.is_controllable): return false
+		var m = e.get_node_or_null("GridMover")
+		return m != null and m.is_busy()
+	)
+	
 	for c in cells_to_check:
 		# 1. 邊界檢查
 		if not grid.is_in_bounds(c):
 			print("[GroupMovement]     ", unit.name, " block reason: OUT OF BOUNDS at ", c)
 			return false
 			
-		# 2. 檢查是否與「已停止」的隊友重疊
+		# 2. 檢查是否與「當前群體移動模擬中」已停止的隊友重疊
 		for other in group:
 			if other == unit: continue
 			if group_finished[other]:
-				# 如果隊友已經停下來了，檢查他的最終範圍是否擋住我
 				var other_final_cells = grid.get_cells_in_footprint(current_targets[other], other.footprint_data)
 				if c in other_final_cells:
 					print("[GroupMovement]     ", unit.name, " block reason: TEAMMATE ", other.name, " ALREADY STOPPED at ", c)
 					return false
+		
+		# 3. 關鍵安全性：檢查是否與「正在執行舊移動指令」的忙碌單位目標重疊
+		for busy in busy_units:
+			if busy == unit: continue
+			var b_mover = busy.get_node("GridMover")
+			var b_target = b_mover.target_grid_position
+			if b_target != Vector2i(-1, -1):
+				var busy_target_cells = grid.get_cells_in_footprint(b_target, busy.footprint_data)
+				if c in busy_target_cells:
+					print("[GroupMovement]     ", unit.name, " block reason: BUSY UNIT ", busy.name, " moving to ", b_target)
+					return false
+			else:
+				# 回退：檢查目前佔用
+				var busy_cells = grid.get_cells_in_footprint(busy.grid_position, busy.footprint_data)
+				if c in busy_cells:
+					print("[GroupMovement]     ", unit.name, " block reason: BUSY UNIT ", busy.name, " occupies ", c)
+					return false
 			
-		# 3. 檢查網格上的靜態佔用 (非隊友的佔用)
+		# 4. 檢查網格上的靜態佔用 (非隊友的佔用)
 		if grid.is_cell_occupied(c):
 			var occupant = grid.get_occupant(c)
 			if occupant != unit and not occupant in group:
-				var occ_name = occupant.name if "name" in occupant else "Unnamed"
+				var occ_name = "Unnamed"
+				if "name" in occupant:
+					occ_name = occupant.name
 				print("[GroupMovement]     ", unit.name, " block reason: STATIC OCCUPANT (", occ_name, ") at ", c)
 				return false
 				
 	return true
 
-func _run_mover(mover: GridMover, target: Vector2i) -> void:
-	await mover.move_to(target)
+func _run_mover(mover: Node, target: Vector2i, direction: Vector2i) -> void:
+	await mover.move_to(target, false, direction)
+	# 當一個單位移動結束，檢查是否需要推進回合
+	check_auto_advance()
 
-func _wait_for_movers(movers: Array) -> void:
-	# 給一點啟動時間，確保 Tween 已經開始
-	await get_tree().process_frame
+## 檢查是否可以自動推進回合
+func check_auto_advance() -> void:
+	if not auto_advance_on_move: return
+	if not TurnManager or not TurnManager.is_player_turn() or TurnManager.is_free_roam_mode:
+		return
+		
+	# 檢查是否所有我方單位都已停止
+	var entities = get_tree().get_nodes_in_group("grid_entities")
+	var player_units = entities.filter(func(u): 
+		return u is GridEntity and u.faction and u.faction.is_controllable
+	)
 	
-	while true:
-		var still_moving = false
-		for mover in movers:
-			if is_instance_valid(mover) and mover.is_moving():
-				still_moving = true
-				break
-		if not still_moving:
+	for unit in player_units:
+		var mover = unit.get_node_or_null("GridMover")
+		if mover and mover.is_busy():
+			return # 還有單位在忙，暫不推進
+			
+	# 檢查最後一次操作是否有觸發撞擊 (這裡需要一點技巧，因為現在是異步的)
+	# 為了簡單起見，如果在所有單位都停下時，沒有任何單位正在撞擊且 auto_advance 為真，則推進。
+	# 注意：rammed_any 的判定在非同步下比較複雜，我們改為檢查目前所有單位的 last_move_rammed
+	var rammed_any = false
+	for unit in player_units:
+		var mover = unit.get_node_or_null("GridMover")
+		if mover and mover.last_move_rammed:
+			rammed_any = true
 			break
-		await get_tree().process_frame
+			
+	if not rammed_any:
+		print("[GroupMovementController] All units idle, advancing turn.")
+		# 使用 call_deferred 避免在信號回調中直接觸發重大的狀態變更
+		TurnManager.advance_turn.call_deferred()

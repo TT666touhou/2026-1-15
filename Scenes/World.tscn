@@ -1,4 +1,4 @@
-[gd_scene load_steps=42 format=4 uid="uid://0ete046rt74c"]
+[gd_scene load_steps=44 format=4 uid="uid://0ete046rt74c"]
 
 [ext_resource type="TileSet" uid="uid://fu5tewckuk4p" path="res://Tilesheet/ColoredTransparentPacked.tres" id="1"]
 [ext_resource type="TileSet" uid="uid://b1bitenv" path="res://Tilesheet/1bit_environment.tres" id="1_1bit"]
@@ -7,7 +7,6 @@
 [ext_resource type="PackedScene" path="res://Scenes/Card/hand.tscn" id="3"]
 [ext_resource type="Script" uid="uid://dlpiosr371sw" path="res://Scripts/Map/TileVariation.gd" id="3_y8a40"]
 [ext_resource type="Script" uid="uid://dpwf6ofa0hxkp" path="res://Scripts/Grid/Grid.gd" id="6"]
-[ext_resource type="PackedScene" path="res://Scenes/UI/StatusBarUI.tscn" id="10"]
 [ext_resource type="PackedScene" path="res://Scenes/UI/MainTopBar.tscn" id="15"]
 [ext_resource type="Script" uid="uid://2ryo8hx4hhts" path="res://Scripts/Selection/GridSelector.gd" id="20"]
 [ext_resource type="Script" uid="uid://bjylahw5oal86" path="res://Scripts/Grid/GridPathfinder.gd" id="24"]
@@ -37,6 +36,8 @@
 [ext_resource type="Resource" path="res://Resources/Status/Status_Regen.tres" id="103"]
 [ext_resource type="Resource" path="res://Resources/Status/Status_Vulnerable.tres" id="104"]
 [ext_resource type="Script" uid="uid://ckuhers5dw1k" path="res://Scripts/UI/DebugKillTransitionButton.gd" id="105"]
+[ext_resource type="PackedScene" path="res://Scenes/UI/ComboIndicatorUI.tscn" id="106"]
+[ext_resource type="Shader" uid="uid://beh88na14d6to" path="res://Shaders/EdgeFog.gdshader" id="107"]
 
 [sub_resource type="AtlasTexture" id="AtlasTexture_n1aqv"]
 atlas = ExtResource("2_irg3d")
@@ -50,6 +51,21 @@ region = Rect2(128, 96, 16, 16)
 script = ExtResource("3_y8a40")
 tile_visual = SubResource("AtlasTexture_d2jk0")
 metadata/_custom_type_script = "uid://dlpiosr371sw"
+
+[sub_resource type="ShaderMaterial" id="ShaderMaterial_fog"]
+shader = ExtResource("107")
+shader_parameter/fog_color = Color(0, 0, 0, 1)
+shader_parameter/star_color = Color(1, 1, 1, 1)
+shader_parameter/speed = 0.5
+shader_parameter/flame_intensity = 0.03
+shader_parameter/pixel_resolution = Vector2(320, 176)
+shader_parameter/star_density = 0.0
+shader_parameter/star_drift_speed = 0.02
+shader_parameter/star_flicker_speed = 1.2
+shader_parameter/mask_left = 0.329
+shader_parameter/mask_right = 0.92
+shader_parameter/mask_top = 0.06
+shader_parameter/mask_bottom = 0.94
 
 [sub_resource type="StyleBoxFlat" id="StyleBoxFlat_button"]
 bg_color = Color(0.1, 0.1, 0.1, 1)
@@ -82,19 +98,26 @@ script = ExtResource("24")
 script = ExtResource("30")
 
 [node name="BackgroundGround" type="TileMapLayer" parent="."]
+modulate = Color(0.364706, 0.364706, 0.490196, 1)
 texture_filter = 1
 texture_repeat = 1
-tile_map_data = PackedByteArray("AAADAP//AAAHAAUAAAAAAP//AAAEAAUAAAABAP//AAAGAAUAAAACAP//AAAIAAUAAAAEAP//AAAEAAUAAAAFAP//AAAGAAUAAAAGAP//AAAIAAUAAAA=")
+tile_map_data = PackedByteArray("AAADAP//AAAEAAUAAAAAAP//AAAEAAUAAAABAP//AAAGAAUAAAACAP//AAAIAAUAAAAEAP//AAAGAAUAAAAFAP//AAAEAAUAAAAGAP//AAAIAAUAAAAHAP//AAAGAAUAAAAIAP//AAAEAAUAAAAAAAkAAAAEAAUAAAABAAkAAAAEAAUAAAACAAkAAAAEAAUAAAADAAkAAAAEAAUAAAAEAAkAAAAEAAUAAAAFAAkAAAAEAAUAAAAGAAkAAAAEAAUAAAAHAAkAAAAEAAUAAAAIAAkAAAAEAAUAAAD/////AAAEAAUAAAAJAP//AAAEAAUAAAAJAAkAAAAEAAUAAAD//wkAAAAEAAUAAAAKAP//AAAEAAUAAAAKAAAAAAAEAAUAAAAKAAEAAAAEAAUAAAAKAAIAAAAEAAUAAAAKAAMAAAAEAAUAAAAKAAQAAAAEAAUAAAAKAAUAAAAEAAUAAAAKAAYAAAAEAAUAAAAKAAcAAAAEAAUAAAAKAAgAAAAEAAUAAAAKAAkAAAAEAAUAAAD+////AAAEAAUAAAD+/wAAAAAEAAUAAAD+/wEAAAAEAAUAAAD+/wIAAAAEAAUAAAD+/wMAAAAEAAUAAAD+/wQAAAAEAAUAAAD+/wUAAAAEAAUAAAD+/wYAAAAEAAUAAAD+/wcAAAAEAAUAAAD+/wgAAAAEAAUAAAD+/wkAAAAEAAUAAAD9////AAAEAAUAAAD9/wAAAAAEAAUAAAD9/wEAAAAEAAUAAAD9/wIAAAAEAAUAAAD9/wMAAAAEAAUAAAD9/wQAAAAEAAUAAAD9/wUAAAAEAAUAAAD9/wYAAAAEAAUAAAD9/wcAAAAEAAUAAAD9/wgAAAAEAAUAAAD9/wkAAAAEAAUAAAALAP//AAAEAAUAAAALAAAAAAAEAAUAAAALAAEAAAAEAAUAAAALAAIAAAAEAAUAAAALAAMAAAAEAAUAAAALAAQAAAAEAAUAAAALAAUAAAAEAAUAAAALAAYAAAAEAAUAAAALAAcAAAAEAAUAAAALAAgAAAAEAAUAAAALAAkAAAAEAAUAAAD//wAAAAAEAAUAAAD//wEAAAAEAAUAAAD//wIAAAAEAAUAAAD//wMAAAAEAAUAAAD//wQAAAAEAAUAAAD//wUAAAAEAAUAAAD//wcAAAAEAAUAAAD//wgAAAAEAAUAAAD//wYAAAAEAAUAAAAMAP//AAAEAAUAAAAMAAAAAAAEAAUAAAAMAAEAAAAEAAUAAAAMAAIAAAAEAAUAAAAMAAMAAAAEAAUAAAAMAAQAAAAEAAUAAAAMAAUAAAAEAAUAAAAMAAYAAAAEAAUAAAAMAAcAAAAEAAUAAAAMAAgAAAAEAAUAAAAMAAkAAAAEAAUAAAA=")
 tile_set = ExtResource("1_1bit")
+
+[node name="EdgeFog" type="ColorRect" parent="."]
+material = SubResource("ShaderMaterial_fog")
+offset_left = -112.0
+offset_top = -16.0
+offset_right = 208.0
+offset_bottom = 160.0
+mouse_filter = 2
+color = Color(0, 0, 0, 1)
 
 [node name="Ground" type="TileMapLayer" parent="."]
 texture_filter = 1
 texture_repeat = 1
 tile_map_data = PackedByteArray("AAABAAIAAAAEAAYAAAACAAIAAAAEAAYAAAACAAMAAAAIAAYAAAADAAMAAAAEAAYAAAAEAAMAAAAEAAYAAAAFAAMAAAAEAAYAAAAGAAMAAAAEAAYAAAAFAAIAAAAEAAYAAAAGAAIAAAAEAAYAAAAEAAIAAAAEAAYAAAADAAIAAAAEAAYAAAACAAQAAAAIAAYAAAADAAQAAAAEAAYAAAAGAAEAAAAEAAYAAAAGAAAAAAAEAAYAAAAFAAAAAAAEAAYAAAAEAAEAAAAEAAYAAAADAAEAAAAEAAYAAAABAAEAAAAEAAYAAAACAAEAAAAEAAYAAAAEAAQAAAAEAAYAAAAFAAEAAAAIAAYAAAAFAAQAAAAEAAYAAAAGAAQAAAAEAAYAAAAAAAEAAAAEAAYAAAAAAAIAAAAEAAYAAAAAAAMAAAAEAAYAAAAAAAQAAAAEAAYAAAABAAMAAAAEAAYAAAABAAQAAAAEAAYAAAABAAUAAAAEAAYAAAACAAUAAAAEAAYAAAAAAAUAAAAEAAYAAAADAAUAAAAEAAYAAAAEAAUAAAAEAAYAAAAFAAUAAAAIAAYAAAAGAAUAAAAEAAYAAAAAAAYAAAAEAAYAAAABAAYAAAAIAAYAAAACAAYAAAAEAAYAAAADAAYAAAAEAAYAAAAEAAYAAAAEAAYAAAAFAAYAAAAEAAYAAAAGAAYAAAAEAAYAAAAAAAAAAAAEAAYAAAABAAAAAAAIAAYAAAACAAAAAAAEAAYAAAADAAAAAAAEAAYAAAAEAAAAAAAEAAYAAAA=")
 tile_set = ExtResource("1_1bit")
-
-[node name="MovementRangeIndicator" type="TileMapLayer" parent="."]
-tile_set = ExtResource("1")
 
 [node name="Entities" type="Node2D" parent="."]
 
@@ -114,11 +137,6 @@ enable_debug_log = true
 [node name="GroupInputManager" type="Node" parent="."]
 script = ExtResource("49_input")
 
-[node name="MovementRangeIndicatorController" type="Node" parent="."]
-script = ExtResource("27")
-indicator_layer_path = NodePath("../MovementRangeIndicator")
-enable_debug_log = true
-
 [node name="SelectionHighlight" type="Node2D" parent="."]
 z_index = 100
 script = ExtResource("25")
@@ -127,8 +145,8 @@ script = ExtResource("25")
 script = ExtResource("51")
 
 [node name="Camera2D" type="Camera2D" parent="."]
-position = Vector2(16, 56)
-zoom = Vector2(4, 4)
+position = Vector2(51, 72)
+zoom = Vector2(4.3, 4.3)
 
 [node name="UI" type="CanvasLayer" parent="."]
 
@@ -163,7 +181,16 @@ script = ExtResource("41")
 
 [node name="MainTopBar" parent="UI" instance=ExtResource("15")]
 
+[node name="ComboIndicatorUI" parent="UI" instance=ExtResource("106")]
+anchors_preset = 5
+anchor_left = 0.5
+anchor_right = 0.5
+offset_top = 40.0
+grow_horizontal = 2
+scale = Vector2(0.5, 0.5)
+
 [node name="Hand" parent="UI" instance=ExtResource("3")]
+visible = false
 anchors_preset = 7
 anchor_left = 0.5
 anchor_right = 0.5
@@ -175,11 +202,14 @@ hand_card_size = Vector2(120, 180)
 hand_bottom_offset = 60.0
 
 [node name="UnitSkillBar" parent="UI" instance=ExtResource("50")]
+process_mode = 4
+visible = false
 offset_left = -200.0
 offset_top = -100.0
 offset_right = 200.0
 
 [node name="DeckPileButton" type="Button" parent="UI"]
+visible = false
 anchors_preset = 3
 anchor_left = 1.0
 anchor_top = 1.0
@@ -200,6 +230,7 @@ hand_reference = NodePath("../Hand")
 deck_view_path = NodePath("../DeckView")
 
 [node name="PlayArea" type="Control" parent="UI" groups=["play_area"]]
+visible = false
 layout_mode = 3
 anchors_preset = 8
 anchor_left = 0.5
@@ -215,6 +246,7 @@ grow_vertical = 2
 mouse_filter = 2
 
 [node name="PlayHandButton" type="Button" parent="UI"]
+visible = false
 anchors_preset = 2
 anchor_top = 1.0
 anchor_bottom = 1.0
@@ -229,6 +261,7 @@ theme_override_styles/hover = SubResource("StyleBoxFlat_button")
 text = "PLAY HAND"
 
 [node name="DisposalZone" parent="UI" instance=ExtResource("43")]
+visible = false
 anchors_preset = 2
 anchor_top = 1.0
 anchor_bottom = 1.0
@@ -251,16 +284,19 @@ theme_override_constants/separation = 10
 alignment = 2
 
 [node name="TurnDebugInfo" type="HBoxContainer" parent="UI/TopRightToolbar"]
+visible = false
 layout_mode = 2
 script = ExtResource("45")
 
 [node name="DebugResourceButton" parent="UI/TopRightToolbar" instance=ExtResource("39")]
+visible = false
 layout_mode = 2
 
 [node name="DebugRoomLoader" parent="UI/TopRightToolbar" instance=ExtResource("46")]
 layout_mode = 2
 
 [node name="EndTurnButton" type="Button" parent="UI/TopRightToolbar"]
+visible = false
 layout_mode = 2
 focus_mode = 0
 theme_override_styles/normal = SubResource("StyleBoxFlat_button")
@@ -284,12 +320,10 @@ texture = ExtResource("32")
 region_enabled = true
 region_rect = Rect2(752, 272, 16, 16)
 
-[node name="StatusBarUI" parent="UI" instance=ExtResource("10")]
-layout_mode = 3
-anchors_preset = 0
-
 [node name="DebugLayer" type="CanvasLayer" parent="UI"]
+process_mode = 4
 layer = 10
+visible = false
 
 [node name="DebugMenuPanel" type="PanelContainer" parent="UI/DebugLayer"]
 custom_minimum_size = Vector2(130, 0)

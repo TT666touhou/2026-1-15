@@ -93,7 +93,7 @@ func execute_skill(source_entity: GridEntity, skill: Resource, origin_pos: Vecto
 				print("[SkillManager] CRITICAL HIT on %s! Bonus: %.2f" % [target.name, crit_bonus])
 		
 		for effect in all_effects:
-			_apply_single_effect(effect, target, source_entity, current_target_multiplier)
+			await _apply_single_effect(effect, target, source_entity, current_target_multiplier)
 			
 	# 4. 設置冷卻與標記
 	if source_entity.character_data:
@@ -276,7 +276,8 @@ func _apply_single_effect(effect: EffectDefinition, target: GridEntity, source: 
 			var ignore_s = bool(effect.get("ignore_shield")) if "ignore_shield" in effect else false
 			
 			# 傳入 source (發動者) 以套用貫穿 (Penetration) 效果
-			var actual_damage = target.apply_damage(int(value), ignore_b, ignore_s, source)
+			# 注意：apply_damage 現在是非同步的
+			var actual_damage = await target.apply_damage(int(value), ignore_b, ignore_s, source)
 			
 			# 觸發吸血 (Drain)
 			if actual_damage > 0 and source and source.character_data:

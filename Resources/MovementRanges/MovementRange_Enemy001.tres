@@ -6,12 +6,11 @@
 script = ExtResource("1")
 display_name = "Enemy001 Movement"
 north = 1
-south = 0
+south = 1
 west = 1
 east = 1
-northwest = 1
-northeast = 1
-southwest = 1
-southeast = 1
+northwest = 0
+northeast = 0
+southwest = 0
+southeast = 0
 limit_to_furthest = true
-

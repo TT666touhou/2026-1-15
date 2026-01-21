@@ -49,7 +49,9 @@ func _on_pressed() -> void:
 				entity.character_data.stats_changed.emit()
 				entity.character_data.died.emit()
 			elif entity.has_method("take_damage"):
-				entity.take_damage(9999, true, true)
+				# 注意：take_damage 可能是非同步的
+				var do_kill = func(): await entity.take_damage(9999, true, true)
+				do_kill.call()
 			else:
 				# 最後手段：直接 queue_free 並從 BoardManager 移除
 				entity.queue_free()

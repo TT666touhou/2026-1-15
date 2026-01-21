@@ -6,7 +6,7 @@ class_name MovementArrowSettings
 	set(v):
 		arrow_texture = v
 		emit_changed()
-@export var arrow_scale: float = 0.049:
+@export var arrow_scale: float = 0.1:
 	set(v):
 		arrow_scale = v
 		emit_changed()

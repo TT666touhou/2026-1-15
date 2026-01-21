@@ -276,6 +276,16 @@ func resolve_attacks() -> void:
 			if visuals and visuals.has_method("play_tick_animation"):
 				visuals.play_tick_animation()
 				
+			# 1.5 播放攻擊指示器進度填滿
+			if attacker.has_method("update_attack_indicators"):
+				# 確保重置為紅色起始狀態
+				print("[TurnManager] Starting attack indicator tween for ", attacker.name)
+				attacker.update_attack_indicators(0.0) 
+				var arrow_tween = create_tween()
+				arrow_tween.tween_method(attacker.update_attack_indicators, 0.0, 1.0, 0.4)
+			else:
+				print("[TurnManager] Warning: Attacker ", attacker.name, " missing update_attack_indicators method")
+				
 			# 2. 計算該攻擊者的實際 Hits (含機率)
 			var hits = 0
 			# 從 Event 獲取正確的 Hits 數 (由 AttackManager 計算)
@@ -385,6 +395,13 @@ func resolve_attacks() -> void:
 				# 清除攻擊預告文字
 				if attacker.has_method("dismiss_attack_number"):
 					attacker.dismiss_attack_number()
+				
+				# 清除攻擊指示器進度 (隱藏或重置)
+				if attacker.has_method("update_attack_indicators"):
+					attacker.update_attack_indicators(0.0)
+					# 如果不是當前選取的單位，攻擊完後隱藏箭頭
+					if not attacker.get("is_selected"):
+						attacker.on_deselected()
 					
 				var directions = event.attack_directions[attacker] # 預期是 Array
 				
@@ -442,7 +459,7 @@ func resolve_attacks() -> void:
 						if dmg > 0:
 							# 1. 先造成基礎傷害
 							if is_instance_valid(target):
-								target.apply_damage(dmg, false, false, attacker)
+								await target.apply_damage(dmg, false, false, attacker)
 							
 							# 2. 觸發吸血 (Drain)
 							if attacker.character_data:
@@ -461,7 +478,7 @@ func resolve_attacks() -> void:
 							if attacker.character_data:
 								var pur_dmg = attacker.character_data.get_effective_pursuit()
 								if pur_dmg > 0 and is_instance_valid(target):
-									target.apply_damage(pur_dmg, false, false, attacker, true)
+									await target.apply_damage(pur_dmg, false, false, attacker, true)
 							
 							# 原有的連發感延遲 (扣除已等待的 0.05s)
 							await get_tree().create_timer(0.05).timeout
@@ -475,7 +492,7 @@ func resolve_attacks() -> void:
 		else:
 			# Fallback (should not happen if hits > 0)
 			if is_instance_valid(target):
-				target.apply_damage(final_damage)
+				await target.apply_damage(final_damage)
 			
 		if is_free_roam_mode: break
 			
@@ -487,11 +504,4 @@ func resolve_attacks() -> void:
 		if is_instance_valid(target) and target.has_method("end_combo_sequence"):
 			target.end_combo_sequence()
 			
-		# 隱藏 Combo UI
-		if is_instance_valid(target) and target.has_method("update_combo_display"):
-			# 這裡可以選擇讓 UI 停留久一點，或直接隱藏
-			# 目前選擇保留最後的數字，或歸零。通常受傷後 UI 會消失或重置。
-			target.update_combo_display(0)
-			# 確保隱藏
-			if target.combo_indicator:
-				target.combo_indicator.hide_combo()
+		# 全局連擊系統下，不再需要手動隱藏單位的 Combo UI

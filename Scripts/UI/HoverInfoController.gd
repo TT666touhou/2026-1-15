@@ -132,10 +132,10 @@ func _update_display_logic(entity: GridEntity) -> void:
 			show_data_info(data, false) # 地圖實體不鎖定，讓 _process 持續偵測
 		return
 		
-	# 2. 檢查是否為敵對單位或陷阱
-	if entity is TrapEntity:
+	# 2. 檢查是否為敵對單位或陷阱/砲台
+	if entity is TrapEntity or entity is TurretEntity:
 		if is_new_entity or not _trap_card_instance.visible:
-			print("[HoverInfoController] Showing Trap Card")
+			print("[HoverInfoController] Showing Trap/Turret Card")
 			_last_hovered_entity_id = current_id
 			if _trap_card_instance.has_method("update_info"):
 				_trap_card_instance.update_info(entity)

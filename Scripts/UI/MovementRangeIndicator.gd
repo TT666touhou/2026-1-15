@@ -26,34 +26,8 @@ func _ready() -> void:
 		indicator_layer.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
 
 func _show_range_indicator(cells: Array, entity: Node) -> void:
-	if not indicator_layer:
-		print("[MovementRangeIndicator] CANNOT SHOW: indicator_layer is null!")
-		return
-		
-	# 設置為不透明白色（原始顏色）
-	indicator_layer.modulate = Color.WHITE
-	# 確保像素風格紋理過濾
-	indicator_layer.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
-	# 保持層級在地面之上
-	indicator_layer.z_index = 5
-	
-	var entity_name = "Unknown"
-	if entity != null:
-		entity_name = str(entity.name)
-	print("[MovementRangeIndicator] Updating: ", entity_name, " | Cells: ", cells.size())
-	
-	# 清除舊的高亮
-	indicator_layer.clear()
-	
-	if cells.is_empty():
-		return
-		
-	# 繪製新的高亮
-	for cell in cells:
-		# 使用用戶指定的 (26, 14) 圖塊
-		indicator_layer.set_cell(cell, 0, Vector2i(26, 14))
-	
-	print("[MovementRangeIndicator] Draw complete. Layer visibility: ", indicator_layer.visible, " | Modulate: ", indicator_layer.modulate, " | Z-Index: ", indicator_layer.z_index)
+	# [需求變更] 指示器已由單位身上的 Sprite 進度箭頭取代
+	pass
 
 func clear_indicator() -> void:
 	if indicator_layer:

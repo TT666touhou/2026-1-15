@@ -18,8 +18,13 @@ var movement_range_data: MovementRangeData # 運行時移動數據實例
 var move_limit: int = -1 # 移動距離限制 (-1 為無限制)
 var attack_range_depth: int = 1 # 攻擊範圍深度
 var is_boss: bool = false # 是否為 BOSS (死亡後通關)
-var combo_indicator: ComboIndicatorUI # Combo 顯示組件
-var health_bar: Node = null
+
+# 指示器相關
+var arrow_texture = preload("res://Tilesheet/1bit_assetpack/selfmade/ARROW.png")
+
+# Shader 資源與材質實例
+var combined_shader = preload("res://Shaders/UnitCombined.gdshader")
+var _combined_material: ShaderMaterial
 
 signal movement_data_changed # 通知 UI 更新移動範圍
 signal entry_animation_finished # 進場動畫結束
@@ -31,17 +36,6 @@ func _ready() -> void:
 		cam.zoom = Vector2(4, 4)
 		add_child(cam)
 		print("[GridEntity] Debug Camera Added for standalone scene execution")
-
-	# 初始化 Combo Indicator
-	var combo_ui_scene = preload("res://Scenes/UI/ComboIndicatorUI.tscn")
-	if combo_ui_scene:
-		combo_indicator = combo_ui_scene.instantiate()
-		add_child(combo_indicator)
-		# 調整位置到頭頂上方 (假設單位大小約 16x16)
-		combo_indicator.position = Vector2(0, -12) 
-		combo_indicator.z_index = 20 # 確保在最上層
-	else:
-		push_error("[GridEntity] Failed to preload ComboIndicatorUI.tscn")
 
 	# 預設 Z Index (單位/敵人較高，陷阱/裝飾較低)
 	z_index = 5
@@ -79,14 +73,38 @@ func _ready() -> void:
 	
 	# 註冊所有佔用的格子 (移至 set_grid_position 或由 MapLoader 觸發，避免預設 (0,0) 幽靈佔用)
 	# _register_cells()
-	_init_health_bar_from_footprint()
 	_update_ui_positions()
+	
+	# 只為敵方單位強制顯示攻擊指示器 (預設淡出)
+	if faction and not faction.is_controllable:
+		var arrow_node = get_node_or_null("UnitMovementArrows")
+		if not arrow_node:
+			var arrow_scene = load("res://Scenes/UI/UnitMovementArrows.tscn")
+			if arrow_scene:
+				arrow_node = arrow_scene.instantiate()
+				arrow_node.name = "UnitMovementArrows"
+				add_child(arrow_node)
+				
+		call_deferred("update_attack_indicators", 0.0)
+	elif faction and faction.is_controllable:
+		# 玩家可控制單位：加入 player 群組以便 AI 檢索
+		add_to_group("player")
+
+func update_attack_indicators(progress: float = 0.0, direction: Vector2i = Vector2i.ZERO) -> void:
+	"""更新攻擊指示器進度 (委託給 UnitMovementArrows 組件)"""
+	var arrow_node = get_node_or_null("UnitMovementArrows")
+	if arrow_node and arrow_node.has_method("set_attack_progress"):
+		arrow_node.set_attack_progress(progress, direction)
+	elif arrow_node:
+		# 如果組件存在但版本不符，至少嘗試強制顯示
+		if arrow_node.has_method("update_display"):
+			arrow_node.update_display()
+
+func _process(_delta: float) -> void:
+	pass
 
 func _update_ui_positions() -> void:
-	if combo_indicator:
-		# 由於 GridEntity 的 global_position 已經是單位的世界中心點 (由 grid_to_world_center_footprint 決定)
-		# 所以本地座標的 X = 0 就已經是單位的 X 軸中心。
-		combo_indicator.position = Vector2(0, -12)
+	pass
 
 func get_attack_results(at_cell: Vector2i) -> Dictionary:
 	"""
@@ -152,47 +170,26 @@ func get_attack_results(at_cell: Vector2i) -> Dictionary:
 
 func _get_hitbox_cells(direction: Vector2i, at_grid_pos: Vector2i) -> Array[Vector2i]:
 	"""
-	根據方向和攻擊深度計算 Hitbox 格子
+	根據方向和攻擊深度計算 Hitbox 格子 (支援 8 方向)
 	"""
 	var cells: Array[Vector2i] = []
 	if footprint_data == null:
 		return cells
 		
-	# 判斷是否為斜向 (x和y都不為0)
-	var is_diagonal = direction.x != 0 and direction.y != 0
 	var depth = attack_range_depth
 	
-	if is_diagonal:
+	# 1. 找到對應的邊緣 (Edge)
+	var bounds = footprint_data.get_bounds()
+	var edge_cells_relative: Array[Vector2i] = []
+	
+	if direction.x != 0 and direction.y != 0:
 		# --- 斜向 (Diagonal) ---
-		# 1. 找到對應的角落 (Corner)
-		var bounds = footprint_data.get_bounds() # relative to (0,0)
-		var corner_offset = Vector2i.ZERO
-		
-		# 根據方向決定使用哪個角落
-		if direction.x < 0: # West
-			corner_offset.x = bounds.position.x
-		else: # East
-			corner_offset.x = bounds.end.x - 1
-			
-		if direction.y < 0: # North
-			corner_offset.y = bounds.position.y
-		else: # South
-			corner_offset.y = bounds.end.y - 1
-			
-		var corner_pos = at_grid_pos + corner_offset
-		
-		# 2. 從角落向外延伸 N x N
-		for x in range(1, depth + 1):
-			for y in range(1, depth + 1):
-				var offset = Vector2i(x * direction.x, y * direction.y)
-				cells.append(corner_pos + offset)
-				
+		# 獲取最靠近該斜角的邊角格子
+		var target_x = bounds.position.x if direction.x == -1 else bounds.end.x - 1
+		var target_y = bounds.position.y if direction.y == -1 else bounds.end.y - 1
+		edge_cells_relative.append(Vector2i(target_x, target_y))
 	else:
 		# --- 直線 (Orthogonal) ---
-		# 1. 找到對應的邊緣 (Edge)
-		var bounds = footprint_data.get_bounds()
-		var edge_cells_relative: Array[Vector2i] = []
-		
 		if direction.y == -1: # North
 			for x in range(bounds.position.x, bounds.end.x):
 				edge_cells_relative.append(Vector2i(x, bounds.position.y))
@@ -205,12 +202,12 @@ func _get_hitbox_cells(direction: Vector2i, at_grid_pos: Vector2i) -> Array[Vect
 		elif direction.x == 1: # East
 			for y in range(bounds.position.y, bounds.end.y):
 				edge_cells_relative.append(Vector2i(bounds.end.x - 1, y))
-				
-		# 2. 從邊緣向外延伸 N 層
-		for rel_pos in edge_cells_relative:
-			var start_pos = at_grid_pos + rel_pos
-			for d in range(1, depth + 1):
-				cells.append(start_pos + (direction * d))
+
+	# 2. 從邊緣向外延伸 N 層
+	for rel_pos in edge_cells_relative:
+		var start_pos = at_grid_pos + rel_pos
+		for d in range(1, depth + 1):
+			cells.append(start_pos + (direction * d))
 				
 	return cells
 
@@ -227,16 +224,22 @@ func play_attack_animation_towards(direction: Vector2i) -> void:
 func apply_damage(amount: int, ignore_barrier: bool = false, ignore_shield: bool = false, attacker: GridEntity = null, is_pursuit: bool = false) -> int:
 	"""直接造成傷害 (不處理動畫，動畫由 take_damage 觸發)"""
 	var attacker_data = attacker.character_data if attacker != null else null
-	return take_damage(amount, ignore_barrier, ignore_shield, attacker_data, is_pursuit)
+	# 關鍵修正：因為 take_damage 在某些子類 (如 TurretEntity) 中是非同步的，此處必須使用 await
+	return await take_damage(amount, ignore_barrier, ignore_shield, attacker_data, is_pursuit)
 
 func show_damage_number(amount: int) -> void:
 	"""顯示受傷浮動文字"""
 	var scene = load("res://Scenes/UI/FloatingText.tscn")
 	if scene:
 		var text_instance = scene.instantiate()
-		add_child(text_instance)
-		# 調整位置到頭頂上方
-		text_instance.position = Vector2(0, -16)
+		# 改為加入到父節點，避免隨單位死亡而消失或座標錯亂
+		if get_parent():
+			get_parent().add_child(text_instance)
+		else:
+			add_child(text_instance)
+			
+		# 使用全域座標定位在單位頭頂
+		text_instance.global_position = global_position + Vector2(0, -16)
 		text_instance.popup_damage(amount)
 
 func show_pursuit_number(amount: int) -> void:
@@ -244,8 +247,11 @@ func show_pursuit_number(amount: int) -> void:
 	var scene = load("res://Scenes/UI/FloatingText.tscn")
 	if scene:
 		var instance = scene.instantiate()
-		add_child(instance)
-		instance.position = Vector2(0, -16)
+		if get_parent():
+			get_parent().add_child(instance)
+		else:
+			add_child(instance)
+		instance.global_position = global_position + Vector2(0, -16)
 		if instance.has_method("popup_pursuit"):
 			instance.popup_pursuit(amount)
 		else:
@@ -256,9 +262,11 @@ func show_heal_number(amount: int) -> void:
 	var scene = load("res://Scenes/UI/FloatingText.tscn")
 	if scene:
 		var instance = scene.instantiate()
-		add_child(instance)
-		# 調整位置到頭頂上方
-		instance.position = Vector2(0, -16)
+		if get_parent():
+			get_parent().add_child(instance)
+		else:
+			add_child(instance)
+		instance.global_position = global_position + Vector2(0, -16)
 		# 傳入負值，FloatingText 會自動切換為治療樣式並加上 "+"
 		instance.popup_damage(-amount)
 
@@ -267,8 +275,11 @@ func show_avoid_text() -> void:
 	var scene = load("res://Scenes/UI/FloatingText.tscn")
 	if scene:
 		var instance = scene.instantiate()
-		add_child(instance)
-		instance.position = Vector2(0, -16)
+		if get_parent():
+			get_parent().add_child(instance)
+		else:
+			add_child(instance)
+		instance.global_position = global_position + Vector2(0, -16)
 		# 假設 FloatingText 有支援文字彈出
 		if instance.has_method("popup_text"):
 			instance.popup_text("AVOID", Color.PURPLE)
@@ -281,8 +292,11 @@ func show_resisted_text() -> void:
 	var scene = load("res://Scenes/UI/FloatingText.tscn")
 	if scene:
 		var instance = scene.instantiate()
-		add_child(instance)
-		instance.position = Vector2(0, -16)
+		if get_parent():
+			get_parent().add_child(instance)
+		else:
+			add_child(instance)
+		instance.global_position = global_position + Vector2(0, -16)
 		if instance.has_method("popup_text"):
 			instance.popup_text("RESISTED", Color.BLUE_VIOLET)
 		else:
@@ -293,8 +307,11 @@ func show_parry_text() -> void:
 	var scene = load("res://Scenes/UI/FloatingText.tscn")
 	if scene:
 		var instance = scene.instantiate()
-		add_child(instance)
-		instance.position = Vector2(0, -16)
+		if get_parent():
+			get_parent().add_child(instance)
+		else:
+			add_child(instance)
+		instance.global_position = global_position + Vector2(0, -16)
 		if instance.has_method("popup_parry"):
 			instance.popup_parry()
 		else:
@@ -305,8 +322,11 @@ func show_barrier_text() -> void:
 	var scene = load("res://Scenes/UI/FloatingText.tscn")
 	if scene:
 		var instance = scene.instantiate()
-		add_child(instance)
-		instance.position = Vector2(0, -16)
+		if get_parent():
+			get_parent().add_child(instance)
+		else:
+			add_child(instance)
+		instance.global_position = global_position + Vector2(0, -16)
 		if instance.has_method("popup_barrier"):
 			instance.popup_barrier()
 		else:
@@ -322,9 +342,13 @@ func show_attack_number(amount: int) -> void:
 	var scene = load("res://Scenes/UI/FloatingText.tscn")
 	if scene:
 		var text_instance = scene.instantiate()
-		add_child(text_instance)
-		# 調整位置到頭頂上方
-		text_instance.position = Vector2(0, -16)
+		if get_parent():
+			get_parent().add_child(text_instance)
+		else:
+			add_child(text_instance)
+			
+		# 使用全域座標定位在單位頭頂
+		text_instance.global_position = global_position + Vector2(0, -16)
 		text_instance.popup_attack(amount)
 		current_attack_text = text_instance
 
@@ -334,15 +358,25 @@ func dismiss_attack_number() -> void:
 		current_attack_text.dismiss()
 	current_attack_text = null
 
-func update_combo_display(count: int) -> void:
-	"""更新 Combo 顯示"""
-	if combo_indicator:
-		combo_indicator.show_combo(count)
+func update_combo_display(_count: int) -> void:
+	"""[已棄用] 全局連擊現在由 ComboManager 處理"""
+	pass
+
+func should_register_combo() -> bool:
+	"""是否應該註冊連擊。子類可覆寫此函數來禁用連擊計數。"""
+	# 如果是我方單位（可控制），被打到不計入連擊
+	if faction and faction.is_controllable:
+		return false
+	return true
 
 func set_movement_data(data: MovementRangeData) -> void:
 	"""設置移動數據（通常由 CardProvider 調用）"""
 	movement_range_data = data
 	movement_data_changed.emit()
+	
+	# 如果是敵方單位，資料變更時立即更新指示器 (確保常駐顯示)
+	if faction and not faction.is_controllable:
+		update_attack_indicators(0.0)
 
 func modify_movement(direction: Vector2i, type: int) -> void:
 	"""動態修改移動規則（供 Buff/Debuff 使用）"""
@@ -350,69 +384,19 @@ func modify_movement(direction: Vector2i, type: int) -> void:
 		movement_range_data.set_movement_type(direction, type)
 		movement_data_changed.emit()
 
-func _init_health_bar_from_footprint() -> void:
-	if health_bar == null:
-		health_bar = get_node_or_null("StatBar")
-	if health_bar == null:
-		health_bar = get_node_or_null("HealthBar")
-	
-	# --- 自動為敵方配置血條，並隱藏我方血條 ---
-	if faction:
-		if faction.is_controllable:
-			# 我方單位：隱藏血條
-			if health_bar:
-				health_bar.visible = false
-		else:
-			# 敵方單位：確保有血條，若無則自動添加
-			if health_bar == null:
-				var bar_scene = load("res://Scenes/UI/StatBar.tscn")
-				if bar_scene:
-					health_bar = bar_scene.instantiate()
-					# 使用 call_deferred 避免 "Parent node is busy" 錯誤
-					call_deferred("add_child", health_bar)
-					# 等待準備好後執行配置
-					health_bar.ready.connect(func():
-						move_child(health_bar, 0)
-						_configure_health_bar()
-					)
-					print("[GridEntity] Automatically added StatBar to enemy: ", name)
-			
-			if health_bar:
-				health_bar.visible = true
-	
-	if health_bar == null:
-		return
-	
-	_configure_health_bar()
-
-func _configure_health_bar() -> void:
-	if health_bar == null or not health_bar.is_inside_tree():
-		return
-		
-	# 取得格子尺寸，若 grid 未初始化則使用預設 16x16
-	var cell_size: Vector2i = Vector2i(16, 16)
-	if grid and ("cell_size" in grid):
-		cell_size = grid.cell_size
-	
-	var width_cells := 1
-	var height_cells := 1
-	if footprint_data and footprint_data.has_method("get_bounds"):
-		var bounds = footprint_data.get_bounds()
-		width_cells = max(1, bounds.size.x)
-		height_cells = max(1, bounds.size.y)
-	
-	if health_bar.has_method("configure_from_grid"):
-		health_bar.configure_from_grid(cell_size, width_cells, height_cells)
-	
-	if character_data:
-		var eff = character_data.get_effective_max_health()
-		if health_bar.has_method("set_health"):
-			health_bar.set_health(character_data.current_health, eff)
-		elif health_bar.has_method("update_bar"):
-			health_bar.update_bar(character_data.current_health, eff)
-
 func setup_character(data: CharacterData) -> void:
 	character_data = data
+	
+	# 初始化裂痕與閃爍 Shader (套用於所有單位：玩家與敵人)
+	var sprite = get_node_or_null("Sprite2D")
+	if sprite:
+		_combined_material = ShaderMaterial.new()
+		_combined_material.shader = combined_shader
+		sprite.material = _combined_material
+		# 初始血量同步
+		if character_data:
+			var hp_percent = float(character_data.current_health) / float(character_data.get_effective_max_health())
+			_combined_material.set_shader_parameter("health_percent", hp_percent)
 	
 	if data.unit_def:
 		if "attack_depth" in data.unit_def:
@@ -442,8 +426,7 @@ func setup_character(data: CharacterData) -> void:
 		if not data.saved_status_data.is_empty():
 			status_mgr.load_save_data(data.saved_status_data)
 	
-	# 確保在設置角色後重新檢查血條顯示狀態
-	_init_health_bar_from_footprint()
+	# 確保在設置角色後更新 Shader 狀態
 	_on_health_changed(data.current_health, data.get_effective_max_health())
 
 func apply_overrides(overrides: Dictionary) -> void:
@@ -519,11 +502,9 @@ func play_entry_animation(delay: float = 0.0) -> void:
 	
 	# 嘗試從多個來源獲取動畫類型 (UnitCard, PropCard, TrapCard)
 	var anim_type = 0 # 預設 DROP
-	var source_name = "DEFAULT_FALLBACK"
 	
 	if character_data and character_data.unit_def:
 		anim_type = character_data.unit_def.spawn_animation
-		source_name = "CharacterData.unit_def"
 	else:
 		# 如果沒有角色資料，嘗試從 CardProvider 獲取
 		var card_provider = get_node_or_null("CardProvider")
@@ -531,13 +512,6 @@ func play_entry_animation(delay: float = 0.0) -> void:
 			var card = card_provider.get("card")
 			if card and "spawn_animation" in card:
 				anim_type = card.spawn_animation
-				source_name = "CardProvider.card"
-			else:
-				source_name = "CardProvider (NO_CARD_OR_NO_ANIM_FIELD)"
-		else:
-			source_name = "NO_CARD_PROVIDER"
-	
-	print("[GridEntity] play_entry_animation for ", name, " | anim_type: ", anim_type, " | Source: ", source_name)
 	
 	if delay > 0:
 		await get_tree().create_timer(delay).timeout
@@ -572,12 +546,25 @@ func set_editor_highlight(enabled: bool) -> void:
 		z_index = 5
 
 func take_damage(amount: int, ignore_barrier: bool = false, ignore_shield: bool = false, attacker: CharacterData = null, is_pursuit: bool = false) -> int:
+	# 注意：此函式在子類 (如 TurretEntity) 中可能是非同步的。
+	# 基類此處加上極短延遲，確保它始終是一個協程 (Coroutine)，避免呼叫端編譯器警告或崩潰。
+	await get_tree().process_frame
+	
 	var status_mgr = get_node_or_null("StatusManager")
 	var final_amount = float(amount)
 	
 	if status_mgr and status_mgr.has_method("get_damage_received_multiplier"):
 		var multiplier = status_mgr.get_damage_received_multiplier()
 		final_amount *= multiplier
+	
+	# 連擊加成：改為從全局 ComboManager 註冊並獲取倍率
+	var combo_mult = 1.0
+	if should_register_combo():
+		var cm = get_node_or_null("/root/ComboManager")
+		if cm:
+			combo_mult = cm.register_hit()
+	
+	final_amount *= combo_mult
 	
 	var damage_int = int(final_amount)
 
@@ -600,15 +587,6 @@ func take_damage(amount: int, ignore_barrier: bool = false, ignore_shield: bool 
 
 func _apply_damage_visuals(damage_int: int, is_pursuit: bool) -> void:
 	"""套用受傷相關的視覺與 UI 更新"""
-	if health_bar and character_data:
-		var eff = character_data.get_effective_max_health()
-		# 使用目前 CharacterData 中的血量 (因為剛才已經由 take_damage 更新過)
-		var current_hp = character_data.current_health
-		if health_bar.has_method("on_damage"):
-			health_bar.on_damage(damage_int, current_hp, eff)
-		elif health_bar.has_method("update_bar"):
-			health_bar.update_bar(current_hp, eff)
-
 	if is_pursuit:
 		show_pursuit_number(damage_int)
 	else:
@@ -632,11 +610,12 @@ func heal(amount: int) -> void:
 		show_heal_number(amount)
 
 func _on_health_changed(_current: int, _max_h: int) -> void:
-	if health_bar:
-		if health_bar.has_method("set_health"):
-			health_bar.set_health(_current, _max_h)
-		elif health_bar.has_method("update_bar"):
-			health_bar.update_bar(_current, _max_h)
+	# [需求變更] 不再更新血條
+	
+	# 更新 Shader 裂痕進度
+	if _combined_material:
+		var hp_percent = float(_current) / float(_max_h)
+		_combined_material.set_shader_parameter("health_percent", hp_percent)
 
 func _on_died() -> void:
 	_handle_death()
@@ -648,7 +627,8 @@ func _on_reflect_triggered(attacker_data: CharacterData, amount: int, reflector_
 		if attacker_entity and attacker_entity.has_method("apply_damage"):
 			# 反射傷害無視防護罩與護盾 (ignore_barrier=true, ignore_shield=true)
 			# 傳入反射者資料 (reflector_data) 以套用其貫穿效果
-			attacker_entity.apply_damage(amount, true, true, reflector_data.status_manager_ref.get_parent() if reflector_data.status_manager_ref != null else null)
+			# 注意：apply_damage 是非同步的，雖然此處不一定要 await，但為了穩定性建議加上
+			await attacker_entity.apply_damage(amount, true, true, reflector_data.status_manager_ref.get_parent() if reflector_data.status_manager_ref != null else null)
 
 func _on_parry_triggered() -> void:
 	show_parry_text()
@@ -835,9 +815,12 @@ func get_leading_edge_cells(target_cell: Vector2i, from_cell: Vector2i) -> Array
 
 func on_selected() -> void:
 	is_selected = true
+	update_attack_indicators(0.0) 
 
 func on_deselected() -> void:
 	is_selected = false
+	# 重新更新指示器狀態 (非控制單位會保持半透明顯示，控制單位會隱藏)
+	update_attack_indicators(0.0)
 
 func _register_cells() -> void:
 	if grid == null or footprint_data == null:

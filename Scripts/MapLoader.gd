@@ -8,8 +8,8 @@ extends Node
 @export var resources_layer_path: NodePath = "ResourcesLayer"
 
 @export_group("Map Settings")
-@export var map_width: int = 7
-@export var map_height: int = 7
+@export var map_width: int = 11
+@export var map_height: int = 9
 
 @export_group("Tile Assets")
 ## 基礎地塊 (4,5) 的視覺預覽 (AtlasTexture)
@@ -144,6 +144,7 @@ func instantiate_room(template: RoomTemplate) -> Array[GridEntity]:
 					elif "building_scene" in card: scene_to_spawn = card.get("building_scene")
 					elif "prop_scene" in card: scene_to_spawn = card.get("prop_scene")
 					elif "trap_scene" in card: scene_to_spawn = card.get("trap_scene")
+					elif "turret_scene" in card: scene_to_spawn = card.get("turret_scene")
 				
 				if scene_to_spawn:
 					instance = scene_to_spawn.instantiate()
@@ -151,9 +152,11 @@ func instantiate_room(template: RoomTemplate) -> Array[GridEntity]:
 					if card_provider:
 						card_provider.card = card
 					
-					# 陷阱特殊初始化
+					# 陷阱與砲台特殊初始化
 					if instance.has_method("setup_trap"):
 						instance.setup_trap(card)
+					if instance.has_method("setup_turret"):
+						instance.setup_turret(card)
 		
 		if instance:
 			# 先加入場景 (確保 _ready 執行)

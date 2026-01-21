@@ -291,7 +291,8 @@ func _on_move_finished(entity: GridEntity, final_pos: Vector2i) -> void:
 			is_type_3_movement_skill = true
 			
 		handled_by_skill = true
-		skill_bar.trigger_armed_skill(entity, final_pos)
+		# trigger_armed_skill 現在是非同步的
+		await skill_bar.trigger_armed_skill(entity, final_pos)
 	
 	# 標記該單位這回合已經移動過 (排除移動技能)
 	if entity.character_data and not is_type_3_movement_skill:

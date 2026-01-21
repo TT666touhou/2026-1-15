@@ -122,7 +122,7 @@ func _reset_state() -> void:
 	
 	visible = true
 	scale = _base_scale
-	position = Vector2.ZERO
+	# position = Vector2.ZERO # Removed to allow setting position before popup
 	modulate.a = 1.0
 	rotation = 0.0
 
@@ -145,16 +145,20 @@ func _play_bounce_animation() -> void:
 		.set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
 	
 	_tween.parallel().tween_property(self, "position:y", height, 0.15)\
-		.set_trans(Tween.TRANS_QUART).set_ease(Tween.EASE_OUT)
-	_tween.parallel().tween_property(self, "position:x", target_x * 0.4, 0.15)
+		.as_relative().set_trans(Tween.TRANS_QUART).set_ease(Tween.EASE_OUT)
+	_tween.parallel().tween_property(self, "position:x", target_x * 0.4, 0.15)\
+		.as_relative()
 	_tween.parallel().tween_property(self, "rotation", rand_rot, 0.15)
 		
 	# 2. 落下 (Down)
 	# 落點不再是 0.0，而是 land_y
-	_tween.tween_property(self, "position:y", land_y, 0.35)\
+	# 注意：這裡需要計算相對於上升後的落點，或者直接用 absolute (但需要基值)
+	# 為了簡單，我們記錄起始位置
+	var start_pos = position
+	_tween.tween_property(self, "position:y", start_pos.y + land_y, 0.35)\
 		.set_trans(Tween.TRANS_BOUNCE).set_ease(Tween.EASE_OUT)
 	_tween.parallel().tween_property(self, "scale", _base_scale, 0.35)
-	_tween.parallel().tween_property(self, "position:x", target_x, 0.35)
+	_tween.parallel().tween_property(self, "position:x", start_pos.x + target_x, 0.35)
 	_tween.parallel().tween_property(self, "rotation", 0.0, 0.35)
 	
 	# 3. 停留

@@ -76,7 +76,9 @@ func _on_kill_all_pressed() -> void:
 					damage = enemy.character_data.current_health
 				
 				print("[DebugGridToggler] Killing enemy: ", enemy.name, " with damage: ", damage)
-				enemy.take_damage(damage)
+				# 注意：take_damage 可能是非同步的
+				var do_kill = func(): await enemy.take_damage(damage)
+				do_kill.call()
 
 func _on_test_recycle_pressed() -> void:
 	if DeckManager:

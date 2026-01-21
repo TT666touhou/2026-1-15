@@ -10,9 +10,9 @@ var active_gates: Array[Node] = []
 # 必須與 MapLoader 的 extra_cell_coords 保持一致，或者從 MapLoader 獲取
 # 為了簡單，這裡我們複製一份配置，實際運作時應以 MapLoader 為準
 var extra_cells: Array[Vector2i] = [
-	Vector2i(7, 1), # 上
-	Vector2i(7, 3), # 中
-	Vector2i(7, 5)  # 下
+	Vector2i(11, 1), # 上
+	Vector2i(11, 3), # 中
+	Vector2i(11, 5)  # 下
 ]
 var _spawned_gates_by_index: Dictionary = {}
 # var gate_scene = preload("res://Scenes/Map/GateEntity.tscn") # [暫時停用]
@@ -67,7 +67,8 @@ func _kill_all_enemies() -> void:
 				enemy.character_data.died.emit()
 			elif enemy.has_method("take_damage"):
 				# 對於沒有 character_data 的對象（如建築），使用原本的超大傷害
-				enemy.take_damage(99999, true, true)
+				# 注意：take_damage 可能是非同步的
+				await enemy.take_damage(99999, true, true)
 
 func _check_room_clear_condition_deferred() -> void:
 	if not BoardManager: return
@@ -117,13 +118,13 @@ func unregister_gate(_gate: Node) -> void:
 	pass
 
 func check_gate_trigger(entity: Node, cell: Vector2i) -> void:
-	# [新邏輯]：不再檢查實體門，而是檢查單位是否到達右側邊界 (X >= 7)
+	# [新邏輯]：不再檢查實體門，而是檢查單位是否到達右側邊界 (X >= 11)
 	# 只有在非戰鬥模式 (Free Roam) 且是玩家單位時觸發
 	if TurnManager and not TurnManager.is_free_roam_mode:
 		return
 		
 	if entity.get("faction") != null and entity.faction.resource_path.contains("Player"):
-		if cell.x >= 7:
+		if cell.x >= 11:
 			print("[DungeonManager] Player reached boundary at ", cell, ". Triggering transition...")
 			# 建立一個臨時對象來攜帶 next_room_name
 			var transition_info = { "next_room_name": "T001" } # 預設前往 T001
@@ -141,7 +142,7 @@ func load_room_by_name(room_name: String, skip_spawn_anim: bool = false, skip_gr
 		
 	var template = load(path)
 	if template is RoomTemplate:
-		return _load_room_template(template, skip_spawn_anim, skip_ground_init)
+		return await _load_room_template(template, skip_spawn_anim, skip_ground_init)
 	else:
 		push_error("[DungeonManager] Invalid resource type at: " + path)
 		return {"players": [], "enemies": []}
@@ -190,7 +191,7 @@ func _load_room_template(template: RoomTemplate, skip_spawn_anim: bool = false, 
 	
 	# 4. 播放進場動畫序列 (如果沒有跳過)
 	if not skip_spawn_anim:
-		_play_spawn_sequence(spawned_players, spawned_enemies)
+		await _play_spawn_sequence(spawned_players, spawned_enemies)
 	
 	# 5. 重置回合 (假設 TurnManager 存在)
 	if TurnManager:
@@ -288,77 +289,54 @@ func _force_player_units_occupancy(units: Array[GridEntity]) -> void:
 			# print("[SpawnForce] Occupancy set for ", u.name, " at ", u.grid_position, " cells:", cells.size()) # Debug removed
 
 func _play_spawn_sequence(players: Array[GridEntity], enemies: Array[GridEntity]) -> void:
-	"""
-	依序播放進場動畫：
-	1. 裝備/物件 (由上而下, 由左而右)
-	2. 玩家單位 (由上而下, 由左而右)
-	3. 敵方單位 (由上而下, 由左而右)
-	"""
+	print("[DungeonManager] >>> 集體登場序列開始 <<<")
 	
-	# 定義排序函數
-	var sort_func = func(a: GridEntity, b: GridEntity) -> bool:
-		if a.grid_position.y != b.grid_position.y:
-			return a.grid_position.y < b.grid_position.y
-		return a.grid_position.x < b.grid_position.x
-	
-	# 拆分敵人清單中的「真實敵人」與「環境物/裝備」
+	# 1. 預處理分類
 	var real_enemies: Array[GridEntity] = []
-	var environment_items: Array[GridEntity] = []
+	var env_items: Array[GridEntity] = []
 	
 	for e in enemies:
 		if e is EquipmentEntity or e is PropEntity or e is TrapEntity:
-			environment_items.append(e)
+			env_items.append(e)
 		else:
 			real_enemies.append(e)
 			
-	players.sort_custom(sort_func)
-	real_enemies.sort_custom(sort_func)
-	environment_items.sort_custom(sort_func)
-	
-	var full_sequence: Array[GridEntity] = []
-	full_sequence.append_array(environment_items)
-	full_sequence.append_array(players)
-	full_sequence.append_array(real_enemies)
-	
-	# 依序執行動畫
-	# 1. 環境物件：全部同時進場
-	var env_promises = []
-	for unit in environment_items:
+	# 2. 環境物件登場 (同步執行動畫，不阻塞)
+	for unit in env_items:
 		if is_instance_valid(unit):
 			unit.visible = true
+			if unit.has_node("Sprite2D"): unit.get_node("Sprite2D").modulate.a = 1.0
 			if unit.has_method("play_entry_animation"):
 				unit.play_entry_animation(0.0)
-				if unit.has_signal("entry_animation_finished"):
-					env_promises.append(unit.entry_animation_finished)
-			else:
-				if unit.has_node("Sprite2D"):
-					unit.get_node("Sprite2D").modulate.a = 1.0
 	
-	# 等待所有環境物件進場 (如果有信號的話)
-	for promise in env_promises:
-		await promise
-	
-	# 如果環境物件很多，給予一個極短的緩衝時間
-	if not environment_items.is_empty():
+	# 短暫停頓讓環境先就緒
 		await get_tree().create_timer(0.2).timeout
 
-	# 2. 玩家與敵人：維持逐一進場 (以維持打擊感)
-	var combatants: Array[GridEntity] = []
-	combatants.append_array(players)
-	combatants.append_array(real_enemies)
-	
-	for unit in combatants:
+	# 3. 英雄集體登場
+	print("[DungeonManager] 玩家英雄集體登場中...")
+	for unit in players:
 		if is_instance_valid(unit):
 			unit.visible = true
+			if unit.has_node("Sprite2D"): unit.get_node("Sprite2D").modulate.a = 1.0
 			if unit.has_method("play_entry_animation"):
 				unit.play_entry_animation(0.0)
-				if unit.has_signal("entry_animation_finished"):
-					await unit.entry_animation_finished
-				else:
-					await get_tree().create_timer(0.3).timeout
-			else:
-				if unit.has_node("Sprite2D"):
-					unit.get_node("Sprite2D").modulate.a = 1.0
+	
+	# 等待英雄動畫大約完成的時間 (DROP 動畫約 0.6s)
+	await get_tree().create_timer(0.8).timeout
+
+	# 4. 敵人集體登場
+	print("[DungeonManager] 敵方單位集體登場中...")
+	for unit in real_enemies:
+		if is_instance_valid(unit):
+			unit.visible = true
+			if unit.has_node("Sprite2D"): unit.get_node("Sprite2D").modulate.a = 1.0
+			if unit.has_method("play_entry_animation"):
+				unit.play_entry_animation(0.0)
+	
+	# 等待敵人動畫大約完成的時間
+	await get_tree().create_timer(0.8).timeout
+	
+	print("[DungeonManager] >>> 集體登場序列結束 <<<")
 
 func on_gate_entered(gate: Node) -> void:
 	print("[DungeonManager] Player entered gate: ", gate.name)
@@ -435,7 +413,7 @@ func play_gate_transition(gate: Variant) -> void:
 	if !map_loader:
 		print("[DungeonManager] MapLoader not found, falling back to basic load")
 		if gate.get("next_room_name"):
-			load_room_by_name(gate.next_room_name)
+			await load_room_by_name(gate.next_room_name)
 		return
 
 	# 1. 關閉輸入
@@ -477,7 +455,7 @@ func play_gate_transition(gate: Variant) -> void:
 	
 	var result = {"players": [], "enemies": []}
 	if next_room and next_room != "":
-		result = load_room_by_name(next_room, true, true) 
+		result = await load_room_by_name(next_room, true, true) 
 	
 	var new_players = result.get("players", [])
 	var new_enemies = result.get("enemies", [])
@@ -579,13 +557,13 @@ func _play_step_transition(units: Array, duration: float, delta_x: float, is_ent
 	# 2. 每隔 X 秒更新一排地塊 (啟用動畫效果)
 	for i in range(grid_steps):
 		if !is_entry:
-			# 出鏡：在地圖 right 之外生成，在 left 刪除
-			map_loader.generate_column(7 + i, true) 
+			# 出鏡：在地圖 playable edge 之外生成，在 left 刪除
+			map_loader.generate_column(11 + i, true) 
 			map_loader.erase_column(i, true)
 		else:
 			# 入鏡：單位從 -20 格開始跑向 0 格
 			var current_gx = -grid_steps + i
-			map_loader.generate_column(current_gx + 7, true) # 在視窗右緣生成
+			map_loader.generate_column(current_gx + 11, true) # 在視窗右緣 (playable edge) 生成
 			map_loader.erase_column(current_gx, true)        # 在視窗左緣擦除
 		
 		# 每 5 步印一次進度
@@ -625,12 +603,11 @@ func _reset_camera(camera: Camera2D = null) -> void:
 				print("[DungeonManager] Background position reset to 0")
 	
 	if camera:
-		# Reset to default values from World.tscn
-		camera.zoom = Vector2(4, 4)
-		camera.position = Vector2(16, 56)
+		# Reset to centered position for 11x9 grid with margins (Zoom 4.3)
+		camera.zoom = Vector2(4.3, 4.3)
+		camera.position = Vector2(51, 72)
 		camera.rotation = 0.0 # Reset rotation
-		# camera.ignore_rotation = true # Reset to default (Removed rotation anim)
-		print("[DungeonManager] Camera reset to default")
+		print("[DungeonManager] Camera reset to zoomed position (51, 72) Zoom 4.3")
 
 func debug_test_gate_transition() -> void:
 	var world = get_tree().current_scene

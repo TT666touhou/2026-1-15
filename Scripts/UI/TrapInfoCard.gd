@@ -4,8 +4,6 @@ extends PanelContainer
 @onready var name_label: Label = $MarginContainer/HBox/InfoBox/NameLabel
 @onready var atk_label: Label = $MarginContainer/HBox/InfoBox/StatsGrid/AtkLabel
 
-var _trap_entity: TrapEntity = null
-
 func _ready() -> void:
 	# 列表項目默認顯示，但由 HoverInfoController 控制
 	visible = false
@@ -19,14 +17,15 @@ func _set_mouse_filter_recursive(node: Node, filter: int) -> void:
 		_set_mouse_filter_recursive(child, filter)
 
 func update_info(entity: GridEntity) -> void:
-	# 兼容 GridEntity 但預期是 TrapEntity
-	if not entity is TrapEntity:
-		print("[TrapInfoCard] Entity is NOT a TrapEntity: ", entity.name if entity else "null")
+	# 兼容 GridEntity 但預期是 TrapEntity 或 TurretEntity
+	if not (entity is TrapEntity or entity is TurretEntity):
+		print("[TrapInfoCard] Entity is NOT a Trap or Turret: ", entity.name if entity else "null")
 		visible = false
 		return
 		
-	_trap_entity = entity as TrapEntity
-	# print("[TrapInfoCard] Updating info for: ", _trap_entity.name, " ATK: ", _trap_entity.trap_atk)
+	# 由於兩者屬性結構相似，我們這裡做個小轉換或直接使用
+	var data_obj = entity
+	# print("[TrapInfoCard] Updating info for: ", data_obj.name, " ATK: ", data_obj.trap_atk)
 	visible = true
 	
 	# 1. 更新頭像
@@ -45,10 +44,15 @@ func update_info(entity: GridEntity) -> void:
 		icon_rect.texture = atlas_tex
 	
 	# 2. 更新名稱與 ATK
-	if _trap_entity.trap_resource:
-		var res = _trap_entity.trap_resource
-		name_label.text = res.display_name if (res.has_method("get") and res.get("display_name")) else res.card_name
+	if data_obj.trap_resource:
+		var res = data_obj.trap_resource
+		var d_name = ""
+		if res.get("display_name"):
+			d_name = str(res.get("display_name"))
+		else:
+			d_name = str(res.get("card_name"))
+		name_label.text = d_name
 	else:
-		name_label.text = "陷阱"
+		name_label.text = "機關" if entity is TurretEntity else "陷阱"
 		
-	atk_label.text = "ATK: %d" % _trap_entity.trap_atk
+	atk_label.text = "ATK: %d" % data_obj.trap_atk

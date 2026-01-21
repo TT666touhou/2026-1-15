@@ -24,6 +24,7 @@ max_health = 120.0
 attack_damage = 25
 attack_depth = 1
 base_combo_count = 1.0
+base_movement_speed = 3.0
 move_speed_anim = 300.0
 base_crit_rate = 0.05
 base_luck = 0
