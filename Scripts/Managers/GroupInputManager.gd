@@ -7,9 +7,10 @@ class_name GroupMovementController
 @export var auto_advance_on_move: bool = false # 移動後是否自動結束回合的可選項
 
 const DIRECTION_MAP = {
-	KEY_Q: Vector2i(-1, -1), KEY_W: Vector2i(0, -1), KEY_E: Vector2i(1, -1),
-	KEY_A: Vector2i(-1, 0),                          KEY_D: Vector2i(1, 0),
-	KEY_Z: Vector2i(-1, 1),  KEY_X: Vector2i(0, 1),  KEY_C: Vector2i(1, 1)
+	KEY_W: Vector2i(0, -1),
+	KEY_A: Vector2i(-1, 0),
+	KEY_S: Vector2i(0, 1),
+	KEY_D: Vector2i(1, 0)
 }
 
 func _ready() -> void:
@@ -19,7 +20,7 @@ func _unhandled_input(event: InputEvent) -> void:
 	if not TurnManager or TurnManager.is_busy():
 		return
 		
-	if event is InputEventKey and event.pressed and not event.is_echo():
+	if event is InputEventKey and event.pressed:
 		if DIRECTION_MAP.has(event.keycode):
 			_execute_group_move(DIRECTION_MAP[event.keycode])
 
@@ -43,15 +44,17 @@ func execute_faction_move(units: Array, direction: Vector2i) -> void:
 	var grid = units[0].grid
 	if not grid: return
 	
-	# 1. 模擬獲取目標 (包含暫時 unregister 邏輯)
+		# 1. 模擬獲取目標 (包含暫時 unregister 邏輯)
 	var unit_to_target = simulate_group_movement(units, direction, grid)
 	
 	# 準備排序後的單位列表，確保執行順序與模擬判定順序一致 (前排優先)
 	var sorted_units = units.duplicate()
 	sorted_units.sort_custom(func(a, b):
-		var dot_a = a.grid_position.x * direction.x + a.grid_position.y * direction.y
-		var dot_b = b.grid_position.x * direction.x + b.grid_position.y * direction.y
-		return dot_a > dot_b
+		# 獲取世界座標方向以便比較
+		var world_dir = Vector2(direction)
+		var pos_a = Vector2(a.grid_position)
+		var pos_b = Vector2(b.grid_position)
+		return pos_a.dot(world_dir) > pos_b.dot(world_dir)
 	)
 	
 	# 2. 啟動移動動畫
@@ -79,25 +82,12 @@ func execute_faction_move(units: Array, direction: Vector2i) -> void:
 		# 等待所有移動動畫完成 (平行執行)
 		await _wait_for_movers(active_movers)
 		
-		# 檢查是否有任何單位觸發了撞擊
-		var rammed_any = false
-		for mover in active_movers:
-			if is_instance_valid(mover) and mover.last_move_rammed:
-				rammed_any = true
-				break
-		
 		# 結束回合
 		if TurnManager and TurnManager.is_player_turn() and not TurnManager.is_free_roam_mode:
-			if auto_advance_on_move and not rammed_any:
-				print("[GroupMovementController] Player moves completed, advancing turn.")
-				await TurnManager.advance_turn() # 確保等待回合結算與攻擊動畫完成
-			else:
-				if rammed_any:
-					print("[GroupMovementController] Ram attack occurred, skipping advance_turn.")
-				else:
-					print("[GroupMovementController] Auto-advance is OFF, skipping advance_turn.")
+			print("[GroupMovementController] Player move sequence completed, advancing turn.")
+			await TurnManager.advance_turn()
 		
-		if TurnManager: TurnManager.unlock_input() # 最後才解鎖，確保整個流程結束
+		if TurnManager: TurnManager.unlock_input()
 	else:
 		if TurnManager: TurnManager.unlock_input()
 

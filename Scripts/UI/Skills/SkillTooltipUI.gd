@@ -60,7 +60,7 @@ func _update_range_display(skill: UnitSkillData) -> void:
 			render_skill_grid(range_grid, target_to_show, Color(1.0, 0.4, 0.1), false)
 
 ## 靜態工具函數：供所有 UI 組件共用渲染邏輯
-static func render_skill_grid(grid: GridContainer, targeting: TargetingDefinition, active_color: Color, force_dot_only: bool = false, cell_size: Vector2 = Vector2(12, 12)) -> void:
+static func render_skill_grid(grid: GridContainer, targeting: TargetingDefinition, active_color: Color, force_dot_only: bool = false, cell_size: Vector2 = Vector2(8, 8)) -> void:
 	# 清除舊內容
 	for child in grid.get_children():
 		child.free()
@@ -68,8 +68,8 @@ static func render_skill_grid(grid: GridContainer, targeting: TargetingDefinitio
 	if not targeting:
 		return
 		
-	# 強制設定列數為 7，確保預覽正確
-	grid.columns = 7
+	# 強制設定列數為 11，確保與地圖規格一致
+	grid.columns = 11
 	
 	var radius = targeting.aoe_radius
 	if radius == null: radius = 0
@@ -102,27 +102,35 @@ static func render_skill_grid(grid: GridContainer, targeting: TargetingDefinitio
 					cells_in_scope.append(center + Vector2i(0, i))
 					cells_in_scope.append(center + Vector2i(0, -i))
 			TargetingDefinition.ScopeType.GLOBAL:
-				for x in range(-3, 4):
-					for y in range(-3, 4):
+				for x in range(-5, 6):
+					for y in range(-4, 5):
 						cells_in_scope.append(Vector2i(x, y))
 			TargetingDefinition.ScopeType.GLOBAL_CHECKER_A:
-				for x in range(-3, 4):
-					for y in range(-3, 4):
+				for x in range(-5, 6):
+					for y in range(-4, 5):
 						if abs(x + y) % 2 == 0:
 							cells_in_scope.append(Vector2i(x, y))
 			TargetingDefinition.ScopeType.GLOBAL_CHECKER_B:
-				for x in range(-3, 4):
-					for y in range(-3, 4):
+				for x in range(-5, 6):
+					for y in range(-4, 5):
 						if abs(x + y) % 2 != 0:
 							cells_in_scope.append(Vector2i(x, y))
 			TargetingDefinition.ScopeType.AREA_PATTERN:
-				var pattern = targeting.get("pattern_7x7")
-				if pattern and pattern.size() == 49:
-					for i in range(49):
-						if pattern[i]:
-							var dx = (i % 7) - 3
-							var dy: int = int(floor(i / 7.0)) - 3
+				var p11x9 = targeting.get("pattern_11x9")
+				if p11x9 and p11x9.size() == 99:
+					for i in range(99):
+						if p11x9[i]:
+							var dx = (i % 11) - 5
+							var dy: int = int(floor(i / 11.0)) - 4
 							cells_in_scope.append(center + Vector2i(dx, dy))
+				else:
+					var pattern = targeting.get("pattern_7x7")
+					if pattern and pattern.size() == 49:
+						for i in range(49):
+							if pattern[i]:
+								var dx = (i % 7) - 3
+								var dy: int = int(floor(i / 7.0)) - 3
+								cells_in_scope.append(center + Vector2i(dx, dy))
 			TargetingDefinition.ScopeType.AREA_X:
 				cells_in_scope.append(center)
 				for i in range(1, radius + 1):
@@ -141,17 +149,33 @@ static func render_skill_grid(grid: GridContainer, targeting: TargetingDefinitio
 					cells_in_scope.append(center + Vector2i(-i, -i))
 					cells_in_scope.append(center + Vector2i(i, -i))
 					cells_in_scope.append(center + Vector2i(-i, i))
-
-	# 繪製 7x7 網格
-	for y in range(-3, 4):
-		for x in range(-3, 4):
+	
+	# 繪製 11x9 網格
+	for y in range(-4, 5):
+		for x in range(-5, 6):
 			var rect = ColorRect.new()
 			rect.mouse_filter = Control.MOUSE_FILTER_IGNORE # 確保預覽圖示不阻擋按鈕點擊
 			rect.custom_minimum_size = cell_size
 			
 			var pos = Vector2i(x, y)
 			if pos == Vector2i.ZERO:
-				rect.color = Color(1, 0.9, 0.2) # 中心：黃色
+				if targeting.origin_is_self:
+					# 創建帶有紅框的黃色方塊
+					var panel = Panel.new()
+					panel.mouse_filter = Control.MOUSE_FILTER_IGNORE
+					panel.custom_minimum_size = cell_size
+					
+					var style = StyleBoxFlat.new()
+					style.bg_color = Color(1, 0.9, 0.2) # 中心黃色
+					style.set_border_width_all(1) # 1 像素邊框
+					style.border_color = Color.RED # 紅色邊框
+					style.set_expand_margin_all(1) # 稍微向外擴張讓紅框更明顯
+					
+					panel.add_theme_stylebox_override("panel", style)
+					grid.add_child(panel)
+					continue
+				else:
+					rect.color = Color(1, 0.9, 0.2) # 中心：黃色
 			elif cells_in_scope.has(pos):
 				rect.color = active_color
 			else:
@@ -173,4 +197,3 @@ func hide_tooltip() -> void:
 	var tw = create_tween()
 	tw.tween_property(self, "modulate:a", 0.0, 0.2)
 	tw.finished.connect(func(): visible = false)
-

@@ -4,13 +4,13 @@
 
 [resource]
 script = ExtResource("1")
-north = 0
-south = 0
-west = 0
-east = 0
-northwest = 2
-northeast = 2
-southwest = 2
-southeast = 2
-display_name = "Diagonal Only"
+north = 1
+south = 1
+west = 1
+east = 1
+northwest = 0
+northeast = 0
+southwest = 0
+southeast = 0
+display_name = "Cross One-Step"
 limit_to_furthest = true

@@ -20,6 +20,7 @@ const ARROW_SHADER = preload("res://Scenes/Shared/Shaders/double_arrow.gdshader"
 
 @onready var parent_entity: GridEntity = get_parent()
 var _arrows: Dictionary = {}
+var _current_attack_progress: float = 0.0
 
 func _ready() -> void:
 	if not parent_entity:
@@ -77,6 +78,15 @@ func _setup_arrows() -> void:
 		mat.shader = ARROW_SHADER
 		sprite.material = mat
 		
+		# 新增：用於填滿進度的紅色矩形
+		sprite.clip_children = CanvasItem.CLIP_CHILDREN_AND_DRAW
+		
+		var fill = ColorRect.new()
+		fill.name = "FillProgress"
+		fill.color = Color.RED
+		fill.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		sprite.add_child(fill)
+		
 		add_child(sprite)
 		_arrows[dir_name] = {
 			"sprite": sprite,
@@ -93,7 +103,10 @@ func _update_visuals() -> void:
 		var s = data["sprite"] as Sprite2D
 		s.texture = settings.arrow_texture
 		s.scale = Vector2(settings.arrow_scale, settings.arrow_scale)
-		s.modulate = settings.arrow_color
+		
+		# 箭頭保持白色，以便內部的 FillProgress (紅色) 清楚顯示
+		s.modulate = Color.WHITE
+			
 		s.rotation = atan2(data["dir"].y, data["dir"].x) + PI/2
 
 # 更新箭頭位置 (從 settings 讀取)
@@ -119,6 +132,19 @@ func _update_arrow_positions() -> void:
 # 更新顯示邏輯 (從 settings 讀取)
 func update_display() -> void:
 	var data = parent_entity.movement_range_data if parent_entity else null
+	
+	# 如果正在攻擊預警中，優先顯示預警箭頭
+	if _current_attack_progress > 0.001:
+		for dir_name in _arrows:
+			var sprite = _arrows[dir_name]["sprite"]
+			if data:
+				var move_type = data.get(dir_name)
+				sprite.visible = move_type > 0
+			else:
+				# 若無移動數據（如進場中），預設顯示箭頭
+				sprite.visible = true
+		return
+
 	if not data or _arrows.is_empty() or settings == null:
 		for arrow_data in _arrows.values():
 			arrow_data["sprite"].visible = false
@@ -137,3 +163,40 @@ func update_display() -> void:
 			sprite.material.set_shader_parameter("duplicate_alpha", settings.double_arrow_alpha)
 		else:
 			sprite.material.set_shader_parameter("is_unlimited", false)
+
+func set_attack_progress(progress: float, direction: Vector2i = Vector2i.ZERO) -> void:
+	"""設置攻擊進度，這會讓箭頭填滿紅色"""
+	_current_attack_progress = progress
+	
+	for dir_name in _arrows:
+		var arrow_data = _arrows[dir_name]
+		var sprite = arrow_data["sprite"] as Sprite2D
+		var fill = sprite.get_node_or_null("FillProgress") as ColorRect
+		
+		# 判斷是否為目標方向 (如果為 ZERO 則全部顯示)
+		var is_target_dir = (direction == Vector2i.ZERO or arrow_data["dir"] == direction)
+		
+		if fill:
+			if not is_target_dir:
+				fill.visible = false
+				continue
+				
+			# 根據 Texture 尺寸決定 Fill 的大小
+			var rect_size = Vector2(16, 16) # fallback
+			if sprite.texture:
+				if sprite.texture is AtlasTexture:
+					rect_size = sprite.texture.region.size
+				else:
+					rect_size = sprite.texture.get_size()
+			
+			var w = rect_size.x
+			var h = rect_size.y
+			
+			# 核心：由下而上填滿
+			# Sprite 的錨點通常在中心 (0,0)，所以 Rect 的起始點要偏移
+			fill.size = Vector2(w, h * progress)
+			fill.position = Vector2(-w/2, (h/2) - (h * progress))
+			fill.visible = progress > 0.001
+	
+	# 更新視覺狀態（處理 Modulate）
+	_update_visuals()

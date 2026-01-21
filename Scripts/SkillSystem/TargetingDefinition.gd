@@ -27,9 +27,10 @@ enum TargetFilter {
 @export var target_filter: TargetFilter = TargetFilter.ENEMY
 @export var can_target_empty: bool = false
 
-# For AREA_PATTERN: A 7x7 bitmask or array. 
-# We'll use an array of 49 booleans for simplicity in the inspector.
+# For AREA_PATTERN: A 7x7 or 11x9 bitmask or array. 
+# We'll support both for backward compatibility, but 11x9 is preferred.
 @export var pattern_7x7: Array[bool] = []
+@export var pattern_11x9: Array[bool] = []
 
 func get_targeting_text(targeting_type: int) -> String:
 	var scope_text = ""
@@ -82,3 +83,6 @@ func _init() -> void:
 	if pattern_7x7.is_empty():
 		pattern_7x7.resize(49)
 		pattern_7x7.fill(false)
+	if pattern_11x9.is_empty():
+		pattern_11x9.resize(99)
+		pattern_11x9.fill(false)

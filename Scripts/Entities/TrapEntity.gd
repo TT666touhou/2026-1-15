@@ -12,8 +12,6 @@ func _ready() -> void:
 	
 	if combo_indicator:
 		combo_indicator.visible = false
-	if health_bar:
-		health_bar.visible = false
 
 func setup_trap(card: TrapCard) -> void:
 	"""從卡片初始化陷阱"""

@@ -10,9 +10,9 @@ var active_gates: Array[Node] = []
 # 必須與 MapLoader 的 extra_cell_coords 保持一致，或者從 MapLoader 獲取
 # 為了簡單，這裡我們複製一份配置，實際運作時應以 MapLoader 為準
 var extra_cells: Array[Vector2i] = [
-	Vector2i(7, 1), # 上
-	Vector2i(7, 3), # 中
-	Vector2i(7, 5)  # 下
+	Vector2i(11, 1), # 上
+	Vector2i(11, 3), # 中
+	Vector2i(11, 5)  # 下
 ]
 var _spawned_gates_by_index: Dictionary = {}
 # var gate_scene = preload("res://Scenes/Map/GateEntity.tscn") # [暫時停用]
@@ -123,7 +123,7 @@ func check_gate_trigger(entity: Node, cell: Vector2i) -> void:
 		return
 		
 	if entity.get("faction") != null and entity.faction.resource_path.contains("Player"):
-		if cell.x >= 7:
+		if cell.x >= 11:
 			print("[DungeonManager] Player reached boundary at ", cell, ". Triggering transition...")
 			# 建立一個臨時對象來攜帶 next_room_name
 			var transition_info = { "next_room_name": "T001" } # 預設前往 T001
@@ -167,7 +167,7 @@ func _load_room_template(template: RoomTemplate, skip_spawn_anim: bool = false, 
 		map_loader.clear_current_map(skip_ground_init)
 		
 	# Reset Camera after clearing/before spawning
-	_reset_camera()
+	# _reset_camera()
 		
 	# 清除所有動態生成的門和格子
 	for i in range(extra_cells.size()):
@@ -580,12 +580,12 @@ func _play_step_transition(units: Array, duration: float, delta_x: float, is_ent
 	for i in range(grid_steps):
 		if !is_entry:
 			# 出鏡：在地圖 right 之外生成，在 left 刪除
-			map_loader.generate_column(7 + i, true) 
+			map_loader.generate_column(11 + i, true) 
 			map_loader.erase_column(i, true)
 		else:
 			# 入鏡：單位從 -20 格開始跑向 0 格
 			var current_gx = -grid_steps + i
-			map_loader.generate_column(current_gx + 7, true) # 在視窗右緣生成
+			map_loader.generate_column(current_gx + 11, true) # 在視窗右緣生成
 			map_loader.erase_column(current_gx, true)        # 在視窗左緣擦除
 		
 		# 每 5 步印一次進度

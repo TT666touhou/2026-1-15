@@ -103,10 +103,12 @@ static func create(def: UnitCard) -> CharacterData:
 	instance.luck = def.base_luck
 	instance.character_trait = def.character_trait
 	
-	# Initialize runtime skills
+	# Initialize runtime skills (limit to 4)
+	var skill_count = 0
 	for skill in def.default_skills:
-		if skill:
+		if skill and skill_count < 4:
 			instance.runtime_skills.append(skill)
+			skill_count += 1
 	
 	return instance
 

@@ -4,8 +4,8 @@
 
 [resource]
 script = ExtResource("1")
-north = 2
-south = 0
+north = 1
+south = 1
 west = 1
 east = 1
 northwest = 0

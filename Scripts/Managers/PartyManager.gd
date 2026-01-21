@@ -4,7 +4,7 @@ extends Node
 
 signal party_updated
 
-const MAX_PARTY_SIZE: int = 4
+const MAX_PARTY_SIZE: int = 1
 
 var party_members: Array[CharacterData] = []
 var leaders: Array[CharacterData] = [] # Current logic: leaders[0] is party_members[0]
@@ -21,15 +21,6 @@ func _recruit_starters() -> void:
 		# Load starter units
 		var u1 = load("res://Resources/Cards/Unit_001.tres")
 		if u1: recruit_member(u1)
-		
-		var u2 = load("res://Resources/Cards/Unit_002.tres")
-		if u2: recruit_member(u2)
-		
-		var u3 = load("res://Resources/Cards/Unit_003.tres")
-		if u3: recruit_member(u3)
-		
-		var u4 = load("res://Resources/Cards/Unit_004.tres")
-		if u4: recruit_member(u4)
 
 func recruit_member(unit_card: UnitCard) -> bool:
 	if party_members.size() >= MAX_PARTY_SIZE:

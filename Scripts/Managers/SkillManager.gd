@@ -191,13 +191,21 @@ func get_cells_in_scope(targeting_data: Resource, center: Vector2i) -> Array[Vec
 				cells.append(center + Vector2i(i, -i))
 				cells.append(center + Vector2i(-i, i))
 		TargetingDefinition.ScopeType.AREA_PATTERN:
-			var pattern = targeting_data.get("pattern_7x7")
-			if pattern and pattern.size() == 49:
-				for i in range(49):
-					if pattern[i]:
-						var dx = (i % 7) - 3
-						var dy: int = int(floor(i / 7.0)) - 3
+			var p11x9 = targeting_data.get("pattern_11x9")
+			if p11x9 and p11x9.size() == 99:
+				for i in range(99):
+					if p11x9[i]:
+						var dx = (i % 11) - 5
+						var dy: int = int(floor(i / 11.0)) - 4
 						cells.append(center + Vector2i(dx, dy))
+			else:
+				var pattern = targeting_data.get("pattern_7x7")
+				if pattern and pattern.size() == 49:
+					for i in range(49):
+						if pattern[i]:
+							var dx = (i % 7) - 3
+							var dy: int = int(floor(i / 7.0)) - 3
+							cells.append(center + Vector2i(dx, dy))
 		TargetingDefinition.ScopeType.GLOBAL:
 			for x in range(grid.map_width):
 				for y in range(grid.map_height):

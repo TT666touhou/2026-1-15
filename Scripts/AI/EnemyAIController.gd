@@ -2,43 +2,30 @@ extends Node
 class_name EnemyAIController
 
 ## 敵方 AI 控制器
-## 負責評估陣營中所有單位的最佳移動方案，每回合僅選取一個單位進行移動
+## 負責評估單位的最佳移動方案
 
-## 計算指定陣營當前的最佳單一移動方案
-## 返回: { "unit": GridEntity, "cell": Vector2i } 或空字典
-static func calculate_best_move(tree: SceneTree, faction: FactionDefinition) -> Dictionary:
+## 計算單一單位的最佳移動方案
+static func calculate_best_move_for_unit(tree: SceneTree, unit: GridEntity) -> Dictionary:
+	if not is_instance_valid(unit): return {}
+	
 	var entities = tree.get_nodes_in_group("grid_entities")
-	var enemy_units = entities.filter(func(e): 
-		return e is GridEntity and e.faction == faction
-	)
 	var player_units = entities.filter(func(e):
 		return e is GridEntity and e.faction and e.faction.is_controllable
 	)
 	
-	if enemy_units.is_empty(): return {}
-	
+	var reachable = unit.get_reachable_cells()
+	if not reachable.has(unit.grid_position):
+		reachable.append(unit.grid_position)
+		
 	var best_move = {}
 	var max_score = -999999.0
 	
-	for unit in enemy_units:
-		if not is_instance_valid(unit): continue
-		
-		# 獲取該單位所有可到達的格子
-		var reachable = unit.get_reachable_cells()
-		# 必須包含原地
-		if not reachable.has(unit.grid_position):
-			reachable.append(unit.grid_position)
+	for cell in reachable:
+		var score = _evaluate_move(unit, cell, player_units)
+		if best_move.is_empty() or score > max_score:
+			max_score = score
+			best_move = {"unit": unit, "cell": cell}
 			
-		for cell in reachable:
-			var score = _evaluate_move(unit, cell, player_units)
-			
-			if best_move.is_empty() or score > max_score:
-				max_score = score
-				best_move = {"unit": unit, "cell": cell}
-				
-	if not best_move.is_empty():
-		print("[EnemyAI] Best single move found: ", best_move.unit.name, " to ", best_move.cell, " (Score: ", max_score, ")")
-		
 	return best_move
 
 static func _evaluate_move(unit: GridEntity, target_cell: Vector2i, players: Array) -> float:

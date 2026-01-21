@@ -4,8 +4,7 @@ class_name SkillBarUI
 @export var button_scene: PackedScene
 @export var tooltip_scene: PackedScene
 
-@onready var fixed_tooltip_slot: PanelContainer = %FixedTooltipSlot
-@onready var button_container: HBoxContainer = %ButtonContainer
+@onready var button_container: GridContainer = %ButtonContainer
 
 var current_unit: GridEntity = null
 var current_character: CharacterData = null
@@ -34,13 +33,6 @@ func _ready() -> void:
 	_hover_timer.one_shot = true
 	_hover_timer.timeout.connect(_show_tooltip)
 	add_child(_hover_timer)
-	
-	# 初始化固定 Tooltip
-	if tooltip_scene:
-		_tooltip = tooltip_scene.instantiate()
-		fixed_tooltip_slot.add_child(_tooltip)
-		_tooltip.visible = false
-		fixed_tooltip_slot.visible = false
 	
 	call_deferred("_refresh_from_party_manager")
 
@@ -84,7 +76,9 @@ func _populate_skills_internal(char_data: CharacterData, unit: GridEntity = null
 	
 	if not char_data: return
 	
+	var skill_count = 0
 	for skill in char_data.runtime_skills:
+		if skill_count >= 4: break
 		var btn = button_scene.instantiate() as SkillButtonUI
 		button_container.add_child(btn)
 		btn.setup(skill, char_data, unit)
@@ -92,6 +86,7 @@ func _populate_skills_internal(char_data: CharacterData, unit: GridEntity = null
 		btn.confirmed.connect(_execute_direct_skill) # 改用 confirmed 信號
 		btn.mouse_entered.connect(_on_mouse_entered.bind(skill))
 		btn.mouse_exited.connect(_on_mouse_exited)
+		skill_count += 1
 
 func _on_button_state_changed(new_state: int, button: SkillButtonUI) -> void:
 	print("[SkillBarUI] Button state changed: ", button.skill_data.skill_name, " -> ", new_state)
@@ -170,11 +165,38 @@ func _on_mouse_exited() -> void:
 	_hover_timer.stop()
 	if _tooltip:
 		_tooltip.hide_tooltip()
-		fixed_tooltip_slot.visible = false
+		var slot = _get_global_tooltip_slot()
+		if slot: slot.visible = false
 
 func _show_tooltip() -> void:
-	if not _hovered_skill or not _tooltip: return
+	if not _hovered_skill or not tooltip_scene: return
+	
+	var slot = _get_global_tooltip_slot()
+	if not slot: return
+	
+	if _tooltip == null:
+		_tooltip = tooltip_scene.instantiate()
+		var centerer = slot.get_node_or_null("Centerer")
+		if centerer:
+			centerer.add_child(_tooltip)
+		else:
+			slot.add_child(_tooltip)
+	elif _tooltip.get_parent() != slot.get_node_or_null("Centerer") and _tooltip.get_parent() != slot:
+		if _tooltip.get_parent():
+			_tooltip.get_parent().remove_child(_tooltip)
+		var centerer = slot.get_node_or_null("Centerer")
+		if centerer:
+			centerer.add_child(_tooltip)
+		else:
+			slot.add_child(_tooltip)
 	
 	_tooltip.setup(_hovered_skill)
-	fixed_tooltip_slot.visible = true
+	slot.visible = true
 	_tooltip.show_at(Vector2.ZERO) # 座標不再重要，因為在容器內
+
+func _get_global_tooltip_slot() -> PanelContainer:
+	# 尋找全域的 DeploymentUI 上的槽位
+	var deployment_ui = get_tree().get_first_node_in_group("deployment_ui")
+	if deployment_ui:
+		return deployment_ui.get_node_or_null("%CenterTooltipSlot") as PanelContainer
+	return null

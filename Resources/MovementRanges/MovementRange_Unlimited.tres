@@ -4,14 +4,13 @@
 
 [resource]
 script = ExtResource("1")
-display_name = "Unlimited Movement"
-north = 2
-south = 2
-west = 2
-east = 2
-northwest = 2
-northeast = 2
-southwest = 2
-southeast = 2
+display_name = "Four-Way One-Step"
+north = 1
+south = 1
+west = 1
+east = 1
+northwest = 0
+northeast = 0
+southwest = 0
+southeast = 0
 limit_to_furthest = true
-

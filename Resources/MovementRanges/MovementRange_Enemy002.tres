@@ -5,11 +5,11 @@
 [resource]
 script = ExtResource("1")
 display_name = "Enemy002 Movement (Giant)"
-north = 0
+north = 1
 south = 1
-west = 0
-east = 2
-northwest = 1
+west = 1
+east = 1
+northwest = 0
 northeast = 0
 southwest = 0
 southeast = 0

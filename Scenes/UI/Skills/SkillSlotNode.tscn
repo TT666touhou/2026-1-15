@@ -5,8 +5,8 @@
 
 [node name="SkillSlotNode" type="Button"]
 custom_minimum_size = Vector2(80, 80)
-offset_right = 80.0
-offset_bottom = 80.0
+layout_mode = 2
+size_flags_horizontal = 3
 focus_mode = 0
 script = ExtResource("1")
 
@@ -54,7 +54,7 @@ layout_mode = 2
 mouse_filter = 2
 theme_override_constants/h_separation = 1
 theme_override_constants/v_separation = 1
-columns = 7
+columns = 11
 
 [node name="Label" type="Label" parent="Margin/VBox"]
 layout_mode = 2

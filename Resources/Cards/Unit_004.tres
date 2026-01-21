@@ -3,7 +3,7 @@
 [ext_resource type="Script" path="res://Resources/Cards/UnitCard.gd" id="1_unitcard"]
 [ext_resource type="PackedScene" path="res://Scenes/Entities/Player/Unit004.tscn" id="2_unitscene"]
 [ext_resource type="Resource" path="res://Footprints/Footprint_1x1.tres" id="3_footprint"]
-[ext_resource type="Resource" path="res://Resources/MovementRanges/MovementRange_Unlimited.tres" id="4_movement"]
+[ext_resource type="Resource" path="res://Resources/MovementRanges/MovementRange_OneStep.tres" id="4_movement"]
 [ext_resource type="Resource" path="res://Resources/Factions/Faction_Player.tres" id="5_faction"]
 [ext_resource type="Texture2D" path="res://Tilesheet/1bit_assetpack/1bit_assetpack/characters/warrior.png" id="6_icon"]
 [ext_resource type="Resource" path="res://Resources/Skills/TestSkills/Skill_Tactical_Move.tres" id="7_s1"]
@@ -24,6 +24,7 @@ max_health = 120.0
 attack_damage = 25
 attack_depth = 1
 base_combo_count = 1.0
+base_movement_speed = 3.0
 move_speed_anim = 300.0
 base_crit_rate = 0.05
 base_luck = 0

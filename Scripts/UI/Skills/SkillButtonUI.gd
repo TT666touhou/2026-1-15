@@ -36,6 +36,10 @@ func setup(data: UnitSkillData, char_data: CharacterData, unit: GridEntity = nul
 	# 初始化時立即更新一次狀態與視覺
 	_update_unit_status()
 	_update_visuals()
+	
+	# 確保縮放比例始終為 1，防止懸停改變大小
+	scale = Vector2.ONE
+	pivot_offset = size / 2.0
 
 func _ready() -> void:
 	# 確保進入場景時再次檢查
@@ -47,6 +51,9 @@ func _gui_input(event: InputEvent) -> void:
 		accept_event()
 
 func _process(_delta: float) -> void:
+	# 確保縮放比例始終為 1，防止懸停改變大小
+	scale = Vector2.ONE
+	
 	_update_cooldown()
 	_update_unit_status()
 

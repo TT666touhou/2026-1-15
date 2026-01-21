@@ -1,13 +1,15 @@
 extends Control
 class_name ComboIndicatorUI
 
-@onready var panel_container: PanelContainer = $PanelContainer
-@onready var value_label: Label = $PanelContainer/HBoxContainer/ValueLabel
+@onready var panel_container: PanelContainer = get_node_or_null("PanelContainer")
+@onready var value_label: Label = get_node_or_null("PanelContainer/VBoxContainer/HBoxContainer/ValueLabel")
 
 var _tween: Tween
 
 func _ready() -> void:
 	visible = false
+	if not panel_container:
+		return
 	# Ensure correct positioning relative to parent if needed
 	# Default pivot to bottom-center for pop-up animation
 	panel_container.pivot_offset = Vector2(panel_container.size.x / 2, panel_container.size.y)
@@ -25,6 +27,9 @@ func _ready() -> void:
 func show_combo(count: int) -> void:
 	if count <= 0:
 		hide_combo()
+		return
+		
+	if not value_label or not panel_container:
 		return
 		
 	var old_text = value_label.text
@@ -52,6 +57,8 @@ func force_hide() -> void:
 		_tween.kill()
 
 func _play_pop_in_animation() -> void:
+	if not panel_container:
+		return
 	if _tween and _tween.is_valid():
 		_tween.kill()
 		
@@ -61,6 +68,8 @@ func _play_pop_in_animation() -> void:
 		.set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
 
 func _play_bounce_animation() -> void:
+	if not panel_container:
+		return
 	if _tween and _tween.is_valid():
 		_tween.kill()
 		
@@ -76,8 +85,9 @@ func _unhandled_input(event: InputEvent) -> void:
 	if not OS.is_debug_build():
 		return
 		
-	# Only enable if running this scene standalone OR if explicitly enabled
-	# Checking if parent is root (standalone) or if we are just testing
+	if not value_label:
+		return
+		
 	if get_tree().current_scene == self or get_parent() == get_tree().current_scene:
 		if event is InputEventKey and event.pressed and event.shift_pressed:
 			if event.keycode >= KEY_1 and event.keycode <= KEY_9:

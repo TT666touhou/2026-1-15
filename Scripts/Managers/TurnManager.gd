@@ -8,6 +8,7 @@ signal turn_started(faction: FactionDefinition)
 signal turn_ended(faction: FactionDefinition)
 signal state_changed(new_state: State)
 signal free_roam_mode_changed(enabled: bool)
+signal enemy_turn_ticked # 用於通知子彈與攻擊組件的回合步進
 
 enum State {
 	DEPLOYMENT,
@@ -94,6 +95,9 @@ func start_turn() -> void:
 	# 核心：重置所有單位的技能冷卻與移動標記 (不分陣營，確保所有人都能在下一輪行動)
 	_decrement_all_skill_cooldowns()
 	
+	# 通知所有回合制組件 (子彈、AI 預警)
+	enemy_turn_ticked.emit()
+	
 	if current_faction.is_controllable:
 		_set_state(State.PLAYER_TURN)
 	else:
@@ -108,34 +112,42 @@ func start_turn() -> void:
 	turn_count_changed.emit(turn_count)
 
 func _run_enemy_ai_sequence() -> void:
+	print("[TurnManager] Starting Enemy AI Sequence for faction: ", current_faction.resource_name if current_faction else "null")
 	# 1. 稍微延遲一點讓 UI 顯示「敵人回合」
 	await get_tree().create_timer(0.4).timeout
 	
-	# 2. 計算最佳單一移動方案 (Greedy Single Move)
-	var move_data = EnemyAIController.calculate_best_move(get_tree(), current_faction)
+	# 2. 獲取當前陣營所有單位
+	var entities = get_tree().get_nodes_in_group("grid_entities")
+	var enemy_units = entities.filter(func(e): 
+		return e is GridEntity and e.faction == current_faction
+	)
 	
-	# 3. 執行移動
-	if not move_data.is_empty():
-		var unit = move_data.unit
-		var target_cell = move_data.cell
+	print("[TurnManager] Found ", enemy_units.size(), " units to move.")
+	
+	# 3. 遍歷每個單位執行移動
+	for unit in enemy_units:
+		if not is_instance_valid(unit): continue
 		
-		if unit.grid_position != target_cell:
-			print("[TurnManager] AI moving single unit ", unit.name, " to ", target_cell)
-			var mover = unit.get_node_or_null("GridMover")
-			if mover:
-				lock_input() # AI 移動期間也鎖定，防止玩家誤操作
-				await mover.move_to(target_cell)
-				unlock_input()
-				# 移動完畢後稍微停頓
-				await get_tree().create_timer(0.2).timeout
+		print("[TurnManager] Processing move for: ", unit.name)
+		var move_data = EnemyAIController.calculate_best_move_for_unit(get_tree(), unit)
+		
+		if not move_data.is_empty():
+			var target_cell = move_data.cell
+			
+			if unit.grid_position != target_cell:
+				print("[TurnManager] AI moving ", unit.name, " to ", target_cell)
+				var mover = unit.get_node_or_null("GridMover")
+				if mover:
+					lock_input() 
+					await mover.move_to(target_cell)
+					unlock_input()
+					await get_tree().create_timer(0.1).timeout
+				else:
+					unit.set_grid_position(target_cell)
 			else:
-				unit.set_grid_position(target_cell)
+				print("[TurnManager] AI unit ", unit.name, " decided to stay still.")
 		else:
-			print("[TurnManager] AI decided to stay still.")
-			await get_tree().create_timer(0.4).timeout
-	else:
-		print("[TurnManager] No valid move found for AI.")
-		await get_tree().create_timer(0.4).timeout
+			print("[TurnManager] No valid move found for ", unit.name)
 	
 	# 4. 進入結算階段 (執行攻擊)
 	await advance_turn()

@@ -1,0 +1,17 @@
+[gd_scene load_steps=4 format=3]
+
+[ext_resource type="Script" path="res://Scripts/Entities/TurretEntity.gd" id="1_script"]
+[ext_resource type="Texture2D" uid="uid://igs8giojsm55" path="res://Tilesheet/colored-transparent_packed.png" id="2_texture"]
+[ext_resource type="Resource" path="res://Footprints/Footprint_1x1.tres" id="3_footprint"]
+
+[node name="Turret" type="CharacterBody2D"]
+script = ExtResource("1_script")
+footprint_data = ExtResource("3_footprint")
+
+[node name="Sprite2D" type="Sprite2D" parent="."]
+texture_filter = 1
+texture = ExtResource("2_texture")
+region_enabled = true
+region_rect = Rect2(624, 144, 16, 16)
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="."]

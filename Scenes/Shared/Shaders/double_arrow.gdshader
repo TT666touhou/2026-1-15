@@ -38,6 +38,6 @@ void fragment() {
 		final_color = texture(TEXTURE, UV);
 	}
 	
-	COLOR = final_color;
+	// 乘以 COLOR 以支援 Modulate (透明度與顏色)
+	COLOR = final_color * COLOR;
 }
-

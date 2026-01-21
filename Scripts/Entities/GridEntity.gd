@@ -19,7 +19,13 @@ var move_limit: int = -1 # 移動距離限制 (-1 為無限制)
 var attack_range_depth: int = 1 # 攻擊範圍深度
 var is_boss: bool = false # 是否為 BOSS (死亡後通關)
 var combo_indicator: ComboIndicatorUI # Combo 顯示組件
-var health_bar: Node = null
+
+# 箭頭與指示器相關
+var arrow_texture = preload("res://Tilesheet/1bit_assetpack/selfmade/ARROW.png")
+
+# Shader 相關：控制受傷裂痕與閃爍
+var combined_shader = preload("res://Shaders/UnitCombined.gdshader")
+var _combined_material: ShaderMaterial
 
 signal movement_data_changed # 通知 UI 更新移動範圍
 signal entry_animation_finished # 進場動畫結束
@@ -79,8 +85,32 @@ func _ready() -> void:
 	
 	# 註冊所有佔用的格子 (移至 set_grid_position 或由 MapLoader 觸發，避免預設 (0,0) 幽靈佔用)
 	# _register_cells()
-	_init_health_bar_from_footprint()
 	_update_ui_positions()
+
+	# 單位移動與攻擊方向指示器 (自動為敵人添加)
+	if faction and not faction.is_controllable:
+		var arrow_node = get_node_or_null("UnitMovementArrows")
+		if not arrow_node:
+			var arrow_scene = load("res://Scenes/UI/UnitMovementArrows.tscn")
+			if arrow_scene:
+				arrow_node = arrow_scene.instantiate()
+				arrow_node.name = "UnitMovementArrows"
+				add_child(arrow_node)
+		
+		call_deferred("update_attack_indicators", 0.0)
+	elif faction and faction.is_controllable:
+		# 玩家單位加入群組
+		add_to_group("player")
+
+func update_attack_indicators(progress: float = 0.0, direction: Vector2i = Vector2i.ZERO) -> void:
+	"""更新攻擊指示器進度 (進場動畫中、或攻擊預警中)"""
+	var arrow_node = get_node_or_null("UnitMovementArrows")
+	if arrow_node and arrow_node.has_method("set_attack_progress"):
+		arrow_node.set_attack_progress(progress, direction)
+	elif arrow_node:
+		# 如果還沒更新過進度，則根據移動規則顯示箭頭
+		if arrow_node.has_method("update_display"):
+			arrow_node.update_display()
 
 func _update_ui_positions() -> void:
 	if combo_indicator:
@@ -350,70 +380,21 @@ func modify_movement(direction: Vector2i, type: int) -> void:
 		movement_range_data.set_movement_type(direction, type)
 		movement_data_changed.emit()
 
-func _init_health_bar_from_footprint() -> void:
-	if health_bar == null:
-		health_bar = get_node_or_null("StatBar")
-	if health_bar == null:
-		health_bar = get_node_or_null("HealthBar")
-	
-	# --- 自動為敵方配置血條，並隱藏我方血條 ---
-	if faction:
-		if faction.is_controllable:
-			# 我方單位：隱藏血條
-			if health_bar:
-				health_bar.visible = false
-		else:
-			# 敵方單位：確保有血條，若無則自動添加
-			if health_bar == null:
-				var bar_scene = load("res://Scenes/UI/StatBar.tscn")
-				if bar_scene:
-					health_bar = bar_scene.instantiate()
-					# 使用 call_deferred 避免 "Parent node is busy" 錯誤
-					call_deferred("add_child", health_bar)
-					# 等待準備好後執行配置
-					health_bar.ready.connect(func():
-						move_child(health_bar, 0)
-						_configure_health_bar()
-					)
-					print("[GridEntity] Automatically added StatBar to enemy: ", name)
-			
-			if health_bar:
-				health_bar.visible = true
-	
-	if health_bar == null:
-		return
-	
-	_configure_health_bar()
-
-func _configure_health_bar() -> void:
-	if health_bar == null or not health_bar.is_inside_tree():
-		return
-		
-	# 取得格子尺寸，若 grid 未初始化則使用預設 16x16
-	var cell_size: Vector2i = Vector2i(16, 16)
-	if grid and ("cell_size" in grid):
-		cell_size = grid.cell_size
-	
-	var width_cells := 1
-	var height_cells := 1
-	if footprint_data and footprint_data.has_method("get_bounds"):
-		var bounds = footprint_data.get_bounds()
-		width_cells = max(1, bounds.size.x)
-		height_cells = max(1, bounds.size.y)
-	
-	if health_bar.has_method("configure_from_grid"):
-		health_bar.configure_from_grid(cell_size, width_cells, height_cells)
-	
-	if character_data:
-		var eff = character_data.get_effective_max_health()
-		if health_bar.has_method("set_health"):
-			health_bar.set_health(character_data.current_health, eff)
-		elif health_bar.has_method("update_bar"):
-			health_bar.update_bar(character_data.current_health, eff)
-
 func setup_character(data: CharacterData) -> void:
 	character_data = data
 	
+	# 套用受傷裂痕與閃爍 Shader
+	var sprite = get_node_or_null("Sprite2D")
+	if sprite:
+		_combined_material = ShaderMaterial.new()
+		_combined_material.shader = combined_shader
+		sprite.material = _combined_material
+		
+		# 初始化血量百分比
+		if character_data:
+			var hp_percent = float(character_data.current_health) / float(character_data.get_effective_max_health())
+			_combined_material.set_shader_parameter("health_percent", hp_percent)
+
 	if data.unit_def:
 		if "attack_depth" in data.unit_def:
 			attack_range_depth = data.unit_def.attack_depth
@@ -442,8 +423,7 @@ func setup_character(data: CharacterData) -> void:
 		if not data.saved_status_data.is_empty():
 			status_mgr.load_save_data(data.saved_status_data)
 	
-	# 確保在設置角色後重新檢查血條顯示狀態
-	_init_health_bar_from_footprint()
+	# 確保在設置角色後更新 Shader 狀態
 	_on_health_changed(data.current_health, data.get_effective_max_health())
 
 func apply_overrides(overrides: Dictionary) -> void:
@@ -600,15 +580,6 @@ func take_damage(amount: int, ignore_barrier: bool = false, ignore_shield: bool 
 
 func _apply_damage_visuals(damage_int: int, is_pursuit: bool) -> void:
 	"""套用受傷相關的視覺與 UI 更新"""
-	if health_bar and character_data:
-		var eff = character_data.get_effective_max_health()
-		# 使用目前 CharacterData 中的血量 (因為剛才已經由 take_damage 更新過)
-		var current_hp = character_data.current_health
-		if health_bar.has_method("on_damage"):
-			health_bar.on_damage(damage_int, current_hp, eff)
-		elif health_bar.has_method("update_bar"):
-			health_bar.update_bar(current_hp, eff)
-
 	if is_pursuit:
 		show_pursuit_number(damage_int)
 	else:
@@ -632,11 +603,10 @@ func heal(amount: int) -> void:
 		show_heal_number(amount)
 
 func _on_health_changed(_current: int, _max_h: int) -> void:
-	if health_bar:
-		if health_bar.has_method("set_health"):
-			health_bar.set_health(_current, _max_h)
-		elif health_bar.has_method("update_bar"):
-			health_bar.update_bar(_current, _max_h)
+	# 更新 Shader 中的血量百分比
+	if _combined_material:
+		var hp_percent = float(_current) / float(_max_h)
+		_combined_material.set_shader_parameter("health_percent", hp_percent)
 
 func _on_died() -> void:
 	_handle_death()

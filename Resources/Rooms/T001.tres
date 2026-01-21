@@ -11,20 +11,6 @@ difficulty = 0
 "overrides": {},
 "pos": Vector2i(4, 2)
 }, {
-"card_path": "res://Resources/Cards/Enemy_002.tres",
-"overrides": {
-"is_boss": true
-},
-"pos": Vector2i(3, 4)
-}, {
-"card_path": "res://Resources/Cards/Enemy_001.tres",
-"overrides": {},
-"pos": Vector2i(4, 3)
-}, {
-"card_path": "res://Resources/Cards/Enemy_001.tres",
-"overrides": {},
-"pos": Vector2i(2, 5)
-}, {
 "card_path": "res://Resources/Cards/Prop_Wall_1x1.tres",
 "overrides": {},
 "pos": Vector2i(1, 1)

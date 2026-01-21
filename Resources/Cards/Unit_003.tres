@@ -3,7 +3,7 @@
 [ext_resource type="Script" path="res://Resources/Cards/UnitCard.gd" id="1_unitcard"]
 [ext_resource type="PackedScene" path="res://Scenes/Entities/Player/Unit003.tscn" id="2_unitscene"]
 [ext_resource type="Resource" path="res://Footprints/Footprint_1x1.tres" id="3_footprint"]
-[ext_resource type="Resource" path="res://Resources/MovementRanges/MovementRange_Unit003.tres" id="4_movement"]
+[ext_resource type="Resource" path="res://Resources/MovementRanges/MovementRange_OneStep.tres" id="4_movement"]
 [ext_resource type="Resource" path="res://Resources/Factions/Faction_Player.tres" id="5_faction"]
 [ext_resource type="Texture2D" path="res://Tilesheet/1bit_assetpack/1bit_assetpack/characters/wizard.png" id="6_icon"]
 [ext_resource type="Resource" path="res://Resources/Skills/TestSkills/Skill_Move_Rel_X.tres" id="7_s1"]
@@ -41,7 +41,7 @@ base_barriers = 0
 max_health = 80.0
 card_id = "unit_003"
 card_name = "Unit 003"
-description = "A fast scout that moves diagonally."
+description = "A powerful wizard that moves in any cardinal direction without limit."
 cost = {
 "soul": 15
 }
