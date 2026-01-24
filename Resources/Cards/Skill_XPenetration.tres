@@ -1,7 +1,7 @@
-[gd_resource type="Resource" script_class="UnitSkillData" load_steps=6 format=3]
+[gd_resource type="Resource" script_class="SkillCard" load_steps=6 format=3]
 [ext_resource type="Resource" path="res://Resources/Skills/CustomSkills/Effect_Penetration_100.tres" id="1_effect"]
 [ext_resource type="Script" path="res://Scripts/SkillSystem/TargetingDefinition.gd" id="2_target"]
-[ext_resource type="Script" path="res://Scripts/SkillSystem/UnitSkillData.gd" id="3_skill"]
+[ext_resource type="Script" path="res://Scripts/SkillSystem/SkillCard.gd" id="3_skill_card"]
 
 [sub_resource type="Resource" id="Resource_selection"]
 script = ExtResource("2_target")
@@ -22,7 +22,11 @@ can_target_empty = false
 pattern_7x7 = Array[bool]([])
 
 [resource]
-script = ExtResource("3_skill")
+script = ExtResource("3_skill_card")
+soul_cost = 1
+exclusive_unit_id = ""
+card_id = "x_penetration"
+manual_description_en = "Deals {scaling} piercing damage to enemies in an X-shaped area."
 skill_name = "貫穿震擊"
 description = "【移動後觸發】對 X 型無限距離（10格）內的敵人造成 100% 攻擊力穿透傷害"
 execution_mode = 1
@@ -38,4 +42,3 @@ effects = Array[Resource]([ExtResource("1_effect")])
 is_move_skill = false
 post_move_targeting = SubResource("Resource_effect_range")
 post_move_effects = Array[Resource]([])
-

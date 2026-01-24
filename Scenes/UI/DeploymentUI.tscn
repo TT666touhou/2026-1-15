@@ -3,7 +3,6 @@
 [ext_resource type="Script" uid="uid://basec800652wh" path="res://Scripts/UI/DeploymentUI.gd" id="1_script"]
 [ext_resource type="Texture2D" uid="uid://0modheirbetv" path="res://Tilesheet/kenney_fantasy-ui-borders/Vector/fantasy-ui-borders.svg" id="2_vnffd"]
 [ext_resource type="PackedScene" path="res://Scenes/UI/ResourceHUD.tscn" id="3_resource_hud"]
-[ext_resource type="PackedScene" path="res://Scenes/UI/Skills/SkillBarNode.tscn" id="4_skill_bar"]
 
 [sub_resource type="StyleBoxFlat" id="StyleBoxFlat_opaque"]
 bg_color = Color(0.05, 0.05, 0.05, 1)
@@ -100,19 +99,6 @@ size_flags_vertical = 3
 layout_mode = 2
 size_flags_horizontal = 3
 theme_override_constants/separation = 10
-
-[node name="UnitSkillBar" parent="LeftPanel" instance=ExtResource("4_skill_bar")]
-layout_mode = 1
-anchors_preset = 12
-anchor_top = 1.0
-anchor_right = 1.0
-anchor_bottom = 1.0
-offset_left = 16.0
-offset_top = -180.0
-offset_right = -16.0
-offset_bottom = -16.0
-grow_horizontal = 2
-grow_vertical = 0
 
 [node name="LeaderContainer" type="PanelContainer" parent="LeftPanel/VBox"]
 visible = false

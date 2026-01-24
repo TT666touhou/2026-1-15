@@ -97,6 +97,12 @@ theme_override_colors/font_color = Color(1, 0.4, 0.4, 1)
 theme_override_font_sizes/font_size = 12
 text = "ATK: 10"
 
+[node name="SpdLabel" type="Label" parent="HBox/InfoBox/StatsGrid"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.4, 0.8, 1, 1)
+theme_override_font_sizes/font_size = 12
+text = "SPD: 3"
+
 [node name="AvdLabel" type="Label" parent="HBox/InfoBox/StatsGrid"]
 layout_mode = 2
 theme_override_colors/font_color = Color(0.8, 0.4, 1, 1)

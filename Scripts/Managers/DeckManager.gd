@@ -37,7 +37,24 @@ func _ready() -> void:
 
 func register_hand(hand: Control) -> void:
 	_hand_ref = hand
-	print("[DeckSystem] Hand registered: ", hand)
+	print("[DeckSystem] Hand registered successfully: ", hand.get_path())
+	
+	# DEBUG: Spawn initial cards to test visuals and system
+	print("[DeckSystem] Triggering debug card spawn for all skills...")
+	var cards_to_add = [
+		"res://Resources/Cards/Skill_MoveRight.tres",
+		"res://Resources/Cards/Skill_MoveLeft.tres",
+		"res://Resources/Cards/Skill_MoveUp.tres",
+		"res://Resources/Cards/Skill_MoveDown.tres",
+		"res://Resources/Cards/Skill_CheckerDamage.tres",
+		"res://Resources/Cards/Skill_GlobalDamage.tres",
+		"res://Resources/Cards/Skill_XPenetration.tres"
+	]
+	
+	for card_path in cards_to_add:
+		var card_res = load(card_path)
+		if card_res:
+			call_deferred("debug_add_card_to_hand", card_res)
 
 func register_deck_ui(node: Control) -> void:
 	_deck_ui_ref = node
@@ -270,10 +287,14 @@ func get_deck_count_str() -> String:
 	return "%d / %d" % [_master_deck.size(), max_deck_size]
 
 func debug_add_card_to_hand(base_data: Resource) -> void:
+#	print("[DeckSystem] debug_add_card_to_hand called with data: ", base_data)
 	var new_card = RuntimeCardData.create(base_data)
 	hand_pile.append(new_card)
 	if _hand_ref and _hand_ref.has_method("add_card"):
+#		print("[DeckSystem] Hand reference found, calling add_card on Hand node")
 		_hand_ref.add_card(new_card)
+	else:
+		print("[DeckSystem] ERROR: Hand reference is null or missing add_card method! _hand_ref is: ", _hand_ref)
 	deck_changed.emit()
 
 func debug_test_recycle_animation() -> void:

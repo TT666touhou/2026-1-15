@@ -25,11 +25,18 @@ func _ready() -> void:
 		show_combo(2)
 
 func show_combo(count: int) -> void:
+	var parent_name: String
+	if get_parent():
+		parent_name = str(get_parent().name)
+	else:
+		parent_name = "None"
+	print("[ComboUI] show_combo called with count: ", count, " | visible: ", visible, " | global_pos: ", global_position, " | parent: ", parent_name)
 	if count <= 0:
 		hide_combo()
 		return
 		
 	if not value_label or not panel_container:
+		print("[ComboUI] Warning: value_label or panel_container is null!")
 		return
 		
 	var old_text = value_label.text
@@ -40,6 +47,11 @@ func show_combo(count: int) -> void:
 	panel_container.pivot_offset = Vector2(panel_container.size.x / 2, panel_container.size.y)
 	# 核心修正：將面板向左偏移自身寬度的一半，達成水平居中
 	panel_container.position.x = -panel_container.size.x / 2.0
+	
+	# 核心修正：確保在縮放後的 GridEntity 中依然可見
+	# 強制設定 z_index 和 visible，確保 UI 在最上層
+	z_index = 100
+	visible = true
 	
 	if not visible:
 		visible = true

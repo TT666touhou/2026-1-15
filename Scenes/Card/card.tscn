@@ -14,6 +14,22 @@ shader_parameter/y_rot = 0.0
 shader_parameter/x_rot = 0.0
 shader_parameter/inset = 0.0
 
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_SkillInfo"]
+bg_color = Color(1, 1, 1, 1)
+corner_radius_top_left = 0
+corner_radius_top_right = 0
+corner_radius_bottom_right = 0
+corner_radius_bottom_left = 0
+expand_margin_left = 0.0
+expand_margin_top = 0.0
+expand_margin_right = 0.0
+expand_margin_bottom = 0.0
+border_width_left = 0
+border_width_top = 1
+border_width_right = 0
+border_width_bottom = 0
+border_color = Color(0, 0, 0, 0.1)
+
 [node name="Card" type="Control"]
 custom_minimum_size = Vector2(80, 120)
 layout_mode = 3
@@ -85,13 +101,14 @@ anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
 mouse_filter = 2
-theme_override_constants/margin_left = 0
-theme_override_constants/margin_top = 0
-theme_override_constants/margin_right = 0
-theme_override_constants/margin_bottom = 0
+theme_override_constants/margin_left = 24
+theme_override_constants/margin_top = 24
+theme_override_constants/margin_right = 24
+theme_override_constants/margin_bottom = 24
 
 [node name="VBoxContainer" type="VBoxContainer" parent="SubViewportContainer/SubViewport/CardContent/MarginContainer"]
 layout_mode = 2
+theme_override_constants/separation = 10
 mouse_filter = 2
 
 [node name="TopBar" type="HBoxContainer" parent="SubViewportContainer/SubViewport/CardContent/MarginContainer/VBoxContainer"]
@@ -108,14 +125,8 @@ horizontal_alignment = 1
 vertical_alignment = 1
 text_overrun_behavior = 3
 
-[node name="CostLabel" type="Label" parent="SubViewportContainer/SubViewport/CardContent/MarginContainer/VBoxContainer/TopBar"]
-layout_mode = 2
-size_flags_horizontal = 8
-size_flags_vertical = 0
-theme_override_font_sizes/font_size = 40
-text = "0"
-
 [node name="ImageContainer" type="Control" parent="SubViewportContainer/SubViewport/CardContent/MarginContainer/VBoxContainer"]
+custom_minimum_size = Vector2(0, 120)
 layout_mode = 2
 size_flags_vertical = 3
 mouse_filter = 2
@@ -131,6 +142,30 @@ grow_vertical = 2
 mouse_filter = 2
 expand_mode = 1
 stretch_mode = 5
+
+[node name="SkillInfoArea" type="PanelContainer" parent="SubViewportContainer/SubViewport/CardContent/MarginContainer/VBoxContainer"]
+layout_mode = 2
+size_flags_horizontal = 4
+mouse_filter = 2
+theme_override_styles/panel = SubResource("StyleBoxFlat_SkillInfo")
+
+[node name="SkillVBox" type="VBoxContainer" parent="SubViewportContainer/SubViewport/CardContent/MarginContainer/VBoxContainer/SkillInfoArea"]
+layout_mode = 2
+theme_override_constants/separation = 4
+mouse_filter = 2
+alignment = 1
+
+[node name="SkillRangeContainer" type="CenterContainer" parent="SubViewportContainer/SubViewport/CardContent/MarginContainer/VBoxContainer/SkillInfoArea/SkillVBox"]
+layout_mode = 2
+mouse_filter = 2
+
+[node name="MiniRangeGrid" type="GridContainer" parent="SubViewportContainer/SubViewport/CardContent/MarginContainer/VBoxContainer/SkillInfoArea/SkillVBox/SkillRangeContainer"]
+unique_name_in_owner = true
+layout_mode = 2
+mouse_filter = 2
+theme_override_constants/h_separation = 1
+theme_override_constants/v_separation = 1
+columns = 7
 
 [connection signal="mouse_entered" from="." to="." method="_on_mouse_entered"]
 [connection signal="mouse_exited" from="." to="." method="_on_mouse_exited"]

@@ -8,6 +8,7 @@ class_name DeploymentMemberCard
 @onready var hp_bar: ProgressBar = $HBox/InfoBox/StatsBox/HPBarContainer/HPBar
 @onready var barrier_container: HBoxContainer = $HBox/InfoBox/StatsBox/BarrierContainer
 @onready var atk_label: Label = $HBox/InfoBox/StatsGrid/AtkLabel
+@onready var spd_label: Label = $HBox/InfoBox/StatsGrid/SpdLabel
 @onready var avd_label: Label = $HBox/InfoBox/StatsGrid/AvdLabel
 @onready var acc_label: Label = $HBox/InfoBox/StatsGrid/AccLabel
 @onready var dr_label: Label = $HBox/InfoBox/StatsGrid/DRLabel
@@ -58,15 +59,16 @@ func _ready() -> void:
 		_run_debug_mode()
 
 func _log_heights() -> void:
-	print("[DeploymentMemberCard] DEBUG HEIGHT REPORT")
-	print("  Self min_size: ", custom_minimum_size, " | Size: ", size)
-	if info_box: print("  InfoBox min_size: ", info_box.custom_minimum_size, " | Size: ", info_box.size)
-	if leader_skill_box: print("  LeaderSkillBox min_size: ", leader_skill_box.custom_minimum_size, " | Size: ", leader_skill_box.size)
-	if equipment_box: print("  EquipmentBox min_size: ", equipment_box.custom_minimum_size, " | Size: ", equipment_box.size)
-	if GlobalSettings.has_method("get_use_simplified_stats_ui"):
-		print("  Simplified Mode: ", GlobalSettings.get_use_simplified_stats_ui())
-	else:
-		print("  Simplified Mode: API MISSING")
+	pass
+#	print("[DeploymentMemberCard] DEBUG HEIGHT REPORT")
+#	print("  Self min_size: ", custom_minimum_size, " | Size: ", size)
+#	if info_box: print("  InfoBox min_size: ", info_box.custom_minimum_size, " | Size: ", info_box.size)
+#	if leader_skill_box: print("  LeaderSkillBox min_size: ", leader_skill_box.custom_minimum_size, " | Size: ", leader_skill_box.size)
+#	if equipment_box: print("  EquipmentBox min_size: ", equipment_box.custom_minimum_size, " | Size: ", equipment_box.size)
+#	if GlobalSettings.has_method("get_use_simplified_stats_ui"):
+#		print("  Simplified Mode: ", GlobalSettings.get_use_simplified_stats_ui())
+#	else:
+#		print("  Simplified Mode: API MISSING")
 
 
 func _run_debug_mode() -> void:
@@ -203,6 +205,7 @@ func _update_stats(_unused = null) -> void:
 	
 	# Primary Stats
 	atk_label.text = "ATK: %d" % eff_atk
+	spd_label.text = "SPD: %d" % int(character_data.get_move_distance(false))
 	
 	# 處理精簡模式
 	var is_simplified = false

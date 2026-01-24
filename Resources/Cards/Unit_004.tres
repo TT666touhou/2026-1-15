@@ -1,4 +1,4 @@
-[gd_resource type="Resource" script_class="UnitCard" load_steps=12 format=3]
+[gd_resource type="Resource" script_class="UnitCard" load_steps=8 format=3]
 
 [ext_resource type="Script" path="res://Resources/Cards/UnitCard.gd" id="1_unitcard"]
 [ext_resource type="PackedScene" path="res://Scenes/Entities/Player/Unit004.tscn" id="2_unitscene"]
@@ -6,8 +6,6 @@
 [ext_resource type="Resource" path="res://Resources/MovementRanges/MovementRange_OneStep.tres" id="4_movement"]
 [ext_resource type="Resource" path="res://Resources/Factions/Faction_Player.tres" id="5_faction"]
 [ext_resource type="Texture2D" path="res://Tilesheet/1bit_assetpack/1bit_assetpack/characters/warrior.png" id="6_icon"]
-[ext_resource type="Resource" path="res://Resources/Skills/TestSkills/Skill_Tactical_Move.tres" id="7_s1"]
-[ext_resource type="Resource" path="res://Resources/Skills/TestSkills/Skill_Move_Rel_X.tres" id="8_s2"]
 
 [sub_resource type="AtlasTexture" id="AtlasTexture_icon"]
 atlas = ExtResource("6_icon")
@@ -40,7 +38,7 @@ base_parry = 0.0
 base_drain = 0.0
 base_crit_dmg = 0.0
 base_penetration = 0.0
-default_skills = Array[Resource]([ExtResource("7_s1"), ExtResource("8_s2")])
+default_skills = Array[Resource]([])
 card_id = "unit_004"
 card_name = "Unit 004"
 display_name = "Warrior"

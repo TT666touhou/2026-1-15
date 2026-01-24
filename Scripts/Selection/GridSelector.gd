@@ -488,18 +488,23 @@ func _process(delta: float) -> void:
 			_ghost_actor.visible = false
 
 func _update_combo_preview(target_cell: Vector2i) -> void:
-	if not AttackManager: return
+	if not AttackManager: 
+		print("[GridSelector] AttackManager not found")
+		return
 	
 	# 判斷是否會結束回合
 	var will_end_turn = true
 	if _previewing_skill and _previewing_skill.execution_mode == UnitSkillData.ExecutionMode.MOVEMENT:
-		will_end_turn = false
+		# 核心修正：即使是移動技能，在預覽階段也允許顯示連擊，以便玩家知道移動後的結果
+		will_end_turn = true 
 		
 	if not will_end_turn:
+		print("[GridSelector] Combo preview skipped: will not end turn")
 		_clear_active_combo_previews()
 		return
 		
 	var combo_results = AttackManager.calculate_preview_combos(selected_entity, target_cell)
+	print("[GridSelector] Combo preview results for cell ", target_cell, ": ", combo_results)
 	
 	# 核心優化：不再暴力清除所有預覽，而是進行差異更新
 	# 1. 隱藏不再被攻擊的目標
@@ -507,6 +512,7 @@ func _update_combo_preview(target_cell: Vector2i) -> void:
 	for old_target in _active_combo_targets:
 		if not is_instance_valid(old_target) or not old_target in combo_results:
 			if is_instance_valid(old_target) and old_target.has_method("update_combo_display"):
+				print("[GridSelector] Hiding combo for old target: ", old_target.name)
 				old_target.update_combo_display(0)
 			targets_to_remove.append(old_target)
 	
@@ -516,5 +522,14 @@ func _update_combo_preview(target_cell: Vector2i) -> void:
 	# 2. 更新或顯示新目標
 	for target in combo_results:
 		if is_instance_valid(target) and target.has_method("update_combo_display"):
+			print("[GridSelector] Updating combo for target: ", target.name, " | count: ", combo_results[target])
 			target.update_combo_display(combo_results[target])
 			_active_combo_targets[target] = combo_results[target]
+			
+			# 核心修正：確保目標的 ComboIndicatorUI 是可見的且座標正確
+			if target.combo_indicator:
+				target.combo_indicator.visible = true
+				target.combo_indicator.z_index = 100 # 提升層級
+				# 強制更新一次位置
+				if target.has_method("_update_ui_positions"):
+					target._update_ui_positions()

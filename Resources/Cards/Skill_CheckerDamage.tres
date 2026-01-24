@@ -1,7 +1,7 @@
-[gd_resource type="Resource" script_class="UnitSkillData" load_steps=5 format=3]
+[gd_resource type="Resource" script_class="SkillCard" load_steps=6 format=3]
 [ext_resource type="Resource" path="res://Resources/Skills/TestSkills/Effect_Damage_10.tres" id="1_effect"]
 [ext_resource type="Script" path="res://Scripts/SkillSystem/TargetingDefinition.gd" id="2_target"]
-[ext_resource type="Script" path="res://Scripts/SkillSystem/UnitSkillData.gd" id="3_skill"]
+[ext_resource type="Script" path="res://Scripts/SkillSystem/SkillCard.gd" id="3_skill_card"]
 
 [sub_resource type="Resource" id="Resource_target"]
 script = ExtResource("2_target")
@@ -9,25 +9,29 @@ scope_type = 0
 aoe_radius = 0
 origin_is_self = false
 target_filter = 1
-can_target_empty = true
+can_target_empty = false
 pattern_7x7 = Array[bool]([])
 
 [sub_resource type="Resource" id="Resource_effect"]
 script = ExtResource("2_target")
-scope_type = 2
-aoe_radius = 2
-origin_is_self = true
+scope_type = 5
+aoe_radius = 0
+origin_is_self = false
 target_filter = 1
 can_target_empty = false
 pattern_7x7 = Array[bool]([])
 
 [resource]
-script = ExtResource("3_skill")
-skill_name = "重力震擊"
-description = "移動後觸發：在落點周圍 5x5 範圍內造成 100% 攻擊力傷害"
-execution_mode = 1
-targeting_type = 0
-cooldown_turns = 3
+script = ExtResource("3_skill_card")
+soul_cost = 1
+exclusive_unit_id = ""
+card_id = "checker_damage"
+manual_description_en = "Deals {scaling} damage to all enemies in a global checkerboard pattern."
+skill_name = "虛空棋盤"
+description = "立刻發動：對地圖棋盤格間隔範圍內敵人造成 100% 攻擊力傷害"
+execution_mode = 0
+targeting_type = 1
+cooldown_turns = 4
 scaling_configs = Array[Dictionary]([{
 "stat": "attack",
 "weight": 1.0
@@ -37,3 +41,4 @@ targeting = SubResource("Resource_target")
 effects = Array[Resource]([ExtResource("1_effect")])
 is_move_skill = false
 post_move_targeting = SubResource("Resource_effect")
+post_move_effects = Array[Resource]([])

@@ -5,8 +5,6 @@ class_name DeploymentUI
 @onready var member_list: VBoxContainer = $LeftPanel/VBox/ScrollContainer/MemberList
 @onready var drop_indicator: ColorRect = $DropIndicator
 
-var skill_bar = null # 移除類型提示以避免賦值崩潰
-
 const MemberCardScene = preload("res://Scenes/UI/DeploymentMemberCard.tscn")
 
 # Drag Ghost
@@ -17,20 +15,6 @@ var _current_drop_index: int = -1
 func _ready() -> void:
 	add_to_group("deployment_ui")
 	
-	# 動態獲取技能列引用，優先使用直接路徑
-	var found = get_node_or_null("LeftPanel/VBox/UnitSkillBar")
-	if found == null:
-		found = find_child("UnitSkillBar", true, false)
-	
-	if found is SkillBarUI:
-		skill_bar = found
-	else:
-		# 備援方案：在群組中找尋
-		skill_bar = get_tree().get_first_node_in_group("unit_skill_bar")
-	
-	if skill_bar == null and found != null:
-		push_warning("[DeploymentUI] Found node named UnitSkillBar but it's not SkillBarUI: " + str(found))
-
 	# Connect to PartyManager updates
 	if PartyManager:
 		if not PartyManager.party_updated.is_connected(_on_party_updated):
@@ -79,10 +63,6 @@ func initialize_party(members: Array[CharacterData]) -> void:
 	# 隊員 (其餘) - 放入列表
 	for i in range(1, members.size()):
 		add_member_card(members[i], member_list, false)
-	
-	# 更新技能列內容 (如果是隊長變更)
-	if skill_bar and not members.is_empty():
-		skill_bar._refresh_from_party_manager()
 
 func add_member_card(data: CharacterData, parent_node: Control, is_leader: bool = false) -> void:
 	var card = MemberCardScene.instantiate() as DeploymentMemberCard

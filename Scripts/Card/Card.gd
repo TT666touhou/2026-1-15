@@ -73,6 +73,8 @@ var _original_global_position: Vector2
 var _original_rotation: float
 var _original_z: int
 var _is_mouse_hovering: bool = false
+var _hover_timer: Timer = null
+@export var tooltip_delay: float = 0.5
 
 # Drag State (New)
 var _is_right_pressed: bool = false
@@ -93,12 +95,19 @@ var _drag_base_rotation: float = 0.0 # 拖曳時的基準旋轉角度 (會從扇
 # Node References
 @onready var _sub_viewport_container: SubViewportContainer = get_node_or_null("SubViewportContainer")
 @onready var NameLabel: Label = get_node_or_null("SubViewportContainer/SubViewport/CardContent/MarginContainer/VBoxContainer/TopBar/NameLabel")
-@onready var CostLabel: Label = get_node_or_null("SubViewportContainer/SubViewport/CardContent/MarginContainer/VBoxContainer/TopBar/CostLabel")
 @onready var ImageRect: TextureRect = get_node_or_null("SubViewportContainer/SubViewport/CardContent/MarginContainer/VBoxContainer/ImageContainer/Image")
+@onready var MiniRangeGrid: GridContainer = %MiniRangeGrid
 @onready var _rotation_center: Node2D = get_node_or_null("RotationCenter")
 
 func _ready() -> void:
+	# print("[Card] _ready called for card: ", get_path())
 	_update_size()
+	
+	_hover_timer = Timer.new()
+	_hover_timer.wait_time = tooltip_delay
+	_hover_timer.one_shot = true
+	_hover_timer.timeout.connect(_on_hover_timer_timeout)
+	add_child(_hover_timer)
 	
 	if _rotation_center:
 		pivot_offset = _rotation_center.position
@@ -225,7 +234,23 @@ func kill_tweens() -> void:
 	if tween_rot and tween_rot.is_running(): tween_rot.kill()
 	if tween_hover and tween_hover.is_running(): tween_hover.kill()
 
+var _debug_timer := 0.0
+
 func _process(delta: float) -> void:
+	# DEBUG: 每秒監測一次狀態
+	_debug_timer += delta
+#	if _debug_timer >= 1.0:
+#		_debug_timer = 0.0
+#		print("[Card Debug] Path: %s | Visible: %s | InTree: %s | Pos: %s | Scale: %s | Z: %d | Mod: %s" % [
+#			get_path(),
+#			visible,
+#			is_visible_in_tree(),
+#			global_position,
+#			scale,
+#			z_index,
+#			modulate
+#		])
+
 	if _dragging:
 		var mouse := get_global_mouse_position()
 		
@@ -282,71 +307,81 @@ func _finish_drag(_mouse_pos: Vector2) -> void:
 		hand.hide_hand_border()
 
 func _update_display() -> void:
-	if not card_data:
-		return
-	var nm := ""
-	if card_data and card_data.has_method("get_display_name"):
-		nm = card_data.get_display_name()
-	elif card_data and card_data.has_method("get"):
-		var dn = card_data.get("display_name")
-		if dn != null and String(dn) != "":
-			nm = String(dn)
-		else:
-			var cn = card_data.get("card_name")
-			if cn != null:
-				nm = String(cn)
+	# print("[Card] _update_display called. card_data: ", card_data)
+	var nm := "BLANK"
+	var img: Texture2D = null
 	
-	if enable_debug_log:
-		print("[Card] _update_display name=", nm, " cost=", _get_cost_dict())
+	if card_data:
+		if card_data.has_method("get_display_name"):
+			nm = card_data.get_display_name()
+		elif card_data.has_method("get"):
+			var dn = card_data.get("display_name")
+			if dn != null and String(dn) != "":
+				nm = String(dn)
+			else:
+				var cn = card_data.get("card_name")
+				if cn != null:
+					nm = String(cn)
+		
+		if card_data.has_method("get_card_image"):
+			img = card_data.get_card_image()
+		elif "image" in card_data: # Fallback property check
+			img = card_data.get("image")
+	
 	if NameLabel:
 		NameLabel.text = nm
-	if CostLabel:
-		CostLabel.text = _format_cost_text(_get_cost_dict())
 	
-	# Fix: Use call() to safely access get_card_image if it exists, or check for property
 	if ImageRect:
-		var img = null
-		if card_data and card_data.has_method("get_card_image"):
-			img = card_data.get_card_image()
-		elif card_data and "image" in card_data: # Fallback property check
-			img = card_data.image
-			
+		ImageRect.texture = img
 		if img:
-			ImageRect.texture = img
-			# Ensure nearest neighbor filtering for pixel art scaling
 			ImageRect.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
-
-func _get_cost_dict() -> Dictionary:
-	if not card_data: return {}
 	
-	if card_data.has_method("get_cost_dict"):
-		return card_data.get_cost_dict()
-	# Fix: Check property existence before access using "in" keyword or get()
-	elif "cost" in card_data: 
-		var raw = card_data.get("cost")
-		if raw is Dictionary:
-			return raw
-		elif raw is int and raw > 0:
-			return {"wood": raw}
-	return {}
-
-func _format_cost_text(cost_dict: Dictionary) -> String:
-	if cost_dict.is_empty():
-		return "FREE"
-	var key_names: Array[String] = []
-	for key in cost_dict.keys():
-		key_names.append(String(key))
-	key_names.sort()
-	var lines: Array[String] = []
-	for key_str in key_names:
-		var lookup_key := StringName(key_str)
-		var amount := int(cost_dict.get(lookup_key, cost_dict.get(key_str, 0)))
-		if amount <= 0:
-			continue
-		lines.append("%s: %d" % [key_str.to_upper(), amount])
-	if lines.is_empty():
-		return "FREE"
-	return "\n".join(lines)
+	# 確保基礎卡片背景可見 (如果沒有特別隱藏的話)
+	var bg = get_node_or_null("SubViewportContainer/SubViewport/CardContent/Sprite0001")
+	if bg:
+		bg.visible = true
+	
+	# 確保 TopBar 可見，否則看不到名字
+	var top_bar = get_node_or_null("SubViewportContainer/SubViewport/CardContent/MarginContainer/VBoxContainer/TopBar")
+	if top_bar:
+		top_bar.visible = true
+	
+	# --- 技能 UI 鑲嵌邏輯 ---
+	if card_data:
+		var skill_card = null
+		if card_data.has_method("get_skill_card"):
+			skill_card = card_data.get_skill_card()
+		elif card_data is SkillCard:
+			skill_card = card_data
+			
+		if skill_card:
+			# 1. 將技能名稱填入卡片頂部的名稱標籤
+			if NameLabel:
+				NameLabel.text = skill_card.skill_name if "skill_name" in skill_card else "Unknown Skill"
+			
+			# 2. 渲染範圍網格
+			if MiniRangeGrid:
+				MiniRangeGrid.visible = true
+				# 尋找移動方向
+				var move_dir = Vector2i.ZERO
+				for effect in skill_card.effects:
+					if effect.effect_type == EffectDefinition.EffectType.MOVE:
+						move_dir = effect.move_direction
+						break
+				
+				var is_pure_move = skill_card.get("execution_mode") == UnitSkillData.ExecutionMode.MOVEMENT or skill_card.get("is_move_skill")
+				var color = Color(1, 0.9, 0.2) if is_pure_move else Color(1.0, 0.4, 0.1)
+				
+				# 關鍵修正：優先使用 post_move_targeting 作為效果範圍展示 (針對戰鬥技能)
+				var target_to_show = skill_card.post_move_targeting if skill_card.get("post_move_targeting") != null else skill_card.targeting
+				
+				# 使用靜態工具函數渲染網格 (縮小單元格尺寸至 26x26 以調整佔比)
+				SkillTooltipUI.render_skill_grid(MiniRangeGrid, target_to_show, color, is_pure_move, Vector2(26, 26), move_dir, 3.0)
+		else:
+			# 如果不是技能卡，隱藏網格
+			if MiniRangeGrid: MiniRangeGrid.visible = false
+	else:
+		if MiniRangeGrid: MiniRangeGrid.visible = false
 
 func return_to_hand(animated := true) -> void:
 	var hand = get_parent()
@@ -418,6 +453,9 @@ func _on_mouse_entered() -> void:
 		
 	_is_mouse_hovering = true
 	
+	if _hover_timer:
+		_hover_timer.start()
+	
 	# 提升 Z-Index (100) 以便觀察
 	if not _dragging:
 		z_index = 100
@@ -431,6 +469,13 @@ func _on_mouse_entered() -> void:
 
 func _on_mouse_exited() -> void:
 	_is_mouse_hovering = false
+	
+	if _hover_timer:
+		_hover_timer.stop()
+		
+	var controller = get_tree().get_first_node_in_group("hover_info_controller")
+	if controller and controller.has_method("_hide_all"):
+		controller.call("_hide_all")
 	
 	# 還原 Z-Index
 	if not _dragging:
@@ -449,3 +494,19 @@ func _on_mouse_exited() -> void:
 		tween_hover.kill()
 	tween_hover = create_tween().set_ease(Tween.EASE_OUT).set_trans(Tween.TRANS_ELASTIC)
 	tween_hover.tween_property(self, "scale", Vector2.ONE, hover_scale_duration * 1.1)
+
+func _on_hover_timer_timeout() -> void:
+	if not _is_mouse_hovering or _dragging:
+		return
+		
+	var skill_card = null
+	if card_data:
+		if card_data.has_method("get_skill_card"):
+			skill_card = card_data.get_skill_card()
+		elif card_data is SkillCard:
+			skill_card = card_data
+			
+	if skill_card:
+		var controller = get_tree().get_first_node_in_group("hover_info_controller")
+		if controller and controller.has_method("show_skill_info"):
+			controller.show_skill_info(skill_card, true)

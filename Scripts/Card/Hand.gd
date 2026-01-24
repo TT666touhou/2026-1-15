@@ -46,8 +46,8 @@ var _hand_border: Node = null
 var _skill_preview_controller: Node = null
 
 func set_interactable(value: bool) -> void:
-	if enable_debug_log:
-		print("[Hand] set_interactable: ", value)
+	# if enable_debug_log:
+	# 	print("[Hand] set_interactable: ", value)
 		
 	if is_interactable == value:
 		return
@@ -86,6 +86,10 @@ func _update_lock_shift(val: float) -> void:
 	_arrange(false) # Update layout without internal card tweens
 
 func _ready() -> void:
+	# 強制層級與可見性
+	z_index = 500
+	visible = true
+	
 	# Connect to SkillManager signals for auto-lock
 	var sm = get_node_or_null("/root/SkillManager")
 	if sm:
@@ -117,15 +121,29 @@ func _ready() -> void:
 				_hand_border.call_deferred("update_layout", get_viewport().get_visible_rect())
 
 func add_card(data, start_global_pos = null):
+	# print("[Hand] add_card called with data: ", data)
+	
+	# 強制顯示手牌區域及其父節點
+	visible = true
+	if get_parent() is Control:
+		get_parent().visible = true
+	# print("[Hand Debug] FORCED VISIBILITY. Hand: %s, Parent: %s" % [visible, get_parent().visible if get_parent() else "N/A"])
+	
 	var c = null
 	if card_scene != null:
 		c = card_scene.instantiate()
+		# print("[Hand] Card instance created from scene: ", card_scene.resource_path)
 	else:
 		c = Card.new()
+		# print("[Hand] Card instance created via Card.new()")
+	
 	add_child(c)
+	# print("[Hand] Card added as child of Hand. Current child count: ", get_child_count())
+	
 	# 應用手牌區專屬尺寸
 	if c.get("card_size") != null:
 		c.card_size = hand_card_size
+		# print("[Hand] Applied card_size: ", hand_card_size)
 		
 	c.set_card_data(data)
 	cards.append(c)
@@ -136,15 +154,13 @@ func add_card(data, start_global_pos = null):
 		c.scale = Vector2(0.1, 0.1) # 縮小
 		c.rotation = randf_range(-PI, PI) # 隨機旋轉
 	
-		if "hide_on_leave_hand" in c:
-			c.hide_on_leave_hand = true
-	
 	# Connect selection signals
 	if c.has_signal("selection_toggled"):
 		c.selection_toggled.connect(_on_card_selection_toggled)
 	if c.has_signal("request_deselect_all"):
 		c.request_deselect_all.connect(_on_card_request_deselect_all)
 	
+	# print("[Hand] Triggering layout (_arrange)...")
 	_arrange()
 	return c
 
@@ -183,6 +199,12 @@ func begin_drag(card) -> void:
 		return
 		
 	dragging_card = card
+	
+	# 開始拖拽時，隱藏任何懸浮資訊 (如技能說明)
+	var controller = get_tree().get_first_node_in_group("hover_info_controller")
+	if controller and controller.has_method("_hide_all"):
+		controller.call("_hide_all")
+		
 	drag_from_idx = cards.find(card)
 	preview_insert_idx = drag_from_idx
 	
@@ -316,9 +338,13 @@ func end_drag() -> void:
 			var insert_idx: int = clamp(preview_insert_idx, 0, base_list.size())
 			base_list.insert(insert_idx, dragging_card)
 			cards = base_list
-		
-		dragging_card.return_to_hand(true)
-
+			dragging_card.return_to_hand(true)
+		else:
+			# Outside hand area: TRY TO PLACE/PLAY
+			var played = request_place(dragging_card, mouse_pos)
+			if not played:
+				dragging_card.return_to_hand(true)
+	
 	_clear_skill_preview()
 	dragging_card = null
 	drag_from_idx = -1
@@ -527,8 +553,16 @@ func _arrange(animate: bool = true) -> void:
 	if cards.is_empty():
 		return
 	
+#	print("[Hand] _arrange called for %d cards. Animate: %s" % [cards.size(), animate])
+#	print("[Hand Debug] Hand Visible: %s | InTree: %s | Rect: %s | Parent: %s" % [
+#		visible,
+#		is_visible_in_tree(),
+#		get_global_rect(),
+#		get_parent().name if get_parent() else "None"
+#	])
 	var hand_bottom_y := get_global_rect().end.y
 	var hand_center_x := get_global_rect().get_center().x
+#	print("[Hand] Hand center X: %.2f, Bottom Y: %.2f" % [hand_center_x, hand_bottom_y])
 
 	var is_dragging_selected = dragging_card != null and dragging_card.is_selected
 
@@ -667,14 +701,8 @@ func _update_skill_preview(card: Node, _mouse_pos: Vector2) -> void:
 		_skill_preview_controller = scene.find_child("SkillPreviewController", true, false)
 		
 	if _skill_preview_controller and _skill_preview_controller.has_method("update_preview"):
-		var viewport = get_viewport()
-		var world_pos = Vector2.ZERO
-		if viewport:
-			var camera = viewport.get_camera_2d()
-			if camera: world_pos = camera.get_global_mouse_position()
-		
-		var cell = grid.world_to_grid(world_pos)
-		_skill_preview_controller.update_preview(skill_card, cell)
+		# 不再需要計算 cell，預覽控制器會根據技能類型自動定位
+		_skill_preview_controller.update_preview(null, skill_card, Vector2i.ZERO)
 
 func _clear_skill_preview() -> void:
 	if not _skill_preview_controller:

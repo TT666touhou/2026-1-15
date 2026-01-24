@@ -12,6 +12,7 @@ class_name UnitCard
 @export_enum("DROP:0", "LEAP:1", "POP:2", "NONE:3") var spawn_animation: int = 0
 
 # Combat Stats
+@export var movement_speed: Variant = 3 # 支援 int (如 3) 或 String (如 "3-6")
 @export var attack_damage: int = 10
 @export var attack_depth: int = 1 # Attack range depth (1 = melee/adjacent)
 @export var base_combo_count: float = 1.0

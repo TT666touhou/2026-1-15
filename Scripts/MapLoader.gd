@@ -8,8 +8,8 @@ extends Node
 @export var resources_layer_path: NodePath = "ResourcesLayer"
 
 @export_group("Map Settings")
-@export var map_width: int = 11
-@export var map_height: int = 9
+@export var map_width: int = 7
+@export var map_height: int = 7
 
 @export_group("Tile Assets")
 ## 基礎地塊 (4,5) 的視覺預覽 (AtlasTexture)

@@ -10,37 +10,40 @@ class_name SkillTooltipUI
 @onready var selection_container: Control = %SelectionContainer
 @onready var effect_container: Control = %EffectContainer
 
-func setup(skill: UnitSkillData) -> void:
+func setup(skill: Resource) -> void:
 	name_label.text = skill.skill_name
 	
 	# 使用動態生成描述，支援 BBCode 標籤 (顏色、粗體)
 	desc_label.text = skill.get_dynamic_description()
 	
 	# 更新標籤 (中文)
-	var target_type_str = "相對位置 (以單位為中心)" if skill.targeting_type == UnitSkillData.TargetingType.RELATIVE else "絕對位置 (地圖固定位置)"
-	targeting_type_label.text = "瞄準：" + target_type_str
+	if targeting_type_label:
+		targeting_type_label.visible = false
 	
-	var mode_str = "立刻發動"
-	match skill.execution_mode:
-		UnitSkillData.ExecutionMode.DIRECT: mode_str = "立刻發動"
-		UnitSkillData.ExecutionMode.MOVE_TRIGGER: mode_str = "移動後自動觸發"
-		UnitSkillData.ExecutionMode.MOVEMENT: mode_str = "移動技能 (不結束回合)"
-	execution_mode_label.text = "模式：" + mode_str
+	if execution_mode_label:
+		execution_mode_label.visible = false
 	
 	_update_range_display(skill)
 
-func _update_range_display(skill: UnitSkillData) -> void:
+func _update_range_display(skill: Resource) -> void:
 	# 核心修正：只有當標註為「移動技能」(is_move_skill) 且有後續效果時，才顯示兩段式 (目前僅限影襲)
 	var is_two_stage = skill.is_move_skill and skill.post_move_targeting != null
 	var selection_label = selection_container.get_node("Label")
+	
+	# 尋找移動效果方向
+	var move_dir = Vector2i.ZERO
+	for effect in skill.effects:
+		if effect.effect_type == EffectDefinition.EffectType.MOVE:
+			move_dir = effect.move_direction
+			break
 	
 	if is_two_stage:
 		# 兩段式顯示：中心點(黃色) + 橘色效果
 		selection_container.visible = true
 		effect_container.visible = true
 		selection_label.text = "Selection"
-		render_skill_grid(range_grid, skill.targeting, Color(1, 0.9, 0.2), true) # 僅中心點
-		render_skill_grid(effect_grid, skill.post_move_targeting, Color(1.0, 0.4, 0.1)) # 橘色：效果範圍
+		render_skill_grid(range_grid, skill.targeting, Color(1, 0.9, 0.2), true, Vector2(12, 12), move_dir) # 僅中心點 + 箭頭
+		render_skill_grid(effect_grid, skill.post_move_targeting, Color(1.0, 0.4, 0.1), false, Vector2(12, 12)) # 橘色：效果範圍
 	else:
 		# 單段式顯示
 		selection_container.visible = true
@@ -53,34 +56,40 @@ func _update_range_display(skill: UnitSkillData) -> void:
 		if skill.execution_mode == UnitSkillData.ExecutionMode.MOVEMENT:
 			selection_label.text = "Selection"
 			# 純移動：僅顯示黃色選取中心點
-			render_skill_grid(range_grid, target_to_show, Color(1, 0.9, 0.2), true)
+			render_skill_grid(range_grid, target_to_show, Color(1, 0.9, 0.2), true, Vector2(12, 12), move_dir)
 		else:
 			selection_label.text = "Effect"
 			# 一般/大範圍技能 (如末日、虛空)：顯示完整橘色形狀
-			render_skill_grid(range_grid, target_to_show, Color(1.0, 0.4, 0.1), false)
+			render_skill_grid(range_grid, target_to_show, Color(1.0, 0.4, 0.1), false, Vector2(12, 12), move_dir)
 
 ## 靜態工具函數：供所有 UI 組件共用渲染邏輯
-static func render_skill_grid(grid: GridContainer, targeting: TargetingDefinition, active_color: Color, force_dot_only: bool = false, cell_size: Vector2 = Vector2(8, 8)) -> void:
+static func render_skill_grid(grid: GridContainer, targeting: Resource, active_color: Color, force_dot_only: bool = false, cell_size: Vector2 = Vector2(12, 12), move_dir: Vector2i = Vector2i.ZERO, p_line_width: float = 4.0) -> void:
 	# 清除舊內容
 	for child in grid.get_children():
 		child.free()
 	
-	if not targeting:
+	if not targeting and move_dir == Vector2i.ZERO:
 		return
 		
-	# 強制設定列數為 11，確保與地圖規格一致
-	grid.columns = 11
+	# 強制設定列數為 1，因為我們現在使用單一向量繪製節點
+	grid.columns = 1
+	grid.add_theme_constant_override("h_separation", 0)
+	grid.add_theme_constant_override("v_separation", 0)
 	
-	var radius = targeting.aoe_radius
-	if radius == null: radius = 0
+	var radius = 0
+	if targeting:
+		radius = targeting.aoe_radius
+		if radius == null: radius = 0
+	
 	var cells_in_scope: Array[Vector2i] = []
 	var center = Vector2i.ZERO
 	
-	print("[SkillPreview] Rendering grid. ScopeType: %s, Radius: %d" % [TargetingDefinition.ScopeType.keys()[targeting.scope_type], radius])
+	if targeting:
+		pass # print("[SkillPreview] Rendering grid...")
 	
 	if force_dot_only:
 		cells_in_scope.append(center)
-	else:
+	elif targeting:
 		# 使用 Enum 名稱進行判斷，避免硬編碼索引錯誤
 		match targeting.scope_type:
 			TargetingDefinition.ScopeType.SINGLE:
@@ -102,35 +111,27 @@ static func render_skill_grid(grid: GridContainer, targeting: TargetingDefinitio
 					cells_in_scope.append(center + Vector2i(0, i))
 					cells_in_scope.append(center + Vector2i(0, -i))
 			TargetingDefinition.ScopeType.GLOBAL:
-				for x in range(-5, 6):
-					for y in range(-4, 5):
+				for x in range(-3, 4):
+					for y in range(-3, 4):
 						cells_in_scope.append(Vector2i(x, y))
 			TargetingDefinition.ScopeType.GLOBAL_CHECKER_A:
-				for x in range(-5, 6):
-					for y in range(-4, 5):
+				for x in range(-3, 4):
+					for y in range(-3, 4):
 						if abs(x + y) % 2 == 0:
 							cells_in_scope.append(Vector2i(x, y))
 			TargetingDefinition.ScopeType.GLOBAL_CHECKER_B:
-				for x in range(-5, 6):
-					for y in range(-4, 5):
+				for x in range(-3, 4):
+					for y in range(-3, 4):
 						if abs(x + y) % 2 != 0:
 							cells_in_scope.append(Vector2i(x, y))
 			TargetingDefinition.ScopeType.AREA_PATTERN:
-				var p11x9 = targeting.get("pattern_11x9")
-				if p11x9 and p11x9.size() == 99:
-					for i in range(99):
-						if p11x9[i]:
-							var dx = (i % 11) - 5
-							var dy: int = int(floor(i / 11.0)) - 4
+				var pattern_data = targeting.get("pattern_7x7")
+				if pattern_data and pattern_data.size() == 49:
+					for p_idx in range(49):
+						if pattern_data[p_idx]:
+							var dx = (p_idx % 7) - 3
+							var dy = floori(float(p_idx) / 7.0) - 3
 							cells_in_scope.append(center + Vector2i(dx, dy))
-				else:
-					var pattern = targeting.get("pattern_7x7")
-					if pattern and pattern.size() == 49:
-						for i in range(49):
-							if pattern[i]:
-								var dx = (i % 7) - 3
-								var dy: int = int(floor(i / 7.0)) - 3
-								cells_in_scope.append(center + Vector2i(dx, dy))
 			TargetingDefinition.ScopeType.AREA_X:
 				cells_in_scope.append(center)
 				for i in range(1, radius + 1):
@@ -150,38 +151,14 @@ static func render_skill_grid(grid: GridContainer, targeting: TargetingDefinitio
 					cells_in_scope.append(center + Vector2i(i, -i))
 					cells_in_scope.append(center + Vector2i(-i, i))
 	
-	# 繪製 11x9 網格
-	for y in range(-4, 5):
-		for x in range(-5, 6):
-			var rect = ColorRect.new()
-			rect.mouse_filter = Control.MOUSE_FILTER_IGNORE # 確保預覽圖示不阻擋按鈕點擊
-			rect.custom_minimum_size = cell_size
-			
-			var pos = Vector2i(x, y)
-			if pos == Vector2i.ZERO:
-				if targeting.origin_is_self:
-					# 創建帶有紅框的黃色方塊
-					var panel = Panel.new()
-					panel.mouse_filter = Control.MOUSE_FILTER_IGNORE
-					panel.custom_minimum_size = cell_size
-					
-					var style = StyleBoxFlat.new()
-					style.bg_color = Color(1, 0.9, 0.2) # 中心黃色
-					style.set_border_width_all(1) # 1 像素邊框
-					style.border_color = Color.RED # 紅色邊框
-					style.set_expand_margin_all(1) # 稍微向外擴張讓紅框更明顯
-					
-					panel.add_theme_stylebox_override("panel", style)
-					grid.add_child(panel)
-					continue
-				else:
-					rect.color = Color(1, 0.9, 0.2) # 中心：黃色
-			elif cells_in_scope.has(pos):
-				rect.color = active_color
-			else:
-				rect.color = Color(0.2, 0.2, 0.2, 0.6) # 背景
-			
-			grid.add_child(rect)
+	# 建立向量繪製器
+	var drawer_script = load("res://Scripts/UI/Skills/SkillRangeGridDrawer.gd")
+	var drawer = Control.new()
+	drawer.set_script(drawer_script)
+	grid.add_child(drawer)
+	
+	# 設置數據
+	drawer.setup(cells_in_scope, active_color, move_dir, cell_size, p_line_width)
 
 func show_at(pos: Vector2) -> void:
 	if pos != Vector2.ZERO:

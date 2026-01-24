@@ -7,8 +7,8 @@ class_name Grid
 signal cell_occupied_changed(cell: Vector2i, is_occupied: bool)
 
 @export var cell_size: Vector2i = Vector2i(16, 16)
-@export var map_width: int = 11
-@export var map_height: int = 9
+@export var map_width: int = 7
+@export var map_height: int = 7
 
 # 佔用狀態：{Vector2i: Node} - 格子座標 -> 實體
 var _occupied_cells: Dictionary = {}

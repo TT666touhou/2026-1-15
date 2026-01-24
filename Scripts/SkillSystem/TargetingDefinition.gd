@@ -27,10 +27,8 @@ enum TargetFilter {
 @export var target_filter: TargetFilter = TargetFilter.ENEMY
 @export var can_target_empty: bool = false
 
-# For AREA_PATTERN: A 7x7 or 11x9 bitmask or array. 
-# We'll support both for backward compatibility, but 11x9 is preferred.
+# For AREA_PATTERN: A 7x7 bitmask or array. 
 @export var pattern_7x7: Array[bool] = []
-@export var pattern_11x9: Array[bool] = []
 
 func get_targeting_text(targeting_type: int) -> String:
 	var scope_text = ""
@@ -39,20 +37,25 @@ func get_targeting_text(targeting_type: int) -> String:
 	match scope_type:
 		ScopeType.SINGLE:
 			scope_text = "[color=cyan]單體[/color]"
-		ScopeType.AREA_CIRCLE:
-			scope_text = "[color=cyan]半徑為 %d 的圓形範圍[/color]" % r
-		ScopeType.AREA_SQUARE:
-			scope_text = "[color=cyan]半徑為 %d 的矩形範圍[/color]" % r
-		ScopeType.AREA_CROSS:
-			scope_text = "[color=cyan]半徑為 %d 的十字範圍[/color]" % r
+		ScopeType.AREA_CIRCLE, ScopeType.AREA_SQUARE, ScopeType.AREA_CROSS, ScopeType.AREA_QUEEN, ScopeType.AREA_X:
+			if r >= 7:
+				scope_text = "[color=cyan]全圖範圍[/color]"
+			else:
+				match scope_type:
+					ScopeType.AREA_CIRCLE:
+						scope_text = "[color=cyan]半徑為 %d 的圓形範圍[/color]" % r
+					ScopeType.AREA_SQUARE:
+						scope_text = "[color=cyan]半徑為 %d 的矩形範圍[/color]" % r
+					ScopeType.AREA_CROSS:
+						scope_text = "[color=cyan]半徑為 %d 的十字範圍[/color]" % r
+					ScopeType.AREA_QUEEN:
+						scope_text = "[color=cyan]半徑為 %d 的米字型範圍[/color]" % r
+					ScopeType.AREA_X:
+						scope_text = "[color=cyan]半徑為 %d 的 X 型範圍[/color]" % r
 		ScopeType.GLOBAL:
 			scope_text = "[color=cyan]全圖範圍[/color]"
 		ScopeType.GLOBAL_CHECKER_A, ScopeType.GLOBAL_CHECKER_B:
 			scope_text = "[color=cyan]全圖棋盤格範圍[/color]"
-		ScopeType.AREA_QUEEN:
-			scope_text = "[color=cyan]半徑為 %d 的米字型範圍[/color]" % r
-		ScopeType.AREA_X:
-			scope_text = "[color=cyan]半徑為 %d 的 X 型範圍[/color]" % r
 		ScopeType.AREA_PATTERN:
 			scope_text = "[color=cyan]自定義形狀範圍[/color]"
 		_:
@@ -83,6 +86,3 @@ func _init() -> void:
 	if pattern_7x7.is_empty():
 		pattern_7x7.resize(49)
 		pattern_7x7.fill(false)
-	if pattern_11x9.is_empty():
-		pattern_11x9.resize(99)
-		pattern_11x9.fill(false)

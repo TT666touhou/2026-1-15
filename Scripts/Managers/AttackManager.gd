@@ -44,6 +44,8 @@ func calculate_preview_combos(drag_entity: GridEntity = null, drag_target_pos: V
 		# 獲取該單位的攻擊目標
 		# get_attack_results 返回 { TargetEntity: { "hits": int, "directions": Array[Vector2i] } }
 		var results = unit.get_attack_results(attack_pos)
+		if results.size() > 0:
+			print("[AttackManager] Unit ", unit.name, " at ", attack_pos, " found targets: ", results.keys())
 		
 		# 累加 Hits
 		for target in results:

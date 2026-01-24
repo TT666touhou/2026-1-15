@@ -13,6 +13,7 @@ enum TargetingType {
 }
 
 @export var skill_name: String = "New Skill"
+@export_multiline var manual_description_en: String = ""
 @export var description: String = ""
 @export var icon: Texture2D
 
@@ -56,12 +57,30 @@ func validate_config() -> bool:
 	return is_valid
 
 func get_dynamic_description() -> String:
+	# --- 優先處理手動編輯的英文文本 ---
+	if manual_description_en != "":
+		var final_text = manual_description_en
+		
+		# 獲取所有效果的動態文字並進行替換
+		for i in range(effects.size()):
+			var effect = effects[i]
+			var scaling_text = _get_formatted_scaling_text(effect.base_value, true)
+			var placeholder = "{scaling%d}" % i
+			final_text = final_text.replace(placeholder, scaling_text)
+		
+		# 如果只有一個效果，也可以支持簡單的 {scaling} 標籤
+		if effects.size() > 0:
+			var first_scaling = _get_formatted_scaling_text(effects[0].base_value, true)
+			final_text = final_text.replace("{scaling}", first_scaling)
+			
+		return final_text
+
+	# --- 原本的自動化生成邏輯 (作為備援) ---
 	var mode_prefix = ""
 	var main_body = ""
 	
 	if execution_mode == ExecutionMode.MOVEMENT:
-		# 1. 移動技能專屬：標題與核心動作
-		mode_prefix = "【移動後不結束回合】"
+		# 1. 移動技能專屬：核心動作
 		main_body = "移動至目標位置"
 		
 		# 2. 處理後續效果
@@ -85,11 +104,7 @@ func get_dynamic_description() -> String:
 				main_body += "，接著 " + "、".join(effect_texts)
 	else:
 		# 3. DIRECT 與 MOVE_TRIGGER 模式
-		match execution_mode:
-			ExecutionMode.DIRECT:
-				mode_prefix = "【立刻發動】"
-			ExecutionMode.MOVE_TRIGGER:
-				mode_prefix = "【移動後觸發】"
+		# 移除模式前綴，因為現在是卡片導向
 		
 		# 優先讀取 post_move_targeting (實際效果範圍)，若無則讀取基礎 targeting (選取範圍)
 		var targeting_to_use = post_move_targeting if post_move_targeting != null else targeting
@@ -105,19 +120,28 @@ func get_dynamic_description() -> String:
 				effect_texts.append(txt)
 		
 		if target_desc != "":
-			main_body = target_desc + " " + "、".join(effect_texts)
+			# 核心優化：如果目標是「自身」且只有移動效果，隱藏冗長的目標描述
+			var is_simple_self_move = false
+			if targeting_to_use and targeting_to_use.target_filter == TargetingDefinition.TargetFilter.SELF:
+				if effects.size() == 1 and effects[0].effect_type == EffectDefinition.EffectType.MOVE:
+					is_simple_self_move = true
+			
+			if is_simple_self_move:
+				main_body = "、".join(effect_texts)
+			else:
+				main_body = target_desc + " " + "、".join(effect_texts)
 		else:
 			main_body = "、".join(effect_texts)
 			
 	return mode_prefix + main_body + "。"
 
-func _get_formatted_scaling_text(base_val: float) -> String:
+func _get_formatted_scaling_text(base_val: float, use_en: bool = false) -> String:
 	if scaling_configs.is_empty():
-		return "[color=red]無[/color]"
+		return "[color=red]None[/color]" if use_en else "[color=red]無[/color]"
 	
 	var parts = []
 	for config in scaling_configs:
-		var s_name = _get_stat_display_name(config.get("stat", "str"))
+		var s_name = _get_stat_display_name(config.get("stat", "str"), use_en)
 		var weight = config.get("weight", 1.0)
 		# 將 Effect 的 base_value、技能的 scaling_multiplier 以及屬性權重乘在一起
 		var final_perc = int(round(base_val * scaling_multiplier * weight * 100))
@@ -125,9 +149,14 @@ func _get_formatted_scaling_text(base_val: float) -> String:
 	
 	return " + ".join(parts)
 
-func _get_stat_display_name(stat_key: String) -> String:
+func _get_stat_display_name(stat_key: String, use_en: bool = false) -> String:
 	match stat_key:
-		"attack", "str", "dex", "int", "pie": return "[color=#ff6666]攻擊力[/color]"
-		"hp": return "最大生命值"
-		"luck": return "幸運"
+		"attack", "str", "dex", "int", "pie": 
+			return "[color=#ff6666]ATK[/color]" if use_en else "[color=#ff6666]攻擊力[/color]"
+		"hp": 
+			return "Max HP" if use_en else "最大生命值"
+		"luck": 
+			return "Luck" if use_en else "幸運"
+		"speed": 
+			return "Speed" if use_en else "速度"
 	return stat_key

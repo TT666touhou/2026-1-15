@@ -1,0 +1,26 @@
+[gd_resource type="Resource" script_class="SkillCard" load_steps=4 format=3]
+[ext_resource type="Script" path="res://Scripts/SkillSystem/SkillCard.gd" id="1_skill_card"]
+[ext_resource type="Resource" path="res://Resources/Skills/CustomSkills/Target_Self.tres" id="2_target"]
+[ext_resource type="Resource" path="res://Resources/Skills/CustomSkills/Effect_MoveUp_100.tres" id="3_effect"]
+
+[resource]
+script = ExtResource("1_skill_card")
+soul_cost = 0
+exclusive_unit_id = ""
+card_id = "move_up"
+manual_description_en = "Move upward by {scaling} distance."
+card_name = "往上移動"
+description = "使選中單位往上移動 100% 速度的格數"
+skill_name = "往上移動"
+execution_mode = 0
+targeting_type = 0
+cooldown_turns = 0
+is_accurate = true
+scaling_configs = Array[Dictionary]([{
+"stat": "speed",
+"weight": 1.0
+}])
+scaling_multiplier = 1.0
+targeting = ExtResource("2_target")
+effects = Array[Resource]([ExtResource("3_effect")])
+is_move_skill = true

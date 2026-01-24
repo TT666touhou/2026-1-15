@@ -10,9 +10,9 @@ var active_gates: Array[Node] = []
 # 必須與 MapLoader 的 extra_cell_coords 保持一致，或者從 MapLoader 獲取
 # 為了簡單，這裡我們複製一份配置，實際運作時應以 MapLoader 為準
 var extra_cells: Array[Vector2i] = [
-	Vector2i(11, 1), # 上
-	Vector2i(11, 3), # 中
-	Vector2i(11, 5)  # 下
+	Vector2i(7, 1), # 上
+	Vector2i(7, 3), # 中
+	Vector2i(7, 5)  # 下
 ]
 var _spawned_gates_by_index: Dictionary = {}
 # var gate_scene = preload("res://Scenes/Map/GateEntity.tscn") # [暫時停用]
@@ -123,7 +123,7 @@ func check_gate_trigger(entity: Node, cell: Vector2i) -> void:
 		return
 		
 	if entity.get("faction") != null and entity.faction.resource_path.contains("Player"):
-		if cell.x >= 11:
+		if cell.x >= 7:
 			print("[DungeonManager] Player reached boundary at ", cell, ". Triggering transition...")
 			# 建立一個臨時對象來攜帶 next_room_name
 			var transition_info = { "next_room_name": "T001" } # 預設前往 T001
@@ -377,7 +377,7 @@ func _on_turn_started(faction: FactionDefinition) -> void:
 		# 1. 回復 Soul (每回合 +3)
 		if PlayerResourceLedger:
 			PlayerResourceLedger.add_resource("soul", 3)
-			print("[DungeonManager] Recovered 3 Soul for Player Turn")
+		#	print("[DungeonManager] Recovered 3 Soul for Player Turn")
 
 # --- Scene Visibility Control ---
 
@@ -442,8 +442,8 @@ func play_gate_transition(gate: Variant) -> void:
 	if selector: selector.set_process_unhandled_input(false)
 	
 	# 設定參數
-	var stream_distance = 320.0 # 捲動/跑步的總距離 (20格)
-	var duration = 1.5
+	var stream_distance = 112.0 # 捲動/跑步的總距離 (7格)
+	var duration = 1.0
 	
 	# --- 階段一：出鏡 (Exit) ---
 	var current_player_units = get_tree().get_nodes_in_group("grid_entities").filter(func(u): 
@@ -556,7 +556,8 @@ func _play_step_transition(units: Array, duration: float, delta_x: float, is_ent
 		print("[DungeonManager] Step transition error: MapLoader not found.")
 		return
 	
-	var grid_steps = int(abs(delta_x) / 16.0) # 20 步
+	var grid_steps = int(abs(delta_x) / 16.0) # 7 步 (如果是 112 像素)
+	# 注意：如果 delta_x 是 112 (7格 * 16像素)，那麼 grid_steps 就是 7
 	var step_time = duration / grid_steps
 	
 	print("[DungeonManager] --- Step Loop Start (%s) ---" % ("Entry" if is_entry else "Exit"))
@@ -580,12 +581,12 @@ func _play_step_transition(units: Array, duration: float, delta_x: float, is_ent
 	for i in range(grid_steps):
 		if !is_entry:
 			# 出鏡：在地圖 right 之外生成，在 left 刪除
-			map_loader.generate_column(11 + i, true) 
+			map_loader.generate_column(7 + i, true) 
 			map_loader.erase_column(i, true)
 		else:
-			# 入鏡：單位從 -20 格開始跑向 0 格
+			# 入鏡：單位從 -7 格開始跑向 0 格
 			var current_gx = -grid_steps + i
-			map_loader.generate_column(current_gx + 11, true) # 在視窗右緣生成
+			map_loader.generate_column(current_gx + 7, true) # 在視窗右緣生成
 			map_loader.erase_column(current_gx, true)        # 在視窗左緣擦除
 		
 		# 每 5 步印一次進度
@@ -621,13 +622,13 @@ func _reset_camera(camera: Camera2D = null) -> void:
 			# 同步重置背景位置
 			var bg_ground = world.get_node_or_null("BackgroundGround")
 			if bg_ground:
-				bg_ground.position.x = 0
-				print("[DungeonManager] Background position reset to 0")
+				bg_ground.position = Vector2(-64, -32)
+				print("[DungeonManager] Background position reset to default (-64, -32)")
 	
 	if camera:
 		# Reset to default values from World.tscn
 		camera.zoom = Vector2(4, 4)
-		camera.position = Vector2(16, 56)
+		camera.position = Vector2(16, 72)
 		camera.rotation = 0.0 # Reset rotation
 		# camera.ignore_rotation = true # Reset to default (Removed rotation anim)
 		print("[DungeonManager] Camera reset to default")

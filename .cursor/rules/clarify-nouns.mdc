@@ -1,0 +1,30 @@
+---
+description: 當對用戶描述中的名詞或概念不確定時，直接提問而非猜測
+alwaysApply: true
+---
+<rule>
+<meta>
+<title>Clarify Nouns and Concepts</title>
+<description>當對用戶描述中的名詞、術語或概念有任何疑惑或不確定時，應該直接向用戶提問以獲得準確資訊，而不是自行猜測或假設。</description>
+</meta>
+
+<requirement priority="high">
+當用戶的描述中包含以下情況時，應該主動提問：
+- 不確定的 UI 元件名稱或技術術語
+- 模糊的功能描述或需求
+- 檔案或路徑的具體位置
+- 任何可能有多種解釋的概念
+
+這樣可以：
+- 避免誤解用戶的意圖
+- 減少不必要的修改和重做
+- 提高解決方案的準確性
+</requirement>
+
+<example>
+用戶說：「修改那個按鈕的顏色」
+應該問：「請問是指哪個按鈕？是技能欄中的按鈕，還是卡片上的按鈕？」
+
+而不是直接猜測並修改。
+</example>
+</rule>

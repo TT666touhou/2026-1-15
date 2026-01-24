@@ -21,6 +21,7 @@ var base_drain: float = 0.0 # 基礎吸血率
 var base_crit_dmg: float = 0.0 # 基礎額外暴擊傷害
 var base_penetration: float = 0.0 # 基礎貫穿率
 var base_movement_speed: float = 1.0 # 基礎移動速度
+var movement_speed: Variant = 3 # 支援 int 或 String "3-6"
 var combo_count: float # Base Combo
 var crit_rate: float
 var luck: int
@@ -95,6 +96,7 @@ static func create(def: UnitCard) -> CharacterData:
 	instance.base_crit_dmg = float(def.base_crit_dmg) if "base_crit_dmg" in def else 0.0
 	instance.base_penetration = float(def.base_penetration) if "base_penetration" in def else 0.0
 	instance.base_movement_speed = float(def.base_movement_speed) if "base_movement_speed" in def else 1.0
+	instance.movement_speed = def.movement_speed if "movement_speed" in def else 3
 	instance.shield = int(def.base_shield) if "base_shield" in def else 0
 	instance.barriers = int(def.base_barriers) if "base_barriers" in def else 0
 	
@@ -168,6 +170,18 @@ func get_effective_penetration() -> float:
 func get_effective_movement_speed() -> float:
 	var total = base_movement_speed * stat_modifiers.movement_speed_multiplier
 	return max(0.1, total) # 速度保底 0.1
+
+func get_move_distance(is_random: bool = true) -> int:
+	if movement_speed is String:
+		var parts = movement_speed.split("-")
+		if parts.size() == 2:
+			if is_random:
+				return randi_range(int(parts[0]), int(parts[1]))
+			else:
+				# 敵人或固定距離取最大值
+				return int(parts[1])
+		return int(movement_speed)
+	return int(movement_speed)
 
 func get_effective_max_health() -> int:
 	return int(floor((max_health + stat_modifiers.hp_additive) * stat_modifiers.hp_multiplier))

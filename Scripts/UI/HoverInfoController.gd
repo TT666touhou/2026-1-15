@@ -5,12 +5,14 @@ extends Control
 var _card_instance: Control = null
 var _trap_card_instance: Control = null
 var _equip_panel_instance: Control = null
+var _skill_tooltip_instance: Control = null
 var _grid: Node = null
 var _last_hovered_entity_id: int = -1 # Track instance ID to force updates
 var _is_ui_hovering: bool = false # 標記目前是否由 UI 元素觸發懸停顯示
 
 const EnemyInfoCardScene = preload("res://Scenes/UI/EnemyInfoCard.tscn")
 const TrapInfoCardScene = preload("res://Scenes/UI/TrapInfoCard.tscn")
+const SkillTooltipScene = preload("res://Scenes/UI/Skills/SkillTooltipUI.tscn")
 var EquipmentInfoPanelScene = null
 
 func _ready() -> void:
@@ -45,6 +47,12 @@ func _ready() -> void:
 		_equip_panel_instance.visible = false
 		_equip_panel_instance.mouse_filter = Control.MOUSE_FILTER_IGNORE
 		
+	if SkillTooltipScene:
+		_skill_tooltip_instance = SkillTooltipScene.instantiate()
+		add_child(_skill_tooltip_instance)
+		_skill_tooltip_instance.visible = false
+		_skill_tooltip_instance.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		
 	# 將面板移至頂層 CanvasLayer 確保不會被遮擋
 	call_deferred("_reparent_to_top_layer")
 
@@ -61,6 +69,8 @@ func _reparent_to_top_layer() -> void:
 		_trap_card_instance.reparent(layer)
 	if _equip_panel_instance:
 		_equip_panel_instance.reparent(layer)
+	if _skill_tooltip_instance:
+		_skill_tooltip_instance.reparent(layer)
 		
 	print("[HoverInfoController] Panels reparented to new top-level CanvasLayer (layer 100)")
 
@@ -104,7 +114,7 @@ func _get_entity_under_mouse() -> GridEntity:
 	if entity == null and _grid.has_method("get_trap"):
 		entity = _grid.get_trap(cell) as GridEntity
 		if entity:
-			print("[HoverInfoController] Found TRAP at ", cell, ": ", entity.name)
+			pass
 	
 	if entity:
 		# Add minimal log for debugging visibility
@@ -121,7 +131,7 @@ func _update_display_logic(entity: GridEntity) -> void:
 	var is_new_entity = (current_id != _last_hovered_entity_id)
 	
 	if is_new_entity:
-		print("[HoverInfoController] New entity hovered: ", entity.name, " (", entity.get_class(), ")")
+		pass
 	
 	# 1. 檢查是否為裝備實體
 	if entity is EquipmentEntity:
@@ -171,6 +181,8 @@ func _update_position() -> void:
 		active_panel = _trap_card_instance
 	elif _equip_panel_instance and _equip_panel_instance.visible:
 		active_panel = _equip_panel_instance
+	elif _skill_tooltip_instance and _skill_tooltip_instance.visible:
+		active_panel = _skill_tooltip_instance
 		
 	if active_panel:
 		# 獲取滑鼠在螢幕上的位置 (Viewport 座標)
@@ -198,6 +210,7 @@ func _hide_all() -> void:
 	if _card_instance: _card_instance.visible = false
 	if _trap_card_instance: _trap_card_instance.visible = false
 	if _equip_panel_instance: _equip_panel_instance.visible = false
+	if _skill_tooltip_instance: _skill_tooltip_instance.visible = false
 
 # 公開 API：讓 UI 元素直接顯示資料
 func show_data_info(data: Resource, from_ui: bool = false) -> void:
@@ -222,3 +235,19 @@ func show_data_info(data: Resource, from_ui: bool = false) -> void:
 			_equip_panel_instance.get_parent().move_child(_equip_panel_instance, -1)
 			# 更新位置為目前滑鼠位置
 			_update_position()
+
+func show_skill_info(skill: Resource, from_ui: bool = false) -> void:
+	if skill == null:
+		_hide_all()
+		return
+		
+	if from_ui:
+		_is_ui_hovering = true
+	else:
+		_is_ui_hovering = false
+		
+	if _skill_tooltip_instance and _skill_tooltip_instance.has_method("setup"):
+		_skill_tooltip_instance.setup(skill)
+		_skill_tooltip_instance.visible = true
+		_skill_tooltip_instance.get_parent().move_child(_skill_tooltip_instance, -1)
+		_update_position()

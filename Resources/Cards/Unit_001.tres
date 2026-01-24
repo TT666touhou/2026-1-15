@@ -1,21 +1,12 @@
-[gd_resource type="Resource" script_class="UnitCard" load_steps=17 format=3]
+[gd_resource type="Resource" script_class="UnitCard" load_steps=10 format=3]
 
 [ext_resource type="Resource" path="res://Resources/Traits/Trait_Test_OnDamaged.tres" id="1_2stax"]
 [ext_resource type="Script" path="res://Resources/Cards/UnitCard.gd" id="1_unitcard"]
-[ext_resource type="Script" path="res://Scripts/SkillSystem/UnitSkillData.gd" id="1_skill_script"]
 [ext_resource type="PackedScene" path="res://Scenes/Entities/Player/Unit001.tscn" id="2_unitscene"]
 [ext_resource type="Resource" path="res://Footprints/Footprint_1x1.tres" id="3_footprint"]
 [ext_resource type="Resource" path="res://Resources/MovementRanges/MovementRange_OneStep.tres" id="4_movement"]
 [ext_resource type="Resource" path="res://Resources/Factions/Faction_Player.tres" id="5_faction"]
 [ext_resource type="Texture2D" path="res://Tilesheet/1bit_assetpack/1bit_assetpack/characters/archer.png" id="6_icon"]
-[ext_resource type="Resource" path="res://Resources/Skills/TestSkills/Skill_Move_Abs_Cross.tres" id="7_s1"]
-[ext_resource type="Resource" path="res://Resources/Skills/TestSkills/Skill_Move_Rel_5x5.tres" id="8_s2"]
-[ext_resource type="Resource" path="res://Resources/Skills/TestSkills/Skill_Direct_Abs_Checker.tres" id="9_s3"]
-[ext_resource type="Resource" path="res://Resources/Skills/TestSkills/Skill_Direct_Rel_Global.tres" id="10_s4"]
-[ext_resource type="Resource" path="res://Resources/Skills/TestSkills/Skill_Tactical_Move.tres" id="11_s5"]
-[ext_resource type="Resource" path="res://Resources/Skills/TestSkills/Skill_Move_Rel_X.tres" id="12_s6"]
-
-[ext_resource type="Resource" path="res://Resources/Skills/CustomSkills/Skill_X_Penetration.tres" id="13_xskill"]
 
 [sub_resource type="AtlasTexture" id="AtlasTexture_icon"]
 atlas = ExtResource("6_icon")
@@ -44,7 +35,7 @@ base_barriers = 0
 base_combo_count = 1.5
 base_crit_rate = 0.0
 character_trait = ExtResource("1_2stax")
-default_skills = Array[Resource]([ExtResource("13_xskill"), ExtResource("7_s1"), ExtResource("8_s2"), ExtResource("9_s3"), ExtResource("10_s4"), ExtResource("11_s5"), ExtResource("12_s6")])
+default_skills = Array[Resource]([])
 card_id = "unit_001"
 card_name = "Unit 001"
 description = "A basic unit."

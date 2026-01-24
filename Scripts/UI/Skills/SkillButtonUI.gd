@@ -155,9 +155,17 @@ func _update_visuals() -> void:
 func _render_mini_grid() -> void:
 	if not mini_range_grid or not skill_data: return
 	var target_to_show = skill_data.post_move_targeting if skill_data.post_move_targeting != null else skill_data.targeting
+	
+	# 尋找移動效果方向
+	var move_dir = Vector2i.ZERO
+	for effect in skill_data.effects:
+		if effect.effect_type == EffectDefinition.EffectType.MOVE:
+			move_dir = effect.move_direction
+			break
+			
 	var is_pure_move = skill_data.execution_mode == UnitSkillData.ExecutionMode.MOVEMENT or skill_data.is_move_skill
 	var color = Color(1, 0.9, 0.2) if is_pure_move else Color(1.0, 0.4, 0.1)
-	SkillTooltipUI.render_skill_grid(mini_range_grid, target_to_show, color, is_pure_move, Vector2(4, 4))
+	SkillTooltipUI.render_skill_grid(mini_range_grid, target_to_show, color, is_pure_move, Vector2(4, 4), move_dir)
 
 func _on_pressed() -> void:
 	if disabled: return

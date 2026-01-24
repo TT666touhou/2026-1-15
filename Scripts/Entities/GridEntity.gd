@@ -44,8 +44,9 @@ func _ready() -> void:
 		combo_indicator = combo_ui_scene.instantiate()
 		add_child(combo_indicator)
 		# 調整位置到頭頂上方 (假設單位大小約 16x16)
-		combo_indicator.position = Vector2(0, -12) 
-		combo_indicator.z_index = 20 # 確保在最上層
+		# 核心修正：增加 Y 軸偏移，確保 UI 在單位頭頂清晰可見
+		combo_indicator.position = Vector2(0, -20) 
+		combo_indicator.z_index = 100 # 提升層級，確保在最上層顯示
 	else:
 		push_error("[GridEntity] Failed to preload ComboIndicatorUI.tscn")
 
@@ -116,7 +117,8 @@ func _update_ui_positions() -> void:
 	if combo_indicator:
 		# 由於 GridEntity 的 global_position 已經是單位的世界中心點 (由 grid_to_world_center_footprint 決定)
 		# 所以本地座標的 X = 0 就已經是單位的 X 軸中心。
-		combo_indicator.position = Vector2(0, -12)
+		# 核心修正：與初始化時保持一致，使用 -20 的 Y 偏移
+		combo_indicator.position = Vector2(0, -20)
 
 func get_attack_results(at_cell: Vector2i) -> Dictionary:
 	"""
