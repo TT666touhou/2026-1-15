@@ -94,6 +94,12 @@ func _input(event: InputEvent) -> void:
 			if _previewing_skill != null:
 				_update_skill_world_preview()
 			get_viewport().set_input_as_handled()
+		elif _input_state == InputState.IDLE:
+			# IDLE 狀態下的懸停預覽
+			if _previewing_skill != null:
+				_update_skill_world_preview()
+			else:
+				_check_enemy_hover_preview()
 
 func _unhandled_input(event: InputEvent) -> void:
 	if event is InputEventMouseButton:
@@ -126,8 +132,32 @@ func _unhandled_input(event: InputEvent) -> void:
 				
 	elif event is InputEventMouseMotion:
 		# 當 IDLE 時，如果正在預覽技能 (例如點選了技能但還沒拖拽)，仍要更新預覽
-		if _input_state == InputState.IDLE and _previewing_skill != null:
-			_update_skill_world_preview()
+		if _input_state == InputState.IDLE:
+			if _previewing_skill != null:
+				_update_skill_world_preview()
+			else:
+				_check_enemy_hover_preview()
+
+func _check_enemy_hover_preview() -> void:
+	if not _skill_preview_controller or not grid: return
+	if TurnManager and not TurnManager.is_player_turn(): return
+	
+	var world_pos = get_viewport().get_camera_2d().get_global_mouse_position()
+	var cell = grid.world_to_grid(world_pos)
+	var occupant = grid.get_occupant(cell)
+	
+	if occupant is GridEntity and occupant.faction and not occupant.faction.is_controllable:
+		var attack_comp = occupant.get_node_or_null("EnemyAttackComponent")
+		if attack_comp:
+			if attack_comp.enabled and attack_comp.skill_resource:
+				_skill_preview_controller.update_preview(occupant, attack_comp.skill_resource, occupant.grid_position)
+				return
+			else:
+				pass
+	
+	# 如果沒指到敵人，清除可能存在的敵人預覽 (前提是沒有玩家預覽)
+	if _previewing_skill == null:
+		_skill_preview_controller.clear_preview()
 
 func _update_skill_world_preview() -> void:
 	if not _skill_preview_controller or not _previewing_skill: return
@@ -442,9 +472,8 @@ func _end_drag_visuals() -> void:
 	_clear_active_combo_previews()
 
 func _clear_active_combo_previews() -> void:
-	for target in _active_combo_targets:
-		if is_instance_valid(target) and target.has_method("update_combo_display"):
-			target.update_combo_display(0)
+	if AttackManager:
+		AttackManager.global_combo_changed.emit(AttackManager.global_combo_count)
 	_active_combo_targets.clear()
 
 func _process(delta: float) -> void:
@@ -489,47 +518,14 @@ func _process(delta: float) -> void:
 
 func _update_combo_preview(target_cell: Vector2i) -> void:
 	if not AttackManager: 
-		print("[GridSelector] AttackManager not found")
 		return
 	
-	# 判斷是否會結束回合
-	var will_end_turn = true
-	if _previewing_skill and _previewing_skill.execution_mode == UnitSkillData.ExecutionMode.MOVEMENT:
-		# 核心修正：即使是移動技能，在預覽階段也允許顯示連擊，以便玩家知道移動後的結果
-		will_end_turn = true 
-		
-	if not will_end_turn:
-		print("[GridSelector] Combo preview skipped: will not end turn")
-		_clear_active_combo_previews()
-		return
-		
 	var combo_results = AttackManager.calculate_preview_combos(selected_entity, target_cell)
-	print("[GridSelector] Combo preview results for cell ", target_cell, ": ", combo_results)
 	
-	# 核心優化：不再暴力清除所有預覽，而是進行差異更新
-	# 1. 隱藏不再被攻擊的目標
-	var targets_to_remove = []
-	for old_target in _active_combo_targets:
-		if not is_instance_valid(old_target) or not old_target in combo_results:
-			if is_instance_valid(old_target) and old_target.has_method("update_combo_display"):
-				print("[GridSelector] Hiding combo for old target: ", old_target.name)
-				old_target.update_combo_display(0)
-			targets_to_remove.append(old_target)
-	
-	for t in targets_to_remove:
-		_active_combo_targets.erase(t)
-	
-	# 2. 更新或顯示新目標
+	# 計算預覽總連擊數 (當前全局連擊 + 預覽新增連擊)
+	var total_preview_hits = AttackManager.global_combo_count
 	for target in combo_results:
-		if is_instance_valid(target) and target.has_method("update_combo_display"):
-			print("[GridSelector] Updating combo for target: ", target.name, " | count: ", combo_results[target])
-			target.update_combo_display(combo_results[target])
-			_active_combo_targets[target] = combo_results[target]
-			
-			# 核心修正：確保目標的 ComboIndicatorUI 是可見的且座標正確
-			if target.combo_indicator:
-				target.combo_indicator.visible = true
-				target.combo_indicator.z_index = 100 # 提升層級
-				# 強制更新一次位置
-				if target.has_method("_update_ui_positions"):
-					target._update_ui_positions()
+		total_preview_hits += combo_results[target]
+	
+	# 更新全局 Combo UI
+	AttackManager.global_combo_changed.emit(total_preview_hits)

@@ -1,0 +1,31 @@
+[gd_resource type="Resource" script_class="UnitSkillData" load_steps=5 format=3]
+
+[ext_resource type="Script" path="res://Scripts/SkillSystem/UnitSkillData.gd" id="1_script"]
+[ext_resource type="Resource" path="res://Resources/Skills/Targeting_XRadius1.tres" id="2_targeting"]
+[ext_resource type="Script" path="res://Scripts/SkillSystem/EffectDefinition.gd" id="3_effect_script"]
+
+[sub_resource type="Resource" id="Resource_damage"]
+script = ExtResource("3_effect_script")
+effect_type = 1
+value_calculation = 0
+base_value = 1.0
+move_direction = Vector2i(0, 0)
+ignore_barrier = false
+ignore_shield = false
+
+[resource]
+script = ExtResource("1_script")
+skill_name = "X-Slash"
+manual_description = "對周圍 X 型範圍造成 {scaling} 傷害。"
+manual_description_en = "Deals 10 damage in an X-pattern around the unit."
+description = ""
+execution_mode = 0
+targeting_type = 0
+cooldown_turns = 0
+is_accurate = false
+scaling_configs = Array[Dictionary]([{"stat": "attack", "weight": 1.0}])
+scaling_multiplier = 1.0
+targeting = ExtResource("2_targeting")
+post_move_targeting = ExtResource("2_targeting")
+effects = Array[ExtResource("3_effect_script")]([SubResource("Resource_damage")])
+is_move_skill = false

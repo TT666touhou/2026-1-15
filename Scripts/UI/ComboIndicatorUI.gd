@@ -7,13 +7,20 @@ class_name ComboIndicatorUI
 var _tween: Tween
 
 func _ready() -> void:
+	add_to_group("combo_indicator_ui")
 	visible = false
 	if not panel_container:
 		return
+	
+	# Connect to AttackManager if it exists
+	if AttackManager:
+		if not AttackManager.global_combo_changed.is_connected(show_combo):
+			AttackManager.global_combo_changed.connect(show_combo)
+	
 	# Ensure correct positioning relative to parent if needed
-	# Default pivot to bottom-center for pop-up animation
-	panel_container.pivot_offset = Vector2(panel_container.size.x / 2, panel_container.size.y)
-	panel_container.position.x = -panel_container.size.x / 2.0
+	# Default pivot to center for pop-up animation in global mode
+	panel_container.reset_size()
+	panel_container.pivot_offset = panel_container.size / 2.0
 	
 	# Debug: Add Camera if running standalone
 	if get_tree().current_scene == self:
@@ -25,12 +32,7 @@ func _ready() -> void:
 		show_combo(2)
 
 func show_combo(count: int) -> void:
-	var parent_name: String
-	if get_parent():
-		parent_name = str(get_parent().name)
-	else:
-		parent_name = "None"
-	print("[ComboUI] show_combo called with count: ", count, " | visible: ", visible, " | global_pos: ", global_position, " | parent: ", parent_name)
+	# print("[ComboUI] show_combo called with count: ", count, " | visible: ", visible, " | global_pos: ", global_position)
 	if count <= 0:
 		hide_combo()
 		return
@@ -44,11 +46,11 @@ func show_combo(count: int) -> void:
 	
 	# 強制容器更新尺寸以獲得正確的中心點
 	panel_container.reset_size()
-	panel_container.pivot_offset = Vector2(panel_container.size.x / 2, panel_container.size.y)
-	# 核心修正：將面板向左偏移自身寬度的一半，達成水平居中
-	panel_container.position.x = -panel_container.size.x / 2.0
 	
-	# 核心修正：確保在縮放後的 GridEntity 中依然可見
+	# 全局 UI 模式下，我們不需要手動偏移 position.x，因為它由 anchors 決定
+	# 但我們需要確保 pivot 在正確位置以便動畫
+	panel_container.pivot_offset = Vector2(panel_container.size.x / 2, panel_container.size.y / 2)
+	
 	# 強制設定 z_index 和 visible，確保 UI 在最上層
 	z_index = 100
 	visible = true

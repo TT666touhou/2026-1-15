@@ -165,7 +165,7 @@ func update_display() -> void:
 			sprite.material.set_shader_parameter("is_unlimited", false)
 
 func set_attack_progress(progress: float, direction: Vector2i = Vector2i.ZERO) -> void:
-	"""設置攻擊進度，這會讓箭頭填滿紅色"""
+	"""設置攻擊進度 (已停用紅色填滿效果)"""
 	_current_attack_progress = progress
 	
 	for dir_name in _arrows:
@@ -173,30 +173,8 @@ func set_attack_progress(progress: float, direction: Vector2i = Vector2i.ZERO) -
 		var sprite = arrow_data["sprite"] as Sprite2D
 		var fill = sprite.get_node_or_null("FillProgress") as ColorRect
 		
-		# 判斷是否為目標方向 (如果為 ZERO 則全部顯示)
-		var is_target_dir = (direction == Vector2i.ZERO or arrow_data["dir"] == direction)
-		
 		if fill:
-			if not is_target_dir:
-				fill.visible = false
-				continue
-				
-			# 根據 Texture 尺寸決定 Fill 的大小
-			var rect_size = Vector2(16, 16) # fallback
-			if sprite.texture:
-				if sprite.texture is AtlasTexture:
-					rect_size = sprite.texture.region.size
-				else:
-					rect_size = sprite.texture.get_size()
-			
-			var w = rect_size.x
-			var h = rect_size.y
-			
-			# 核心：由下而上填滿
-			# Sprite 的錨點通常在中心 (0,0)，所以 Rect 的起始點要偏移
-			fill.size = Vector2(w, h * progress)
-			fill.position = Vector2(-w/2, (h/2) - (h * progress))
-			fill.visible = progress > 0.001
+			fill.visible = false
 	
-	# 更新視覺狀態（處理 Modulate）
+	# 更新視覺狀態
 	_update_visuals()

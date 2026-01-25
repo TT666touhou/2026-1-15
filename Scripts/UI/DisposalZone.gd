@@ -63,64 +63,63 @@ func _drop_data(_at_position: Vector2, data: Variant) -> void:
 			hand.remove_card(card)
 
 func dispose_card(card: Card) -> void:
-	print("[DisposalZone] Disposing card: ", card.name)
-	
 	# 禁用交互
 	card.interactable = false
 	card.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	card.set_process(false) # 停止內部邏輯，防止 shader 參數衝突
+	card.set_process(false)
 	
-	# 重定父節點到 UI 層 (DisposalZone 的父節點)，確保維持在 Screen Space 且可見
-	# 不要 reparent 到 current_scene (Node2D)，因為那會導致 Control 的座標系變換為 World Space，
-	# 且可能被 UI 層遮擋或跑出視野。
+	# 重定父節點到 UI 層
 	var ui_layer = get_parent()
 	if ui_layer:
+		var old_pos = card.global_position
 		card.reparent(ui_layer, true)
+		card.global_position = old_pos  # 保持位置
 	else:
-		# Fallback
-		card.reparent(get_tree().current_scene, true)
+		var scene = get_tree().current_scene
+		if scene:
+			var old_pos = card.global_position
+			card.reparent(scene, true)
+			card.global_position = old_pos
 	
 	# 確保在最上層
 	card.z_index = 100
+	card.visible = true
 	
 	# 嘗試應用 Dissolve Shader
 	var container = card.get_node_or_null("SubViewportContainer")
 	if container:
 		var mat = ShaderMaterial.new()
 		mat.shader = DISSOLVE_SHADER
-		# 確保 NoiseTexture 有數據 (通常 _ready 之後已經有了，但為了保險可以用 await)
+		
+		# 確保 NoiseTexture 有數據
 		if not _noise_texture.get_image():
 			await _noise_texture.changed
-		mat.set_shader_parameter("noise_texture", _noise_texture)
-		mat.set_shader_parameter("dissolve_value", 0.0)
+		
+		mat.set_shader_parameter("dissolve_texture", _noise_texture)
+		mat.set_shader_parameter("dissolve_value", 1.0)
 		container.material = mat
 	
-	# 1. 觸發視覺特效 (溶解/縮小)
+	# 觸發視覺特效
 	var tween = create_tween()
 	
 	match effect_type:
 		EffectType.SPIN_AND_SHRINK:
-			# 縮小 + 旋轉
 			tween.tween_property(card, "scale", Vector2.ZERO, 0.5).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_IN)
 			tween.parallel().tween_property(card, "rotation_degrees", 360.0, 0.5).as_relative()
 		EffectType.DISSOLVE_ONLY:
-			# 僅溶解模式：不改變 scale 和 rotation，僅靠下方 shader 效果
 			pass
 	
 	# 如果有 Shader，同時播放 Dissolve
 	if container and container.material:
-		tween.parallel().tween_property(container.material, "shader_parameter/dissolve_value", 1.0, 0.5)
+		tween.parallel().tween_property(container.material, "shader_parameter/dissolve_value", 0.0, 0.5)
 	else:
-		# 後備：透明度漸變
 		tween.parallel().tween_property(card, "modulate:a", 0.0, 0.5)
 	
-	# 3. 等待動畫結束後真正銷毀
+	# 等待動畫結束
 	await tween.finished
 	
 	emit_signal("card_disposed", card.card_data)
 	
-	# 通知 DeckManager 進行棄牌處理 (false = Discard, true = Exhaust)
-	# 根據規劃，DisposalZone 的行為是 Discard
 	if DeckManager:
 		DeckManager.on_card_played(card.card_data, false)
 	

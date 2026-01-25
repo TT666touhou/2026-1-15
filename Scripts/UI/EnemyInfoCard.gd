@@ -1,12 +1,13 @@
 extends PanelContainer
 
-@onready var icon_rect: TextureRect = $HBox/Icon
-@onready var name_label: Label = $HBox/InfoBox/NameLabel
-@onready var hp_label: RichTextLabel = $HBox/InfoBox/StatsBox/HPBarContainer/HPLabel
-@onready var hp_bar: ProgressBar = $HBox/InfoBox/StatsBox/HPBarContainer/HPBar
-@onready var barrier_container: HBoxContainer = $HBox/InfoBox/StatsBox/BarrierContainer
-@onready var atk_label: Label = $HBox/InfoBox/StatsGrid/AtkLabel
-@onready var combo_label: Label = $HBox/InfoBox/ComboLabel
+@onready var icon_rect: TextureRect = $Margin/MainVBox/TopHBox/Icon
+@onready var name_label: Label = $Margin/MainVBox/TopHBox/InfoBox/NameLabel
+@onready var hp_label: RichTextLabel = $Margin/MainVBox/TopHBox/InfoBox/StatsBox/HPBarContainer/HPLabel
+@onready var hp_bar: ProgressBar = $Margin/MainVBox/TopHBox/InfoBox/StatsBox/HPBarContainer/HPBar
+@onready var barrier_container: HBoxContainer = $Margin/MainVBox/TopHBox/InfoBox/StatsBox/BarrierContainer
+@onready var atk_label: Label = $Margin/MainVBox/TopHBox/InfoBox/StatsGrid/AtkLabel
+@onready var skills_container: VBoxContainer = $Margin/MainVBox/SkillsContainer
+@onready var skill_label: RichTextLabel = $Margin/MainVBox/SkillsContainer/SkillLabel
 
 var current_entity: GridEntity = null
 
@@ -31,6 +32,22 @@ func update_info(entity: GridEntity) -> void:
 		return
 	
 	visible = true
+	
+	# 確保節點已準備就緒
+	if icon_rect == null:
+		# 嘗試手動獲取，以防 @onready 失敗
+		icon_rect = get_node_or_null("Margin/MainVBox/TopHBox/Icon")
+		name_label = get_node_or_null("Margin/MainVBox/TopHBox/InfoBox/NameLabel")
+		hp_label = get_node_or_null("Margin/MainVBox/TopHBox/InfoBox/StatsBox/HPBarContainer/HPLabel")
+		hp_bar = get_node_or_null("Margin/MainVBox/TopHBox/InfoBox/StatsBox/HPBarContainer/HPBar")
+		barrier_container = get_node_or_null("Margin/MainVBox/TopHBox/InfoBox/StatsBox/BarrierContainer")
+		atk_label = get_node_or_null("Margin/MainVBox/TopHBox/InfoBox/StatsGrid/AtkLabel")
+		skills_container = get_node_or_null("Margin/MainVBox/SkillsContainer")
+		skill_label = get_node_or_null("Margin/MainVBox/SkillsContainer/SkillLabel")
+
+	if icon_rect == null:
+		push_error("[EnemyInfoCard] Failed to find UI nodes! Check paths.")
+		return
 		
 	# 1. Update Icon
 	var sprite = entity.get_node_or_null("Sprite2D")
@@ -67,7 +84,6 @@ func update_info(entity: GridEntity) -> void:
 		hp_bar.visible = true
 		hp_bar.value = 0
 		atk_label.text = ""
-		combo_label.text = ""
 
 func _process(_delta: float) -> void:
 	# Removed polling logic in favor of signals
@@ -107,19 +123,20 @@ func _refresh_ui_from_data(char_data: CharacterData) -> void:
 	
 	# Primary Stats
 	var eff_atk = char_data.get_effective_attack()
-	var eff_combo = char_data.get_effective_combo()
 	
 	atk_label.text = "ATK: %d" % eff_atk
 	
-	# Combo
-	var floor_combo = int(floor(eff_combo))
-	combo_label.text = "Combo: %d (%.1f)" % [floor_combo, eff_combo]
+	# Update Skills
+	_update_skills_info()
 	
 	# Highlight ATK if boosted
 	if eff_atk > char_data.attack_damage:
 		atk_label.add_theme_color_override("font_color", Color(0.4, 1.0, 0.4)) # Green
 	elif eff_atk < char_data.attack_damage:
 		atk_label.add_theme_color_override("font_color", Color(1, 0.4, 0.4)) # Red
+	
+	# Force container to shrink to fit new content
+	reset_size()
 
 func _update_barriers(count: int) -> void:
 	if not barrier_container: return
@@ -143,3 +160,16 @@ func _update_barriers(count: int) -> void:
 			triangle.add_child(rect)
 			
 		barrier_container.add_child(triangle)
+
+func _update_skills_info() -> void:
+	if not skills_container or not current_entity: return
+	
+	var attack_comp = current_entity.get_node_or_null("EnemyAttackComponent")
+	if attack_comp and attack_comp.enabled and attack_comp.skill_resource:
+		skills_container.visible = true
+		var skill = attack_comp.skill_resource
+		var skill_name = skill.skill_name
+		var skill_desc = skill.get_dynamic_description()
+		skill_label.text = "[color=yellow]%s:[/color] %s" % [skill_name, skill_desc]
+	else:
+		skills_container.visible = false

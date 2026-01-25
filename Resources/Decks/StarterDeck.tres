@@ -1,0 +1,15 @@
+[gd_resource type="Resource" script_class="DeckDefinition" load_steps=10 format=3 uid="uid://bbax8kjcamdie"]
+
+[ext_resource type="Script" path="res://Scripts/Card/DeckDefinition.gd" id="1_script"]
+[ext_resource type="Resource" path="res://Resources/Cards/Skill_MoveRight.tres" id="2_move_right"]
+[ext_resource type="Resource" path="res://Resources/Cards/Skill_MoveLeft.tres" id="3_move_left"]
+[ext_resource type="Resource" path="res://Resources/Cards/Skill_MoveUp.tres" id="4_move_up"]
+[ext_resource type="Resource" path="res://Resources/Cards/Skill_MoveDown.tres" id="5_move_down"]
+[ext_resource type="Resource" path="res://Resources/Cards/Skill_CheckerDamage.tres" id="6_checker"]
+[ext_resource type="Resource" path="res://Resources/Cards/Skill_GlobalDamage.tres" id="7_global"]
+[ext_resource type="Resource" path="res://Resources/Cards/Skill_XPenetration.tres" id="8_xpen"]
+
+[resource]
+script = ExtResource("1_script")
+deck_name = "Starter Deck"
+cards = Array[Resource]([ExtResource("2_move_right"), ExtResource("3_move_left"), ExtResource("4_move_up"), ExtResource("5_move_down"), ExtResource("6_checker"), ExtResource("7_global"), ExtResource("8_xpen")])

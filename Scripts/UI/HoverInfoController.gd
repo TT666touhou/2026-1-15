@@ -191,10 +191,8 @@ func _update_position() -> void:
 		var target_pos = mouse_pos + offset_from_mouse
 		
 		var viewport_rect = get_viewport_rect()
-		var panel_size = active_panel.size
-		if active_panel.custom_minimum_size != Vector2.ZERO:
-			panel_size.x = max(panel_size.x, active_panel.custom_minimum_size.x)
-			panel_size.y = max(panel_size.y, active_panel.custom_minimum_size.y)
+		# Use combined minimum size to ensure we handle adaptive containers correctly
+		var panel_size = active_panel.get_combined_minimum_size()
 			
 		if target_pos.x + panel_size.x > viewport_rect.size.x:
 			target_pos.x = mouse_pos.x - panel_size.x - offset_from_mouse.x

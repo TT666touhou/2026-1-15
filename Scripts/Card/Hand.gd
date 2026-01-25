@@ -341,14 +341,19 @@ func end_drag() -> void:
 			dragging_card.return_to_hand(true)
 		else:
 			# Outside hand area: TRY TO PLACE/PLAY
-			var played = request_place(dragging_card, mouse_pos)
-			if not played:
-				dragging_card.return_to_hand(true)
+			_handle_card_placement(dragging_card, mouse_pos)
 	
 	_clear_skill_preview()
 	dragging_card = null
 	drag_from_idx = -1
 	preview_insert_idx = -1
+	_arrange()
+
+## Helper to handle async placement to avoid coroutine issues in end_drag
+func _handle_card_placement(card, pos: Vector2) -> void:
+	var played = await request_place(card, pos)
+	if not played and is_instance_valid(card):
+		card.return_to_hand(true)
 	_arrange()
 
 func remove_last() -> void:
@@ -392,8 +397,9 @@ func request_dispose(card, mouse_global_pos: Vector2) -> bool:
 		var rect = zone.get_global_rect()
 		if rect.has_point(mouse_global_pos):
 			if zone.has_method("dispose_card"):
-				zone.dispose_card(card)
+				_clear_skill_preview()
 				detach_card(card)
+				zone.dispose_card(card)
 				return true
 	return false
 
@@ -439,11 +445,19 @@ func request_place(card, drop_global_pos: Vector2) -> bool:
 		
 		var skill_manager = get_node_or_null("/root/SkillManager")
 		if not skill_manager: return false
+		
+		if AttackManager:
+			AttackManager.reset_action_hit_flag()
 			
-		var success = skill_manager.cast_skill(skill_card, cell, null)
+		var success = await skill_manager.cast_skill(skill_card, cell, null)
 		if success:
+			if AttackManager and not AttackManager.has_hit_this_action:
+				AttackManager.reset_global_combo()
+				
 			if DeckManager and card_data is RuntimeCardData:
 				DeckManager.on_card_played(card_data)
+				detach_card(card)
+				card.queue_free()
 			else:
 				remove_card(card)
 			return true

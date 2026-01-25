@@ -18,7 +18,6 @@ var movement_range_data: MovementRangeData # 運行時移動數據實例
 var move_limit: int = -1 # 移動距離限制 (-1 為無限制)
 var attack_range_depth: int = 1 # 攻擊範圍深度
 var is_boss: bool = false # 是否為 BOSS (死亡後通關)
-var combo_indicator: ComboIndicatorUI # Combo 顯示組件
 
 # 箭頭與指示器相關
 var arrow_texture = preload("res://Tilesheet/1bit_assetpack/selfmade/ARROW.png")
@@ -37,18 +36,6 @@ func _ready() -> void:
 		cam.zoom = Vector2(4, 4)
 		add_child(cam)
 		print("[GridEntity] Debug Camera Added for standalone scene execution")
-
-	# 初始化 Combo Indicator
-	var combo_ui_scene = preload("res://Scenes/UI/ComboIndicatorUI.tscn")
-	if combo_ui_scene:
-		combo_indicator = combo_ui_scene.instantiate()
-		add_child(combo_indicator)
-		# 調整位置到頭頂上方 (假設單位大小約 16x16)
-		# 核心修正：增加 Y 軸偏移，確保 UI 在單位頭頂清晰可見
-		combo_indicator.position = Vector2(0, -20) 
-		combo_indicator.z_index = 100 # 提升層級，確保在最上層顯示
-	else:
-		push_error("[GridEntity] Failed to preload ComboIndicatorUI.tscn")
 
 	# 預設 Z Index (單位/敵人較高，陷阱/裝飾較低)
 	z_index = 5
@@ -114,11 +101,7 @@ func update_attack_indicators(progress: float = 0.0, direction: Vector2i = Vecto
 			arrow_node.update_display()
 
 func _update_ui_positions() -> void:
-	if combo_indicator:
-		# 由於 GridEntity 的 global_position 已經是單位的世界中心點 (由 grid_to_world_center_footprint 決定)
-		# 所以本地座標的 X = 0 就已經是單位的 X 軸中心。
-		# 核心修正：與初始化時保持一致，使用 -20 的 Y 偏移
-		combo_indicator.position = Vector2(0, -20)
+	pass
 
 func get_attack_results(at_cell: Vector2i) -> Dictionary:
 	"""
@@ -259,25 +242,36 @@ func play_attack_animation_towards(direction: Vector2i) -> void:
 func apply_damage(amount: int, ignore_barrier: bool = false, ignore_shield: bool = false, attacker: GridEntity = null, is_pursuit: bool = false) -> int:
 	"""直接造成傷害 (不處理動畫，動畫由 take_damage 觸發)"""
 	var attacker_data = attacker.character_data if attacker != null else null
-	return take_damage(amount, ignore_barrier, ignore_shield, attacker_data, is_pursuit)
+	var actual_damage = take_damage(amount, ignore_barrier, ignore_shield, attacker_data, is_pursuit)
+	
+	# 核心修正：如果攻擊者是玩家單位，增加全局連擊
+	if actual_damage > 0 and attacker and attacker.is_in_group("player"):
+		if AttackManager:
+			AttackManager.increase_global_combo(1)
+			
+	return actual_damage
 
 func show_damage_number(amount: int) -> void:
 	"""顯示受傷浮動文字"""
 	var scene = load("res://Scenes/UI/FloatingText.tscn")
 	if scene:
-		var text_instance = scene.instantiate()
-		add_child(text_instance)
-		# 調整位置到頭頂上方
-		text_instance.position = Vector2(0, -16)
+		var text_instance = scene.instantiate() as FloatingText
+		# 核心修正：先設定位置，再加入場景，最後開啟 top_level
+		text_instance.global_position = global_position + Vector2(0, -16)
+		text_instance.top_level = true
+		get_tree().current_scene.add_child(text_instance)
+		
 		text_instance.popup_damage(amount)
 
 func show_pursuit_number(amount: int) -> void:
 	"""顯示追擊浮動文字"""
 	var scene = load("res://Scenes/UI/FloatingText.tscn")
 	if scene:
-		var instance = scene.instantiate()
-		add_child(instance)
-		instance.position = Vector2(0, -16)
+		var instance = scene.instantiate() as FloatingText
+		instance.global_position = global_position + Vector2(0, -16)
+		instance.top_level = true
+		get_tree().current_scene.add_child(instance)
+		
 		if instance.has_method("popup_pursuit"):
 			instance.popup_pursuit(amount)
 		else:
@@ -287,10 +281,11 @@ func show_heal_number(amount: int) -> void:
 	"""顯示治療浮動文字"""
 	var scene = load("res://Scenes/UI/FloatingText.tscn")
 	if scene:
-		var instance = scene.instantiate()
-		add_child(instance)
-		# 調整位置到頭頂上方
-		instance.position = Vector2(0, -16)
+		var instance = scene.instantiate() as FloatingText
+		instance.global_position = global_position + Vector2(0, -16)
+		instance.top_level = true
+		get_tree().current_scene.add_child(instance)
+		
 		# 傳入負值，FloatingText 會自動切換為治療樣式並加上 "+"
 		instance.popup_damage(-amount)
 
@@ -298,9 +293,11 @@ func show_avoid_text() -> void:
 	"""顯示閃避浮動文字"""
 	var scene = load("res://Scenes/UI/FloatingText.tscn")
 	if scene:
-		var instance = scene.instantiate()
-		add_child(instance)
-		instance.position = Vector2(0, -16)
+		var instance = scene.instantiate() as FloatingText
+		instance.global_position = global_position + Vector2(0, -16)
+		instance.top_level = true
+		get_tree().current_scene.add_child(instance)
+		
 		# 假設 FloatingText 有支援文字彈出
 		if instance.has_method("popup_text"):
 			instance.popup_text("AVOID", Color.PURPLE)
@@ -312,21 +309,26 @@ func show_resisted_text() -> void:
 	"""顯示抵抗浮動文字"""
 	var scene = load("res://Scenes/UI/FloatingText.tscn")
 	if scene:
-		var instance = scene.instantiate()
-		add_child(instance)
-		instance.position = Vector2(0, -16)
+		var instance = scene.instantiate() as FloatingText
+		instance.global_position = global_position + Vector2(0, -16)
+		instance.top_level = true
+		get_tree().current_scene.add_child(instance)
+		
 		if instance.has_method("popup_text"):
 			instance.popup_text("RESISTED", Color.BLUE_VIOLET)
 		else:
+			# 回退：使用受傷樣式但傳入 0 (如果支援)
 			instance.popup_damage(0)
 
 func show_parry_text() -> void:
 	"""顯示格擋浮動文字"""
 	var scene = load("res://Scenes/UI/FloatingText.tscn")
 	if scene:
-		var instance = scene.instantiate()
-		add_child(instance)
-		instance.position = Vector2(0, -16)
+		var instance = scene.instantiate() as FloatingText
+		instance.global_position = global_position + Vector2(0, -16)
+		instance.top_level = true
+		get_tree().current_scene.add_child(instance)
+		
 		if instance.has_method("popup_parry"):
 			instance.popup_parry()
 		else:
@@ -336,9 +338,11 @@ func show_barrier_text() -> void:
 	"""顯示防護罩抵擋浮動文字"""
 	var scene = load("res://Scenes/UI/FloatingText.tscn")
 	if scene:
-		var instance = scene.instantiate()
-		add_child(instance)
-		instance.position = Vector2(0, -16)
+		var instance = scene.instantiate() as FloatingText
+		instance.global_position = global_position + Vector2(0, -16)
+		instance.top_level = true
+		get_tree().current_scene.add_child(instance)
+		
 		if instance.has_method("popup_barrier"):
 			instance.popup_barrier()
 		else:
@@ -353,10 +357,11 @@ func show_attack_number(amount: int) -> void:
 	
 	var scene = load("res://Scenes/UI/FloatingText.tscn")
 	if scene:
-		var text_instance = scene.instantiate()
-		add_child(text_instance)
-		# 調整位置到頭頂上方
-		text_instance.position = Vector2(0, -16)
+		var text_instance = scene.instantiate() as FloatingText
+		text_instance.global_position = global_position + Vector2(0, -16)
+		text_instance.top_level = true
+		get_tree().current_scene.add_child(text_instance)
+		
 		text_instance.popup_attack(amount)
 		current_attack_text = text_instance
 
@@ -365,11 +370,6 @@ func dismiss_attack_number() -> void:
 	if is_instance_valid(current_attack_text):
 		current_attack_text.dismiss()
 	current_attack_text = null
-
-func update_combo_display(count: int) -> void:
-	"""更新 Combo 顯示"""
-	if combo_indicator:
-		combo_indicator.show_combo(count)
 
 func set_movement_data(data: MovementRangeData) -> void:
 	"""設置移動數據（通常由 CardProvider 調用）"""
@@ -661,10 +661,6 @@ func _handle_death() -> void:
 	var attack_area = get_node_or_null("AttackArea") as Area2D
 	if search_area: search_area.monitoring = false
 	if attack_area: attack_area.monitoring = false
-
-	for child in get_children():
-		if child is FloatingText:
-			child.reparent(get_tree().current_scene, true)
 
 	await play_death_animation()
 

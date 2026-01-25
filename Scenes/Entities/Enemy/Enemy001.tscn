@@ -13,6 +13,7 @@
 [ext_resource type="ParticleProcessMaterial" path="res://Resources/Shared/MovementParticlesMaterial.tres" id="26_material"]
 [ext_resource type="Texture2D" path="res://Resources/Shared/ParticlePixel.tres" id="27_texture"]
 [ext_resource type="Script" path="res://Scripts/Entities/EnemyAttackComponent.gd" id="28_attack"]
+[ext_resource type="Resource" uid="uid://enemy001xattack" path="res://Resources/Skills/EnemySkills/Skill_Enemy001_XAttack.tres" id="30_skill"]
 [ext_resource type="Script" path="res://Scripts/Entities/EnemyMoveAIComponent.gd" id="29_move_ai"]
 
 [sub_resource type="RectangleShape2D" id="RectangleShape2D_enemy"]
@@ -98,6 +99,8 @@ autoplay = "idle"
 script = ExtResource("28_attack")
 attack_interval = 4.0
 telegraph_duration = 1.5
+enabled = true
+skill_resource = ExtResource("30_skill")
 single_direction_only = true
 bullet_travel_time = 0.12
 

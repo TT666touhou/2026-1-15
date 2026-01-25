@@ -95,7 +95,7 @@ func _drop_skill(card: SkillCard) -> void:
 	
 	# 嘗試施放
 	# TODO: 傳入施法來源 (目前假設無來源或全域)
-	skill_manager.cast_skill(card, cell, null)
+	await skill_manager.cast_skill(card, cell, null)
 
 func _get_grid_cell_from_mouse() -> Vector2i:
 	if grid == null:

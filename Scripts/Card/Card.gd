@@ -124,6 +124,7 @@ func _update_size() -> void:
 	
 	# 2. 確保內部 Viewport 保持設計解析度 (清晰度來源)
 	if _sub_viewport_container:
+		_sub_viewport_container.z_index = 0 # 確保不影響 top_level 元素
 		var viewport = _sub_viewport_container.get_node_or_null("SubViewport")
 		if viewport:
 			viewport.size = BASE_DESIGN_SIZE # 固定為 320x480

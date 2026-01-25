@@ -3,6 +3,34 @@ extends Node
 # Autoload name: AttackManager
 # 負責處理攻擊判定、Combo 計算與傷害結算調度
 
+signal global_combo_changed(new_count: int)
+
+var global_combo_count: int = 0
+var has_hit_this_action: bool = false
+
+func increase_global_combo(amount: int = 1) -> void:
+	global_combo_count += amount
+	has_hit_this_action = true
+	global_combo_changed.emit(global_combo_count)
+	print("[AttackManager] Global Combo increased to: ", global_combo_count)
+
+func mark_hit() -> void:
+	has_hit_this_action = true
+
+func reset_global_combo() -> void:
+	if global_combo_count != 0:
+		global_combo_count = 0
+		global_combo_changed.emit(global_combo_count)
+		print("[AttackManager] Global Combo RESET")
+
+func reset_action_hit_flag() -> void:
+	has_hit_this_action = false
+
+func get_combo_damage_multiplier(scaling: float = 0.1) -> float:
+	# 每個連擊提高 scaling 傷害 (預設 0.1 => 1.0, 1.1, 1.2...)
+	# 核心修正：使用快照數值或當前數值，取決於呼叫時機
+	return 1.0 + (global_combo_count * scaling)
+
 # 計算預覽狀態下的 Combo
 # drag_entity: 正在拖曳的實體 (可選，若為 null 則計算場上現有狀態)
 # drag_target_pos: 拖曳實體的目標位置 (當 drag_entity 存在時有效)

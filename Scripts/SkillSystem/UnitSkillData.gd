@@ -13,6 +13,7 @@ enum TargetingType {
 }
 
 @export var skill_name: String = "New Skill"
+@export_multiline var manual_description: String = ""
 @export_multiline var manual_description_en: String = ""
 @export var description: String = ""
 @export var icon: Texture2D
@@ -57,6 +58,24 @@ func validate_config() -> bool:
 	return is_valid
 
 func get_dynamic_description() -> String:
+	# --- 優先處理手動編輯的中文文本 ---
+	if manual_description != "":
+		var final_text = manual_description
+		
+		# 獲取所有效果的動態文字並進行替換
+		for i in range(effects.size()):
+			var effect = effects[i]
+			var scaling_text = _get_formatted_scaling_text(effect.base_value)
+			var placeholder = "{scaling%d}" % i
+			final_text = final_text.replace(placeholder, scaling_text)
+		
+		# 如果只有一個效果，也可以支持簡單的 {scaling} 標籤
+		if effects.size() > 0:
+			var first_scaling = _get_formatted_scaling_text(effects[0].base_value)
+			final_text = final_text.replace("{scaling}", first_scaling)
+			
+		return final_text
+
 	# --- 優先處理手動編輯的英文文本 ---
 	if manual_description_en != "":
 		var final_text = manual_description_en

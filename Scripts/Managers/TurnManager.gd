@@ -100,6 +100,8 @@ func start_turn() -> void:
 	
 	if current_faction.is_controllable:
 		_set_state(State.PLAYER_TURN)
+		if AttackManager:
+			AttackManager.reset_global_combo()
 	else:
 		_set_state(State.ENEMY_TURN)
 		_run_enemy_ai_sequence()
@@ -112,7 +114,7 @@ func start_turn() -> void:
 	turn_count_changed.emit(turn_count)
 
 func _run_enemy_ai_sequence() -> void:
-	print("[TurnManager] Starting Enemy AI Sequence for faction: ", current_faction.resource_name if current_faction else "null")
+	print("[TurnManager] Starting Enemy Sequence for faction: ", current_faction.resource_name if current_faction else "null")
 	# 1. 稍微延遲一點讓 UI 顯示「敵人回合」
 	await get_tree().create_timer(0.4).timeout
 	
@@ -122,34 +124,58 @@ func _run_enemy_ai_sequence() -> void:
 		return e is GridEntity and e.faction == current_faction
 	)
 	
-	print("[TurnManager] Found ", enemy_units.size(), " units to move.")
+	print("[TurnManager] Found ", enemy_units.size(), " units.")
 	
-	# 3. 遍歷每個單位執行移動
+	# Phase A: Skills (先釋放技能)
+	var acted_skills = false
+	for unit in enemy_units:
+		if not is_instance_valid(unit): continue
+		var attack_comp = unit.get_node_or_null("EnemyAttackComponent")
+		if attack_comp and attack_comp.has_method("run_skill_phase"):
+			# 檢查是否真的有放技能 (透過計時器判斷)
+			if attack_comp._turns_since_last_skill >= attack_comp.cast_skill_interval:
+				await attack_comp.run_skill_phase()
+				acted_skills = true
+				await get_tree().create_timer(0.6).timeout # 增加間隔演出 (從 0.4 改為 0.6)
+	
+	if acted_skills:
+		await get_tree().create_timer(0.5).timeout # 所有技能放完後的停頓 (從 0.4 改為 0.5)
+	
+	# Phase B: Movement (再移動)
+	var moved_any = false
 	for unit in enemy_units:
 		if not is_instance_valid(unit): continue
 		
-		print("[TurnManager] Processing move for: ", unit.name)
 		var move_data = EnemyAIController.calculate_best_move_for_unit(get_tree(), unit)
 		
 		if not move_data.is_empty():
 			var target_cell = move_data.cell
 			
 			if unit.grid_position != target_cell:
-				print("[TurnManager] AI moving ", unit.name, " to ", target_cell)
 				var mover = unit.get_node_or_null("GridMover")
 				if mover:
 					lock_input() 
 					await mover.move_to(target_cell)
 					unlock_input()
-					await get_tree().create_timer(0.1).timeout
+					moved_any = true
+					await get_tree().create_timer(0.3).timeout # 每個單位移動後的短暫停頓 (從 0.2 改為 0.3)
 				else:
 					unit.set_grid_position(target_cell)
-			else:
-				print("[TurnManager] AI unit ", unit.name, " decided to stay still.")
-		else:
-			print("[TurnManager] No valid move found for ", unit.name)
 	
-	# 4. 進入結算階段 (執行攻擊)
+	if moved_any:
+		await get_tree().create_timer(0.5).timeout # 所有移動完成後的停頓 (從 0.4 改為 0.5)
+	
+	# Phase C: Final Attacks (移動完之後執行原本的攻擊/撞擊)
+	for unit in enemy_units:
+		if not is_instance_valid(unit): continue
+		var attack_comp = unit.get_node_or_null("EnemyAttackComponent")
+		if attack_comp and attack_comp.has_method("run_attack_phase"):
+			# 檢查是否真的有攻擊 (透過計時器判斷)
+			if attack_comp._turns_since_last_attack >= 2:
+				await attack_comp.run_attack_phase()
+				await get_tree().create_timer(0.5).timeout # 每個攻擊間的間隔 (從 0.3 改為 0.5)
+
+	# 4. 進入結算階段 (執行玩家與其他單位的攻擊，如果有)
 	await advance_turn()
 
 func _decrement_all_skill_cooldowns() -> void:
@@ -267,10 +293,6 @@ func resolve_attacks() -> void:
 		if target.character_data and target.character_data.current_health <= 0:
 			continue
 			
-		# 初始化 Combo 顯示 (0)
-		if target.has_method("update_combo_display"):
-			target.update_combo_display(0)
-			
 		# --- 階段一：序列化蓄力與統計 Hits ---
 		var current_total_hits = 0
 		var resolved_damage = 0
@@ -324,10 +346,6 @@ func resolve_attacks() -> void:
 				"hits": hits
 			}
 			
-			# 4. 更新目標 UI
-			if is_instance_valid(target) and target.has_method("update_combo_display"):
-				target.update_combo_display(current_total_hits)
-				
 			# 5. 顯示攻擊預告數值 (基礎值)
 			if attacker.has_method("show_attack_number"):
 				attacker.show_attack_number(damage)
@@ -381,15 +399,16 @@ func resolve_attacks() -> void:
 		
 		# 計算合擊倍率
 		var combo_multiplier = 1.0
-		if current_total_hits >= 2:
-			# 檢查是否有 >= 2 個不同的攻擊者
-			var unique_attackers = {}
-			for att in event.attackers:
-				unique_attackers[att] = true
-			if unique_attackers.size() >= 2:
-				combo_multiplier = 1.0 + (current_total_hits * 0.125)
+		if AttackManager:
+			# 這裡我們取第一個攻擊者的縮放係數作為基準 (通常同一隊伍縮放一致)
+			var scaling = 0.1
+			if event.attackers.size() > 0 and event.attackers[0].character_data:
+				scaling = event.attackers[0].character_data.combo_damage_scaling
+			
+			# 核心修正：在合擊開始前快照倍率，避免中途變動
+			combo_multiplier = AttackManager.get_combo_damage_multiplier(scaling)
 				
-		var final_damage = int(resolved_damage * combo_multiplier)
+		var final_damage = int(round(resolved_damage * combo_multiplier))
 		
 		# 播放攻擊動畫 (齊發)
 		for attacker in event.attackers:
@@ -495,15 +514,3 @@ func resolve_attacks() -> void:
 		await get_tree().create_timer(0.6).timeout
 
 		# --- 解鎖死亡 ---
-		# 在所有視覺效果 (含受傷硬直) 結束後，才允許單位死亡
-		if is_instance_valid(target) and target.has_method("end_combo_sequence"):
-			target.end_combo_sequence()
-			
-		# 隱藏 Combo UI
-		if is_instance_valid(target) and target.has_method("update_combo_display"):
-			# 這裡可以選擇讓 UI 停留久一點，或直接隱藏
-			# 目前選擇保留最後的數字，或歸零。通常受傷後 UI 會消失或重置。
-			target.update_combo_display(0)
-			# 確保隱藏
-			if target.combo_indicator:
-				target.combo_indicator.hide_combo()

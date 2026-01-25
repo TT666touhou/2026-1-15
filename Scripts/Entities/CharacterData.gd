@@ -23,6 +23,7 @@ var base_penetration: float = 0.0 # 基礎貫穿率
 var base_movement_speed: float = 1.0 # 基礎移動速度
 var movement_speed: Variant = 3 # 支援 int 或 String "3-6"
 var combo_count: float # Base Combo
+var combo_damage_scaling: float = 0.1 # 每個連擊增加的傷害倍率
 var crit_rate: float
 var luck: int
 var character_trait: TraitData

@@ -59,6 +59,28 @@ func play_tick_animation() -> void:
 	# 4. 恢復 (Recover) - 0.1s
 	_tween.chain().tween_property(sprite, "scale", _original_scale, 0.1)
 
+func play_skill_cast_visual() -> void:
+	"""播放施法時的壓縮與放大動畫"""
+	if sprite == null: return
+	
+	if _tween and _tween.is_valid():
+		_tween.kill()
+		
+	sprite.scale = _original_scale
+	_tween = create_tween()
+	
+	# 1. 快速壓縮 (Squash)
+	_tween.tween_property(sprite, "scale", _original_scale * Vector2(1.4, 0.6), 0.1)\
+		.set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_OUT)
+	
+	# 2. 彈力放大 (Stretch/Pop)
+	_tween.chain().tween_property(sprite, "scale", _original_scale * Vector2(0.8, 1.2), 0.1)\
+		.set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_OUT)
+		
+	# 3. 恢復原狀
+	_tween.chain().tween_property(sprite, "scale", _original_scale, 0.3)\
+		.set_trans(Tween.TRANS_ELASTIC).set_ease(Tween.EASE_OUT)
+
 func play_damage_animation() -> void:
 	if sprite == null: return
 	

@@ -6,10 +6,6 @@ func _ready() -> void:
 	super._ready()
 	z_index = 1
 	
-	# Props typically don't show combat UI elements
-	if combo_indicator:
-		combo_indicator.visible = false
-		
 	# Ensure props are recognizable by group if needed
 	add_to_group("props")
 	

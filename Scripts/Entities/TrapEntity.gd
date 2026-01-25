@@ -9,9 +9,6 @@ func _ready() -> void:
 	super._ready()
 	z_index = 1
 	add_to_group("traps")
-	
-	if combo_indicator:
-		combo_indicator.visible = false
 
 func setup_trap(card: TrapCard) -> void:
 	"""從卡片初始化陷阱"""

@@ -25,13 +25,15 @@ var _deck_ui_ref: Control = null
 var _discard_ui_ref: Control = null
 const CardScene = preload("res://Scenes/Card/card.tscn")
 
+const DEFAULT_DECK = preload("res://Resources/Decks/StarterDeck.tres")
+
 func _ready() -> void:
 	print("[DeckSystem] Initialized as Autoload")
 	
-	# Poker Deck auto-loading removed. 
-	# Decks should be initialized via initialize_deck() by game logic.
-	
-	reset_for_combat()
+	if _master_deck.is_empty():
+		initialize_deck(DEFAULT_DECK)
+	else:
+		reset_for_combat()
 
 # --- 初始化與設置 ---
 
@@ -40,21 +42,21 @@ func register_hand(hand: Control) -> void:
 	print("[DeckSystem] Hand registered successfully: ", hand.get_path())
 	
 	# DEBUG: Spawn initial cards to test visuals and system
-	print("[DeckSystem] Triggering debug card spawn for all skills...")
-	var cards_to_add = [
-		"res://Resources/Cards/Skill_MoveRight.tres",
-		"res://Resources/Cards/Skill_MoveLeft.tres",
-		"res://Resources/Cards/Skill_MoveUp.tres",
-		"res://Resources/Cards/Skill_MoveDown.tres",
-		"res://Resources/Cards/Skill_CheckerDamage.tres",
-		"res://Resources/Cards/Skill_GlobalDamage.tres",
-		"res://Resources/Cards/Skill_XPenetration.tres"
-	]
-	
-	for card_path in cards_to_add:
-		var card_res = load(card_path)
-		if card_res:
-			call_deferred("debug_add_card_to_hand", card_res)
+	# print("[DeckSystem] Triggering debug card spawn for all skills...")
+	# var cards_to_add = [
+	# 	"res://Resources/Cards/Skill_MoveRight.tres",
+	# 	"res://Resources/Cards/Skill_MoveLeft.tres",
+	# 	"res://Resources/Cards/Skill_MoveUp.tres",
+	# 	"res://Resources/Cards/Skill_MoveDown.tres",
+	# 	"res://Resources/Cards/Skill_CheckerDamage.tres",
+	# 	"res://Resources/Cards/Skill_GlobalDamage.tres",
+	# 	"res://Resources/Cards/Skill_XPenetration.tres"
+	# ]
+	# 
+	# for card_path in cards_to_add:
+	# 	var card_res = load(card_path)
+	# 	if card_res:
+	# 		call_deferred("debug_add_card_to_hand", card_res)
 
 func register_deck_ui(node: Control) -> void:
 	_deck_ui_ref = node

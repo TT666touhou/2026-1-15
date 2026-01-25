@@ -19,6 +19,14 @@ func update_preview(unit: GridEntity, skill: Resource, _target_cell: Vector2i) -
 		queue_redraw()
 		return
 		
+	# 根據單位陣營切換顏色
+	if unit and unit.faction and not unit.faction.is_controllable:
+		preview_color = Color(1, 0.2, 0.2, 0.4) # 紅色預覽 (敵人)
+		border_color = Color(1, 0.2, 0.2, 0.8)
+	else:
+		preview_color = Color(1, 0.6, 0.2, 0.4) # 橘色預覽 (玩家)
+		border_color = Color(1, 0.6, 0.2, 0.8)
+
 	var targeting = skill.get("targeting")
 	var post_targeting = skill.get("post_move_targeting")
 	var targeting_type = skill.get("targeting_type")
@@ -26,6 +34,10 @@ func update_preview(unit: GridEntity, skill: Resource, _target_cell: Vector2i) -
 	# 核心規則：預覽必須與執行引擎同步，強制使用 post_move_targeting 作為效果預覽
 	var effective_target = post_targeting if post_targeting != null else targeting
 	
+	if effective_target == null:
+		queue_redraw()
+		return
+
 	# 核心修正：在預覽時計算連擊 (Combo)
 	_update_combo_previews(unit, skill, effective_target)
 	
@@ -49,20 +61,18 @@ func update_preview(unit: GridEntity, skill: Resource, _target_cell: Vector2i) -
 				for c in cells:
 					if not affected_cells.has(c):
 						affected_cells.append(c)
-						
+	
 	queue_redraw()
 
 func clear_preview() -> void:
 	affected_cells.clear()
-	# 清除連擊預覽
-	var selector = get_tree().get_first_node_in_group("grid_selector")
-	if selector and selector.has_method("_clear_active_combo_previews"):
-		selector._clear_active_combo_previews()
+	# 清除連擊預覽，恢復顯示當前實際連擊
+	if AttackManager:
+		AttackManager.global_combo_changed.emit(AttackManager.global_combo_count)
 	queue_redraw()
 
 func _update_combo_previews(unit: GridEntity, skill: Resource, _targeting: Resource) -> void:
-	var selector = get_tree().get_first_node_in_group("grid_selector")
-	if not selector or not selector.has_method("_update_combo_preview"):
+	if not AttackManager:
 		return
 		
 	# 核心修正：如果 unit 為空（從手牌拖拽卡片時），自動尋找所有玩家單位
@@ -90,29 +100,20 @@ func _update_combo_previews(unit: GridEntity, skill: Resource, _targeting: Resou
 				move_dist = int(effect.get("base_value"))
 				break
 	
-	# 為每個單位計算預期落點並更新連擊預覽
+	# 計算預覽總連擊數 (當前全局連擊 + 所有單位預覽新增連擊)
+	var total_preview_hits = AttackManager.global_combo_count
+	
 	for u in units_to_check:
 		var preview_cell = u.grid_position
-		
 		if has_move_effect:
-			# 簡單預測落點 (不考慮碰撞，因為這只是預覽)
 			preview_cell += move_dir * move_dist
 		
-		# 借用 GridSelector 的連擊預覽邏輯
-		# 注意：這裡需要傳入單位和目標格，但 GridSelector._update_combo_preview 只接受目標格
-		# 我們需要臨時設置 selected_entity 或使用 AttackManager 直接計算
-		if AttackManager:
-			# 直接使用 AttackManager 計算預覽連擊
-			var combo_results = AttackManager.calculate_preview_combos(u, preview_cell)
-			print("[SkillPreviewController] Combo preview for unit ", u.name, " at cell ", preview_cell, ": ", combo_results)
-			
-			# 更新每個目標的連擊顯示
-			for target in combo_results:
-				if is_instance_valid(target) and target.has_method("update_combo_display"):
-					target.update_combo_display(combo_results[target])
-					if target.combo_indicator:
-						target.combo_indicator.visible = true
-						target.combo_indicator.z_index = 100
+		var combo_results = AttackManager.calculate_preview_combos(u, preview_cell)
+		for target in combo_results:
+			total_preview_hits += combo_results[target]
+	
+	# 更新全局 Combo UI
+	AttackManager.global_combo_changed.emit(total_preview_hits)
 
 func _draw() -> void:
 	if affected_cells.is_empty() or not grid or not grid.has_method("grid_to_world"):
@@ -125,5 +126,6 @@ func _draw() -> void:
 	for cell in affected_cells:
 		var world_pos = grid.grid_to_world(cell)
 		var local_pos = to_local(world_pos)
+		# print("[SkillPreviewController] Drawing cell %s at world %s -> local %s" % [cell, world_pos, local_pos])
 		draw_rect(Rect2(local_pos, cs), preview_color, true)
 		draw_rect(Rect2(local_pos, cs), border_color, false, 1.0)

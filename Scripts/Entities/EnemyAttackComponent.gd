@@ -14,6 +14,10 @@ class_name EnemyAttackComponent
 @export_group("Enable")
 @export var enabled: bool = false
 
+@export_group("Skill Settings")
+@export var skill_resource: UnitSkillData
+@export var cast_skill_interval: int = 2 # 每幾回合放一次技能
+
 @export_group("Projectile Settings")
 @export var attack_range: int = 0               # 攻擊射程 (0 為無限)
 @export var single_direction_only: bool = false
@@ -24,6 +28,7 @@ class_name EnemyAttackComponent
 @onready var parent_entity: GridEntity = get_parent()
 
 var _turns_since_last_attack: int = 0
+var _turns_since_last_skill: int = 0
 
 func _ready() -> void:
 	if not parent_entity:
@@ -41,31 +46,58 @@ func _ready() -> void:
 			TurnManager.enemy_turn_ticked.connect(_on_turn_ticked)
 	
 	# 隨機化初始進度 (0 或 1)
-	_turns_since_last_attack = randi() % 2
+	_turns_since_last_attack = 1 # 讓它第一回合就能撞擊/攻擊
+	_turns_since_last_skill = cast_skill_interval # 讓它第一回合就能放技能
 
 func _on_turn_ticked() -> void:
 	if not enabled or not parent_entity: return
 	
 	if TurnManager.is_player_turn():
-		# 玩家回合開始：檢查下個敵人回合是否要發射
-		# 每 2 個敵人回合發射一次 (即 _turns_since_last_attack 將達到 2)
-		if _turns_since_last_attack >= 1:
-			_update_telegraph_direction()
-			# 顯示紅色預警箭頭 (progress = 1.0)
-			if parent_entity.has_method("update_attack_indicators"):
-				parent_entity.update_attack_indicators(1.0, current_attack_dir)
-		else:
-			if parent_entity.has_method("update_attack_indicators"):
-				parent_entity.update_attack_indicators(0.0)
+		# 玩家回合：顯示下個敵人回合的預警
+		_update_telegraph_visuals()
 	else:
-		# 敵人回合開始：計數並執行攻擊
+		# 敵人回合開始：計數 (實際施放由 TurnManager 呼叫 run_skill_phase / run_attack_phase)
 		_turns_since_last_attack += 1
-		if _turns_since_last_attack >= 2:
-			await _fire_projectiles()
-			_turns_since_last_attack = 0
-			# 重置指示器
-			if parent_entity.has_method("update_attack_indicators"):
-				parent_entity.update_attack_indicators(0.0)
+		_turns_since_last_skill += 1
+
+func _update_telegraph_visuals() -> void:
+	# 技能預警 (這裡只負責傳統箭頭預警，Hover 預覽由 GridSelector 處理)
+	if _turns_since_last_attack >= 1:
+		_update_telegraph_direction()
+		if parent_entity.has_method("update_attack_indicators"):
+			parent_entity.update_attack_indicators(1.0, current_attack_dir)
+	else:
+		if parent_entity.has_method("update_attack_indicators"):
+			parent_entity.update_attack_indicators(0.0)
+
+## 技能階段入口 (由 TurnManager 呼叫)
+func run_skill_phase() -> void:
+	if not enabled or not skill_resource: return
+	
+	if _turns_since_last_skill >= cast_skill_interval:
+		await cast_skill()
+		_turns_since_last_skill = 0
+	else:
+		# print("[EnemyAttackComponent] %s skill on cooldown: %d/%d" % [parent_entity.name, _turns_since_last_skill, cast_skill_interval])
+		pass
+
+## 攻擊階段入口 (由 TurnManager 呼叫)
+func run_attack_phase() -> void:
+	if not enabled: return
+	
+	if _turns_since_last_attack >= 2:
+		await _fire_projectiles()
+		_turns_since_last_attack = 0
+		if parent_entity.has_method("update_attack_indicators"):
+			parent_entity.update_attack_indicators(0.0)
+
+func cast_skill() -> void:
+	if not skill_resource: return
+	print("[EnemyAttackComponent] %s casting skill: %s" % [parent_entity.name, skill_resource.skill_name])
+	
+	if SkillManager:
+		# 敵人的技能通常以自己為中心 (TargetingDefinition.origin_is_self)
+		await SkillManager.execute_skill(parent_entity, skill_resource, parent_entity.grid_position)
 
 func _update_telegraph_direction() -> void:
 	# 尋找最近的玩家並更新 current_attack_dir

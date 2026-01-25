@@ -10,6 +10,8 @@ func _ready() -> void:
 	# 記錄初始縮放值 (這通常來自 .tscn 中的設定，如 0.25)
 	_base_scale = scale
 	
+	# 核心修正：移除這裡的 top_level = true，改由外部設定位置後再開啟
+	
 	# --- Debug 模式 ---
 	# 如果是單獨運行此場景 (F6)，自動添加相機並啟用測試
 	if get_tree().current_scene == self:
@@ -122,7 +124,8 @@ func _reset_state() -> void:
 	
 	visible = true
 	scale = _base_scale
-	position = Vector2.ZERO
+	# 核心修正：恢復 position 動畫邏輯，但因為 top_level = true，
+	# 這裡的 position 會在 _ready 時被 GridEntity 設定為正確的世界座標
 	modulate.a = 1.0
 	rotation = 0.0
 
@@ -133,8 +136,12 @@ func _play_bounce_animation() -> void:
 	var height = randf_range(-12.5, -20.0) # (-50 to -80) * 0.25
 	# 增加 30% 旋轉幅度 (原本 0.1 -> 0.13)
 	var rand_rot = randf_range(-0.13, 0.13)
-	# 落點水平線隨機偏移 (-2.5 到 2.5 px) (10 * 0.25)
-	var land_y = randf_range(-2.5, 2.5)
+	# 核心修正：落點高度調整為單位的腳部位置
+	# 假設單位高度約 16-20 像素，從頭頂 (-16) 墜落到腳部 (+8)，大約需要 24 像素的偏移
+	var land_y = 24.0 + randf_range(-2.5, 2.5)
+	
+	# 記錄起始位置 (由 GridEntity 設定的 global_position)
+	var start_pos = position
 	
 	_tween = create_tween()
 	_tween.set_parallel(false)
@@ -144,17 +151,17 @@ func _play_bounce_animation() -> void:
 	_tween.tween_property(self, "scale", _base_scale * 1.5, 0.15)\
 		.set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
 	
-	_tween.parallel().tween_property(self, "position:y", height, 0.15)\
+	_tween.parallel().tween_property(self, "position:y", start_pos.y + height, 0.15)\
 		.set_trans(Tween.TRANS_QUART).set_ease(Tween.EASE_OUT)
-	_tween.parallel().tween_property(self, "position:x", target_x * 0.4, 0.15)
+	_tween.parallel().tween_property(self, "position:x", start_pos.x + target_x * 0.4, 0.15)
 	_tween.parallel().tween_property(self, "rotation", rand_rot, 0.15)
 		
 	# 2. 落下 (Down)
 	# 落點不再是 0.0，而是 land_y
-	_tween.tween_property(self, "position:y", land_y, 0.35)\
+	_tween.tween_property(self, "position:y", start_pos.y + land_y, 0.35)\
 		.set_trans(Tween.TRANS_BOUNCE).set_ease(Tween.EASE_OUT)
 	_tween.parallel().tween_property(self, "scale", _base_scale, 0.35)
-	_tween.parallel().tween_property(self, "position:x", target_x, 0.35)
+	_tween.parallel().tween_property(self, "position:x", start_pos.x + target_x, 0.35)
 	_tween.parallel().tween_property(self, "rotation", 0.0, 0.35)
 	
 	# 3. 停留

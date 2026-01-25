@@ -1,3 +1,4 @@
+# FIXED VERSION - ENSURE AWAIT IS USED
 extends Node
 
 # SkillManager (Autoload)
@@ -16,15 +17,14 @@ func _get_grid_center() -> Vector2i:
 		return Vector2i(grid.map_width / 2, grid.map_height / 2)
 	return Vector2i(0, 0)
 
-## 從卡牌施放技能的入口
+## 從卡牌施放技能的入口 (Async)
 func cast_skill(skill_card: Resource, target_cell: Vector2i, source_entity: GridEntity = null) -> bool:
 	if skill_card == null:
 		return false
 	
-	# 如果指定了 source_entity，直接執行
 	if source_entity != null:
 		# print("[SkillManager] Casting skill from card for specific unit: ", source_entity.name)
-		return execute_skill(source_entity, skill_card, target_cell)
+		return await execute_skill(source_entity, skill_card, target_cell)
 	
 	# 如果沒有指定 source_entity，則對所有玩家單位執行效果
 	var player_units = get_tree().get_nodes_in_group("player")
@@ -37,7 +37,7 @@ func cast_skill(skill_card: Resource, target_cell: Vector2i, source_entity: Grid
 	var any_success = false
 	for unit in player_units:
 		if unit is GridEntity:
-			if execute_skill(unit, skill_card, target_cell):
+			if await execute_skill(unit, skill_card, target_cell):
 				any_success = true
 	
 	return any_success
@@ -83,7 +83,7 @@ func execute_skill(source_entity: GridEntity, skill: Resource, origin_pos: Vecto
 	if valid_targets.is_empty():
 		return false
 
-	# 2. 計算縮放係數
+	# 2. 計算縮放係數與連擊加成 (Snapshot)
 	var total_stat_value = 0.0
 	var scaling_multiplier = skill.get("scaling_multiplier")
 	if scaling_multiplier == null: scaling_multiplier = 1.0
@@ -94,35 +94,76 @@ func execute_skill(source_entity: GridEntity, skill: Resource, origin_pos: Vecto
 	else:
 		total_stat_value = _get_weighted_stat_sum(source_entity, scaling_configs)
 			
-	var final_multiplier = scaling_multiplier * total_stat_value
+	# 核心修正：在技能開始時快照連擊倍率，確保整個技能執行期間數值一致
+	var combo_mult = 1.0
+	if AttackManager:
+		var scaling = 0.1
+		if source_entity.character_data:
+			scaling = source_entity.character_data.combo_damage_scaling
+		combo_mult = AttackManager.get_combo_damage_multiplier(scaling)
+	
+	var final_multiplier = scaling_multiplier * total_stat_value * combo_mult
 	
 	# 3. 執行效果
 	skill_cast_started.emit(skill, source_entity)
-	if valid_targets.is_empty() and not targeting.get("can_target_empty"):
-		skill_cast_failed.emit("No valid targets")
-		# 這裡仍然回傳 true，因為技能已經嘗試執行並進入 CD
 	
-	for target in valid_targets:
-		# 命中判定 (除非技能標記為必中 is_accurate)
-		var is_accurate = bool(skill.get("is_accurate")) if "is_accurate" in skill else false
-		if not is_accurate and AttackManager.has_method("check_hit"):
-			if not AttackManager.check_hit(source_entity, target):
-				if target.has_method("show_avoid_text"):
-					target.show_avoid_text()
-				continue # 沒打中，跳過此目標的所有效果
+	# 新增：如果是敵人施放，對所有受影響的格子（不含中心）播放爆炸特效
+	var is_enemy_cast = false
+	if source_entity.faction:
+		is_enemy_cast = source_entity.faction.resource_path.to_lower().contains("enemy")
+	else:
+		is_enemy_cast = source_entity.is_in_group("enemy")
 		
-		# 暴擊判定 (技能現在也可以暴擊)
-		var current_target_multiplier = final_multiplier
-		if source_entity.character_data:
-			var crit_rate = source_entity.character_data.crit_rate
-			if randf() < crit_rate:
-				var extra_crit = source_entity.character_data.get_effective_crit_dmg()
-				var crit_bonus = 2.0 + extra_crit
-				current_target_multiplier *= crit_bonus
-				print("[SkillManager] CRITICAL HIT on %s! Bonus: %.2f" % [target.name, crit_bonus])
+	if is_enemy_cast:
+		var cells_in_scope = get_cells_in_scope(targeting, actual_origin)
+		var fx_cells = cells_in_scope.filter(func(c): return c != actual_origin)
+		_play_skill_explosion_fx(fx_cells)
 		
-		for effect in all_effects:
-			_apply_single_effect(effect, target, source_entity, current_target_multiplier)
+		# 新增：施法者自身的壓縮放大動畫
+		var visuals = source_entity.get_node_or_null("UnitVisuals")
+		if visuals and visuals.has_method("play_skill_cast_visual"):
+			visuals.play_skill_cast_visual()
+	
+	# 核心修正：將效果分為「針對發動者」與「針對目標」
+	var self_effects = []
+	var target_effects = []
+	for effect in all_effects:
+		if effect.effect_type == EffectDefinition.EffectType.MOVE:
+			self_effects.append(effect)
+		else:
+			target_effects.append(effect)
+	
+	# A. 執行發動者效果 (僅執行一次)
+	# 這裡傳入快照後的 final_multiplier (已包含 combo_mult)
+	for effect in self_effects:
+		_apply_single_effect(effect, source_entity, source_entity, final_multiplier)
+	
+	# B. 執行目標效果 (遍歷所有有效目標)
+	if valid_targets.is_empty() and not targeting.get("can_target_empty"):
+		# 如果沒有目標且不允許空放，則不執行後續
+		pass
+	else:
+		for target in valid_targets:
+			# 命中判定 (除非技能標記為必中 is_accurate)
+			var is_accurate = bool(skill.get("is_accurate")) if "is_accurate" in skill else false
+			if not is_accurate and AttackManager.has_method("check_hit"):
+				if not AttackManager.check_hit(source_entity, target):
+					if target.has_method("show_avoid_text"):
+						target.show_avoid_text()
+					continue # 沒打中，跳過此目標的所有效果
+			
+			# 暴擊判定 (技能現在也可以暴擊)
+			var current_target_multiplier = final_multiplier
+			if source_entity.character_data:
+				var crit_rate = source_entity.character_data.crit_rate
+				if randf() < crit_rate:
+					var extra_crit = source_entity.character_data.get_effective_crit_dmg()
+					var crit_bonus = 2.0 + extra_crit
+					current_target_multiplier *= crit_bonus
+					print("[SkillManager] CRITICAL HIT on %s! Bonus: %.2f" % [target.name, crit_bonus])
+			
+			for effect in target_effects:
+				_apply_single_effect(effect, target, source_entity, current_target_multiplier)
 			
 	# 4. 設置冷卻與標記
 	if source_entity.character_data:
@@ -130,6 +171,9 @@ func execute_skill(source_entity: GridEntity, skill: Resource, origin_pos: Vecto
 		if cd != null and cd > 0:
 			source_entity.character_data.set_skill_cooldown(skill.get("skill_name"), cd)
 		source_entity.character_data.has_used_skill_this_turn = true
+		
+	# 增加演出等待時間 (例如等待爆炸特效播放完畢)
+	await get_tree().create_timer(0.5).timeout
 		
 	skill_cast_completed.emit(skill)
 	return true
@@ -177,6 +221,7 @@ func get_cells_in_scope(targeting_data: Resource, center: Vector2i) -> Array[Vec
 	var cells: Array[Vector2i] = []
 	var grid = get_tree().get_first_node_in_group("grid")
 	if not grid or not targeting_data:
+		# print("[SkillManager] get_cells_in_scope failed: grid or targeting_data is null")
 		return cells
 		
 	var scope_type = targeting_data.get("scope_type")
@@ -196,21 +241,21 @@ func get_cells_in_scope(targeting_data: Resource, center: Vector2i) -> Array[Vec
 				for y in range(-radius, radius + 1):
 					cells.append(center + Vector2i(x, y))
 		TargetingDefinition.ScopeType.AREA_CROSS:
-			cells.append(center)
+			# 不包含中心格 (敵人自身)
 			for i in range(1, radius + 1):
 				cells.append(center + Vector2i(i, 0))
 				cells.append(center + Vector2i(-i, 0))
 				cells.append(center + Vector2i(0, i))
 				cells.append(center + Vector2i(0, -i))
-		TargetingDefinition.ScopeType.AREA_X:
-			cells.append(center)
+		9, 14: # 兼容 AREA_X 的不同索引 (可能因 Godot 緩存或版本差異)
+			# 不包含中心格 (敵人自身)
 			for i in range(1, radius + 1):
 				cells.append(center + Vector2i(i, i))
 				cells.append(center + Vector2i(-i, -i))
 				cells.append(center + Vector2i(i, -i))
 				cells.append(center + Vector2i(-i, i))
 		TargetingDefinition.ScopeType.AREA_QUEEN:
-			cells.append(center)
+			# 不包含中心格 (敵人自身)
 			for i in range(1, radius + 1):
 				cells.append(center + Vector2i(i, 0))
 				cells.append(center + Vector2i(-i, 0))
@@ -242,6 +287,8 @@ func get_cells_in_scope(targeting_data: Resource, center: Vector2i) -> Array[Vec
 				for y in range(grid.map_height):
 					if (x + y) % 2 != 0:
 						cells.append(Vector2i(x, y))
+		_:
+			print("[SkillManager] Warning: Unknown scope type: ", scope_type)
 						
 	# 過濾掉不在地圖範圍內的格子
 	var valid_cells: Array[Vector2i] = []
@@ -306,7 +353,8 @@ func _apply_single_effect(effect: EffectDefinition, target: GridEntity, source: 
 			var ignore_s = bool(effect.get("ignore_shield")) if "ignore_shield" in effect else false
 			
 			# 傳入 source (發動者) 以套用貫穿 (Penetration) 效果
-			var actual_damage = target.apply_damage(int(value), ignore_b, ignore_s, source)
+			# apply_damage 會自動處理連擊增加
+			var actual_damage = target.apply_damage(int(round(value)), ignore_b, ignore_s, source)
 			
 			# 觸發吸血 (Drain)
 			if actual_damage > 0 and source and source.character_data:
@@ -354,7 +402,6 @@ func _apply_single_effect(effect: EffectDefinition, target: GridEntity, source: 
 								if is_enemy:
 									# 觸發撞擊：剩餘距離轉化為撞擊次數
 									var ram_count = (dist - steps_moved)
-									# print("[SkillManager] Collision! %s ramming %s for %d hits" % [target.name, occupant.name, ram_count])
 									for j in range(ram_count):
 										_execute_ramming_hit(target, occupant)
 								
@@ -366,56 +413,68 @@ func _apply_single_effect(effect: EffectDefinition, target: GridEntity, source: 
 							steps_moved += 1
 					
 					# 執行最終位移 (此時路徑已確保無障礙)
-					var old_pos = target.grid_position
 					await mover.move_to(final_target)
-					
-					if target.grid_position == old_pos and final_target != old_pos:
-						pass # print("[SkillManager] MOVE EFFECT FAILED for %s to %s (Blocked?)" % [target.name, final_target])
-					else:
-						# if steps_moved > 0:
-						# 	print("[SkillManager] Moving %s to %s (dir: %s, steps: %d/%d)" % [target.name, final_target, move_dir, steps_moved, dist])
-						pass
 
 func _execute_ramming_hit(source: GridEntity, target: GridEntity) -> void:
 	if not source.character_data or not target.character_data: return
 	
-	# 1. 增加 COMBO (每下撞擊 0.1)
-	source.character_data.combo_count += 0.1
+	# 1. 獲取連擊加成 (Snapshot)
+	var combo_mult = 1.0
+	if AttackManager:
+		var scaling = source.character_data.combo_damage_scaling
+		combo_mult = AttackManager.get_combo_damage_multiplier(scaling)
 	
 	# 2. 計算傷害：基礎撞擊力 (5) + 追擊 (Pursuit)
 	var base_ram_dmg = 5
 	var pursuit = source.character_data.get_effective_pursuit()
-	var total_dmg = base_ram_dmg + pursuit
 	
-	# 3. 執行傷害 (直接呼叫 apply_damage)
+	# 核心修正：套用連擊加成，並使用 round 確保 0.1 的增幅能正確反映
+	var total_dmg = int(round((base_ram_dmg + pursuit) * combo_mult))
+	
+	# 3. 執行傷害
 	target.apply_damage(total_dmg, false, false, source)
+
+func _play_skill_explosion_fx(cells: Array[Vector2i]) -> void:
+	var grid = get_tree().get_first_node_in_group("grid")
+	if not grid: 
+		return
+
+	for cell in cells:
+		var world_pos = grid.grid_to_world_center(cell)
+		_spawn_shard_explosion(world_pos)
+
+func _spawn_shard_explosion(pos: Vector2) -> void:
+	var particles = GPUParticles2D.new()
+	particles.name = "SkillExplosionFX"
 	
-	# 4. 核心修正：更新目標的連擊 UI 顯示
-	# 計算當前目標受到的總連擊數（包括這次撞擊）
-	# 注意：這裡需要計算所有攻擊者對目標的總連擊，而不只是單一攻擊者
-	if AttackManager:
-		# 計算當前所有玩家單位對目標的總連擊數
-		var combo_results = AttackManager.calculate_preview_combos(null, Vector2i.ZERO)
-		if combo_results.has(target):
-			var total_hits = combo_results[target]
-			print("[SkillManager] Ramming Hit! Updating combo UI for ", target.name, " with ", total_hits, " hits (from all attackers)")
-			if target.has_method("update_combo_display"):
-				target.update_combo_display(total_hits)
-				# 確保 UI 可見
-				if target.combo_indicator:
-					target.combo_indicator.visible = true
-					target.combo_indicator.z_index = 100
-		else:
-			# 如果 AttackManager 沒有計算到，至少顯示基礎連擊數
-			var base_combo = int(floor(source.character_data.combo_count))
-			if base_combo > 0:
-				print("[SkillManager] Ramming Hit! Fallback: Showing base combo ", base_combo, " for ", target.name)
-				if target.has_method("update_combo_display"):
-					target.update_combo_display(base_combo)
-					if target.combo_indicator:
-						target.combo_indicator.visible = true
-						target.combo_indicator.z_index = 100
+	# 載入資源 (暫時改用已確認可見的 Landing 材質進行交叉測試)
+	var mat_res = load("res://Resources/Shared/LandingExplosionProcess.tres")
+	var tex_res = load("res://Resources/Shared/RetroSquare.tres")
 	
-	# print("[SkillManager] Ramming Hit! %s deals %d damage to %s (Pursuit: %d, New Combo: %.1f)" % [
-	# 	source.name, total_dmg, target.name, pursuit, source.character_data.combo_count
-	# ])
+	if not mat_res or not tex_res:
+		return
+		
+	particles.process_material = mat_res.duplicate()
+	particles.texture = tex_res
+	
+	# 基礎配置
+	particles.amount = 32
+	particles.lifetime = 0.6
+	particles.one_shot = true
+	particles.explosiveness = 1.0
+	particles.z_index = 200 # 提高層級
+	particles.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
+	particles.local_coords = false
+	
+	# 加入場景並啟動
+	var scene_root = get_tree().current_scene
+	if scene_root:
+		scene_root.add_child(particles)
+		particles.global_position = pos
+		particles.restart() # 使用 restart 確保發射
+		
+		# 自動清理
+		get_tree().create_timer(1.2).timeout.connect(func():
+			if is_instance_valid(particles):
+				particles.queue_free()
+		)

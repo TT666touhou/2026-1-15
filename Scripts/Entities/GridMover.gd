@@ -301,7 +301,11 @@ func _move_dash(path: Array[Vector2i]) -> void:
 # --- 撞擊攻擊 (Ram Attack) 相關方法 ---
 
 func _check_and_trigger_ram(dir: Vector2i) -> bool:
-	"""檢查前方是否為敵人並觸發撞擊"""
+	"""檢查前方是否為敵人並觸發撞擊 (限定上下左右)"""
+	# 限定正交方向 (上下左右)
+	if dir.x != 0 and dir.y != 0:
+		return false
+		
 	var next_cell = entity.grid_position + dir
 	
 	# 1. 邊界檢查：如果出界，不觸發撞擊

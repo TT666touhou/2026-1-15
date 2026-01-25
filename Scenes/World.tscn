@@ -35,6 +35,8 @@
 [ext_resource type="Script" uid="uid://ckuhers5dw1k" path="res://Scripts/UI/DebugKillTransitionButton.gd" id="105"]
 [ext_resource type="PackedScene" path="res://Scenes/UI/ComboIndicatorUI.tscn" id="106"]
 [ext_resource type="Shader" uid="uid://ct5sptojmcqci" path="res://Shaders/EdgeFog.gdshader" id="107"]
+[ext_resource type="PackedScene" path="res://Scenes/UI/DeckView.tscn" id="108"]
+[ext_resource type="Script" path="res://Scripts/UI/MovementRangeIndicator.gd" id="109"]
 
 [sub_resource type="AtlasTexture" id="AtlasTexture_n1aqv"]
 atlas = ExtResource("2_irg3d")
@@ -64,6 +66,20 @@ shader_parameter/mask_right = 0.825
 shader_parameter/mask_top = 0.046
 shader_parameter/mask_bottom = 0.772
 
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_deck"]
+bg_color = Color(0.1, 0.1, 0.3, 1)
+border_width_left = 2
+border_width_top = 2
+border_width_right = 2
+border_width_bottom = 2
+border_color = Color(0.5, 0.8, 1, 1)
+corner_radius_top_left = 4
+corner_radius_top_right = 4
+corner_radius_bottom_right = 4
+corner_radius_bottom_left = 4
+shadow_color = Color(0, 0, 0, 0.7)
+shadow_size = 6
+
 [sub_resource type="StyleBoxFlat" id="StyleBoxFlat_button"]
 bg_color = Color(0.1, 0.1, 0.1, 1)
 border_width_left = 2
@@ -75,6 +91,8 @@ corner_radius_top_left = 4
 corner_radius_top_right = 4
 corner_radius_bottom_right = 4
 corner_radius_bottom_left = 4
+shadow_color = Color(0, 0, 0, 0.5)
+shadow_size = 4
 
 [node name="World2" type="Node2D"]
 script = ExtResource("2")
@@ -107,6 +125,13 @@ texture_repeat = 1
 tile_map_data = PackedByteArray("AAABAAIAAAAEAAYAAAACAAIAAAAEAAYAAAACAAMAAAAIAAYAAAADAAMAAAAEAAYAAAAEAAMAAAAEAAYAAAAFAAMAAAAEAAYAAAAGAAMAAAAEAAYAAAAFAAIAAAAEAAYAAAAGAAIAAAAEAAYAAAAEAAIAAAAEAAYAAAADAAIAAAAEAAYAAAACAAQAAAAIAAYAAAADAAQAAAAEAAYAAAAGAAEAAAAEAAYAAAAGAAAAAAAEAAYAAAAFAAAAAAAEAAYAAAAEAAEAAAAEAAYAAAADAAEAAAAEAAYAAAABAAEAAAAEAAYAAAACAAEAAAAEAAYAAAAEAAQAAAAEAAYAAAAFAAEAAAAIAAYAAAAFAAQAAAAEAAYAAAAGAAQAAAAEAAYAAAAAAAEAAAAEAAYAAAAAAAIAAAAEAAYAAAAAAAMAAAAEAAYAAAAAAAQAAAAEAAYAAAABAAMAAAAEAAYAAAABAAQAAAAEAAYAAAABAAUAAAAEAAYAAAACAAUAAAAEAAYAAAAAAAUAAAAEAAYAAAADAAUAAAAEAAYAAAAEAAUAAAAEAAYAAAAFAAUAAAAIAAYAAAAGAAUAAAAEAAYAAAAAAAYAAAAEAAYAAAABAAYAAAAIAAYAAAACAAYAAAAEAAYAAAADAAYAAAAEAAYAAAAEAAYAAAAEAAYAAAAFAAYAAAAEAAYAAAAGAAYAAAAEAAYAAAAAAAAAAAAEAAYAAAABAAAAAAAIAAYAAAACAAAAAAAEAAYAAAADAAAAAAAEAAYAAAAEAAAAAAAEAAYAAAA=")
 tile_set = ExtResource("1_1bit")
 
+[node name="MovementRangeIndicator" type="TileMapLayer" parent="."]
+visible = false
+z_index = 5
+tile_set = ExtResource("1_1bit")
+script = ExtResource("109")
+indicator_layer_path = NodePath(".")
+
 [node name="Entities" type="Node2D" parent="."]
 
 [node name="BasesLayer" type="Node2D" parent="Entities"]
@@ -129,7 +154,11 @@ script = ExtResource("49_input")
 z_index = 100
 script = ExtResource("25")
 
-[node name="SkillPreviewController" type="Node2D" parent="."]
+[node name="SkillPreviewLayer" type="CanvasLayer" parent="."]
+follow_viewport_enabled = true
+
+[node name="SkillPreviewController" type="Node2D" parent="SkillPreviewLayer"]
+z_index = 100
 script = ExtResource("51")
 
 [node name="Camera2D" type="Camera2D" parent="."]
@@ -179,12 +208,13 @@ script = ExtResource("41")
 
 [node name="MainTopBar" parent="UI" instance=ExtResource("15")]
 
-[node name="ComboIndicatorUI" parent="UI" instance=ExtResource("106")]
-anchors_preset = 5
-anchor_left = 0.5
-anchor_right = 0.5
-offset_top = 40.0
-grow_horizontal = 2
+[node name="ComboIndicatorUI" parent="UI" groups=["global_combo_ui"] instance=ExtResource("106")]
+anchors_preset = 0
+anchor_left = 0.0
+anchor_right = 0.0
+offset_left = 395.0
+offset_top = 25.0
+grow_horizontal = 1
 scale = Vector2(0.5, 0.5)
 
 [node name="Hand" parent="UI" instance=ExtResource("3")]
@@ -199,7 +229,8 @@ hand_card_size = Vector2(120, 180)
 hand_bottom_offset = 60.0
 
 [node name="DeckPileButton" type="Button" parent="UI"]
-visible = false
+z_index = 10
+visible = true
 anchors_preset = 3
 anchor_left = 1.0
 anchor_top = 1.0
@@ -211,13 +242,26 @@ offset_right = -20.0
 offset_bottom = -20.0
 grow_horizontal = 0
 grow_vertical = 0
-theme_override_styles/normal = SubResource("StyleBoxFlat_button")
-theme_override_styles/pressed = SubResource("StyleBoxFlat_button")
-theme_override_styles/hover = SubResource("StyleBoxFlat_button")
+theme_override_colors/font_color = Color(0.4, 0.8, 1, 1)
+theme_override_font_sizes/font_size = 14
+theme_override_styles/normal = SubResource("StyleBoxFlat_deck")
+theme_override_styles/hover = SubResource("StyleBoxFlat_deck")
+theme_override_styles/pressed = SubResource("StyleBoxFlat_deck")
+theme_override_styles/disabled = SubResource("StyleBoxFlat_deck")
+theme_override_styles/focus = SubResource("StyleBoxFlat_deck")
 text = "DECK"
 script = ExtResource("36")
 hand_reference = NodePath("../Hand")
 deck_view_path = NodePath("../DeckView")
+
+[node name="DeckView" parent="UI" instance=ExtResource("108")]
+visible = false
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
 
 [node name="PlayArea" type="Control" parent="UI" groups=["play_area"]]
 visible = false
@@ -251,7 +295,8 @@ theme_override_styles/hover = SubResource("StyleBoxFlat_button")
 text = "PLAY HAND"
 
 [node name="DisposalZone" parent="UI" instance=ExtResource("43")]
-visible = false
+z_index = 10
+visible = true
 anchors_preset = 2
 anchor_top = 1.0
 anchor_bottom = 1.0
@@ -274,7 +319,7 @@ theme_override_constants/separation = 10
 alignment = 2
 
 [node name="TurnDebugInfo" type="HBoxContainer" parent="UI/TopRightToolbar"]
-visible = false
+visible = true
 layout_mode = 2
 script = ExtResource("45")
 
@@ -286,7 +331,7 @@ layout_mode = 2
 layout_mode = 2
 
 [node name="EndTurnButton" type="Button" parent="UI/TopRightToolbar"]
-visible = false
+visible = true
 layout_mode = 2
 focus_mode = 0
 theme_override_styles/normal = SubResource("StyleBoxFlat_button")

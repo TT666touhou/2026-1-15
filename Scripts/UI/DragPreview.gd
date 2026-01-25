@@ -161,9 +161,7 @@ func _update_attack_preview() -> void:
 				if enable_debug_log: print("[DragPreview] Start preview shake on: ", target.name)
 		
 		# 更新 Combo UI
-		if combo_results.has(target):
-			if target.has_method("update_combo_display"):
-				target.update_combo_display(combo_results[target])
+		pass
 
 	# 2. 處理移除目標
 	var targets_to_remove = []
@@ -175,8 +173,7 @@ func _update_attack_preview() -> void:
 				visuals.stop_preview_shake()
 			
 			# 隱藏 Combo UI
-			if active_target.has_method("update_combo_display"):
-				active_target.update_combo_display(0)
+			pass
 				
 			targets_to_remove.append(active_target)
 			if enable_debug_log: print("[DragPreview] Stop preview shake on: ", active_target.name)
@@ -192,6 +189,4 @@ func _exit_tree() -> void:
 		var visuals = _active_preview_targets[target]
 		if visuals and visuals.has_method("stop_preview_shake"):
 			visuals.stop_preview_shake()
-		if target.has_method("update_combo_display"):
-			target.update_combo_display(0)
 	_active_preview_targets.clear()
