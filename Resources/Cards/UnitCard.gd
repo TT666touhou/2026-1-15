@@ -12,12 +12,9 @@ class_name UnitCard
 @export_enum("DROP:0", "LEAP:1", "POP:2", "NONE:3") var spawn_animation: int = 0
 
 # Combat Stats
-@export var movement_speed: Variant = 3 # 支援 int (如 3) 或 String (如 "3-6")
+@export var base_speed: float = 1.0 # 1.0 相當於 600 最大力
 @export var attack_damage: int = 10
-@export var attack_depth: int = 1 # Attack range depth (1 = melee/adjacent)
 @export var base_combo_count: float = 1.0
-@export var base_movement_speed: float = 1.0 # 移動速度倍率 (影響動畫時長)
-@export var move_speed_anim: float = 300.0 # Visual animation speed
 
 # New Stats (Crit & Luck)
 @export var base_crit_rate: float = 0.0 # 預設 0%
@@ -37,7 +34,7 @@ class_name UnitCard
 
 # Trait (Leader Skill)
 @export var character_trait: TraitData
-@export var default_skills: Array[UnitSkillData] = []
+@export var default_skill: UnitSkillData
 
 # Note: max_health is inherited from BaseCard (float)
 # We use it as the source of truth for unit health.

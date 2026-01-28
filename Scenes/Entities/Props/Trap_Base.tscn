@@ -5,6 +5,7 @@
 [ext_resource type="Texture2D" path="res://Tilesheet/1bit_assetpack/selfmade/spikes.png" id="3"]
 [ext_resource type="Resource" path="res://Footprints/Footprint_1x1.tres" id="4"]
 [ext_resource type="Script" path="res://Scripts/Entities/CardProvider.gd" id="5"]
+[ext_resource type="PhysicsMaterial" path="res://Resources/Physics/NoFrictionBounce.tres" id="30_nofriction"]
 
 [sub_resource type="Animation" id="Animation_idle"]
 resource_name = "idle"
@@ -46,9 +47,17 @@ _data = {
 "trigger": SubResource("Animation_trigger")
 }
 
-[node name="Trap_Base" type="CharacterBody2D"]
-collision_layer = 0
-collision_mask = 0
+[node name="Trap_Base" type="RigidBody2D"]
+collision_layer = 1
+collision_mask = 3
+physics_material_override = ExtResource("30_nofriction")
+linear_damp_mode = 1
+linear_damp = 0.0
+angular_damp_mode = 1
+angular_damp = 0.0
+gravity_scale = 0.0
+can_sleep = false
+freeze = true
 script = ExtResource("1")
 footprint_data = ExtResource("4")
 

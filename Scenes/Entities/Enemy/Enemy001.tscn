@@ -2,22 +2,19 @@
 
 [ext_resource type="Resource" path="res://Footprints/Footprint_1x1.tres" id="2_footprint"]
 [ext_resource type="Texture2D" path="res://Tilesheet/1bit_assetpack/1bit_assetpack/characters/skeleton.png" id="1_skeleton"]
-[ext_resource type="Script" path="res://Scripts/Entities/UnitMovementController.gd" id="6"]
 [ext_resource type="Script" path="res://Scripts/Entities/CardProvider.gd" id="12"]
 [ext_resource type="Script" path="res://Scripts/Entities/UnitVisuals.gd" id="13"]
 [ext_resource type="Script" path="res://Scripts/Entities/GridMover.gd" id="20"]
 [ext_resource type="Script" path="res://Scripts/Entities/GridEntity.gd" id="21"]
 [ext_resource type="Script" path="res://Scripts/Managers/StatusManager.gd" id="22_status"]
 [ext_resource type="PackedScene" path="res://Scenes/Managers/StatusDisplayManager.tscn" id="23_display"]
-[ext_resource type="PackedScene" uid="uid://df6i8j7y6k3m4" path="res://Scenes/UI/UnitMovementArrows.tscn" id="25_arrows"]
 [ext_resource type="ParticleProcessMaterial" path="res://Resources/Shared/MovementParticlesMaterial.tres" id="26_material"]
 [ext_resource type="Texture2D" path="res://Resources/Shared/ParticlePixel.tres" id="27_texture"]
-[ext_resource type="Script" path="res://Scripts/Entities/EnemyAttackComponent.gd" id="28_attack"]
-[ext_resource type="Resource" uid="uid://enemy001xattack" path="res://Resources/Skills/EnemySkills/Skill_Enemy001_XAttack.tres" id="30_skill"]
-[ext_resource type="Script" path="res://Scripts/Entities/EnemyMoveAIComponent.gd" id="29_move_ai"]
+[ext_resource type="PhysicsMaterial" path="res://Resources/Physics/NoFrictionBounce.tres" id="30_nofriction"]
+[ext_resource type="Script" path="res://Scripts/Entities/EnemyAttack_Skeleton.gd" id="31_skeleton_atk"]
 
-[sub_resource type="RectangleShape2D" id="RectangleShape2D_enemy"]
-size = Vector2(16, 16)
+[sub_resource type="CircleShape2D" id="CircleShape2D_enemy"]
+radius = 6.4
 
 [sub_resource type="Animation" id="Animation_idle"]
 resource_name = "idle"
@@ -42,11 +39,22 @@ _data = {
 &"idle": SubResource("Animation_idle")
 }
 
-[node name="Enemy001" type="CharacterBody2D"]
-collision_layer = 0
-collision_mask = 0
+[node name="Enemy001" type="RigidBody2D"]
+collision_layer = 1
+collision_mask = 3
+physics_material_override = ExtResource("30_nofriction")
+linear_damp_mode = 1
+linear_damp = 2.0
+angular_damp_mode = 1
+angular_damp = 0.0
+gravity_scale = 0.0
+can_sleep = false
+freeze = true
 script = ExtResource("21")
 footprint_data = ExtResource("2_footprint")
+
+[node name="AttackComponent" type="Node" parent="."]
+script = ExtResource("31_skeleton_atk")
 
 [node name="Sprite2D" type="Sprite2D" parent="."]
 texture_filter = 1
@@ -55,10 +63,7 @@ hframes = 4
 vframes = 2
 
 [node name="CollisionShape2D" type="CollisionShape2D" parent="."]
-shape = SubResource("RectangleShape2D_enemy")
-
-[node name="UnitMovementController" type="Node" parent="."]
-script = ExtResource("6")
+shape = SubResource("CircleShape2D_enemy")
 
 [node name="GridMover" type="Node" parent="."]
 script = ExtResource("20")
@@ -77,8 +82,6 @@ script = ExtResource("22_status")
 offset_top = -12.0
 offset_bottom = -12.0
 
-[node name="UnitMovementArrows" parent="." instance=ExtResource("25_arrows")]
-z_index = 5
 
 [node name="MoveParticles" type="GPUParticles2D" parent="."]
 texture_filter = 1
@@ -95,16 +98,3 @@ libraries = {
 }
 autoplay = "idle"
 
-[node name="EnemyAttackComponent" type="Node" parent="."]
-script = ExtResource("28_attack")
-attack_interval = 4.0
-telegraph_duration = 1.5
-enabled = true
-skill_resource = ExtResource("30_skill")
-single_direction_only = true
-bullet_travel_time = 0.12
-
-[node name="EnemyMoveAIComponent" type="Node" parent="."]
-script = ExtResource("29_move_ai")
-move_interval = 2.0
-ideal_distance = 3

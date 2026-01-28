@@ -45,7 +45,14 @@ func _ready() -> void:
 ## 應用狀態
 ## overrides: { "duration": int, "value": float }
 func apply_status(def: StatusDefinition, overrides: Dictionary = {}) -> void:
-	if not def: return
+	if not def: 
+		print("[StatusManager] apply_status failed: def is null")
+		return
+	
+	var entity_name = "Unknown"
+	if _parent_entity:
+		entity_name = _parent_entity.name
+	print("[StatusManager] Request to apply status: ", def.id, " to ", entity_name)
 	
 	# 核心修正：抗性判定 (RES)
 	if _parent_entity and _parent_entity.character_data:
@@ -170,6 +177,8 @@ func _on_turn_started(faction: FactionDefinition) -> void:
 	for id in active_statuses:
 		var list = active_statuses[id]
 		var max_remaining = 0
+		
+		print("[StatusManager] Updating status: ", id, " | Remaining: ", list[0].remaining_turns if not list.is_empty() else 0)
 		
 		for i in range(list.size() - 1, -1, -1):
 			var status = list[i]

@@ -6,7 +6,6 @@ extends Node
 
 signal skill_cast_started(skill: Resource, source_entity: GridEntity)
 signal skill_cast_completed(skill: Resource)
-signal skill_cast_failed(reason: String)
 
 func _ready() -> void:
 	pass
@@ -17,30 +16,8 @@ func _get_grid_center() -> Vector2i:
 		return Vector2i(grid.map_width / 2, grid.map_height / 2)
 	return Vector2i(0, 0)
 
-## 從卡牌施放技能的入口 (Async)
-func cast_skill(skill_card: Resource, target_cell: Vector2i, source_entity: GridEntity = null) -> bool:
-	if skill_card == null:
-		return false
-	
-	if source_entity != null:
-		# print("[SkillManager] Casting skill from card for specific unit: ", source_entity.name)
-		return await execute_skill(source_entity, skill_card, target_cell)
-	
-	# 如果沒有指定 source_entity，則對所有玩家單位執行效果
-	var player_units = get_tree().get_nodes_in_group("player")
-	if player_units.is_empty():
-		# print("[SkillManager] cast_skill failed: No player units found.")
-		skill_cast_failed.emit("No player units")
-		return false
-	
-	# print("[SkillManager] Casting skill from card for ALL player units: ", skill_card.get("skill_name"))
-	var any_success = false
-	for unit in player_units:
-		if unit is GridEntity:
-			if await execute_skill(unit, skill_card, target_cell):
-				any_success = true
-	
-	return any_success
+## 已移除：cast_skill 方法（grid-based 卡片技能系統已刪除）
+## 現在只使用 execute_skill 進行距離觸發技能
 
 ## 主要入口：執行技能核心邏輯
 func execute_skill(source_entity: GridEntity, skill: Resource, origin_pos: Vector2i) -> bool:
@@ -48,7 +25,28 @@ func execute_skill(source_entity: GridEntity, skill: Resource, origin_pos: Vecto
 		return false
 	
 	var skill_name = skill.get("skill_name")
-	# print("[SkillManager] Executing skill: ", skill_name, " by ", source_entity.name, " at ", origin_pos)
+	if skill_name == null: skill_name = "Unknown"
+	
+	print("[SkillManager] execute_skill: ", skill_name, " | Source: ", source_entity.name)
+	
+	# 特殊技能處理：十字箭矢 (Cross Arrow)
+	# 使用更健壯的匹配方式
+	if skill_name.contains("十字箭矢") or skill_name.to_lower().contains("cross arrow"):
+		_fire_cross_arrows(source_entity)
+		skill_cast_completed.emit(skill)
+		return true
+	
+	# 特殊技能處理：迴旋飛斧 (Whirlwind Axe)
+	if skill_name.contains("迴旋飛斧") or skill_name.to_lower().contains("whirlwind axe"):
+		call_deferred("_fire_whirlwind_axes", source_entity)
+		skill_cast_completed.emit(skill)
+		return true
+		
+	# 特殊技能處理：連鎖閃電 (Lightning Chain)
+	if skill_name.contains("連鎖閃電") or skill_name.to_lower().contains("lightning chain"):
+		# 連鎖閃電通常由 GridEntity 碰撞觸發，這裡僅作為佔位
+		skill_cast_completed.emit(skill)
+		return true
 		
 	var targeting = skill.get("post_move_targeting")
 	var effects = skill.get("effects")
@@ -153,17 +151,10 @@ func execute_skill(source_entity: GridEntity, skill: Resource, origin_pos: Vecto
 					continue # 沒打中，跳過此目標的所有效果
 			
 			# 暴擊判定 (技能現在也可以暴擊)
-			var current_target_multiplier = final_multiplier
-			if source_entity.character_data:
-				var crit_rate = source_entity.character_data.crit_rate
-				if randf() < crit_rate:
-					var extra_crit = source_entity.character_data.get_effective_crit_dmg()
-					var crit_bonus = 2.0 + extra_crit
-					current_target_multiplier *= crit_bonus
-					print("[SkillManager] CRITICAL HIT on %s! Bonus: %.2f" % [target.name, crit_bonus])
-			
+			# 核心修正：技能傷害現在統一透過 AttackManager.resolve_combat 結算
+			# 這裡只需調用 target.apply_damage，它內部會調用 AttackManager
 			for effect in target_effects:
-				_apply_single_effect(effect, target, source_entity, current_target_multiplier)
+				_apply_single_effect(effect, target, source_entity, final_multiplier)
 			
 	# 4. 設置冷卻與標記
 	if source_entity.character_data:
@@ -190,8 +181,7 @@ func _get_weighted_stat_sum(source_entity: GridEntity, configs: Array) -> float:
 		match stat_name:
 			"attack", "str", "dex", "int", "pie": val = source_entity.character_data.get_effective_attack()
 			"hp": val = source_entity.character_data.get_effective_max_health()
-			"luck": val = source_entity.character_data.luck
-			"speed": val = source_entity.character_data.get_move_distance(source_entity.faction.is_controllable if source_entity.faction else true)
+			"luck": val = float(source_entity.character_data.get_effective_luck())
 			_: val = 1.0
 		total += val * weight
 	return total
@@ -349,23 +339,11 @@ func _apply_single_effect(effect: EffectDefinition, target: GridEntity, source: 
 	
 	match effect.effect_type:
 		EffectDefinition.EffectType.DAMAGE:
-			var ignore_b = bool(effect.get("ignore_barrier")) if "ignore_barrier" in effect else false
-			var ignore_s = bool(effect.get("ignore_shield")) if "ignore_shield" in effect else false
+			# 核心修正：技能傷害現在統一透過 AttackManager 結算
+			# 傳入 is_skill = true 以便 AttackManager 識別
+			var base_dmg = int(round(value))
+			target.apply_damage(base_dmg, false, false, source, false)
 			
-			# 傳入 source (發動者) 以套用貫穿 (Penetration) 效果
-			# apply_damage 會自動處理連擊增加
-			var actual_damage = target.apply_damage(int(round(value)), ignore_b, ignore_s, source)
-			
-			# 觸發吸血 (Drain)
-			if actual_damage > 0 and source and source.character_data:
-				var drain_rate = source.character_data.get_effective_drain()
-				if drain_rate > 0:
-					var heal_amount = int(actual_damage * drain_rate)
-					if heal_amount > 0:
-						source.character_data.heal(heal_amount)
-						if source.has_method("show_heal_number"):
-							source.show_heal_number(heal_amount)
-							
 		EffectDefinition.EffectType.HEAL:
 			target.heal(int(value))
 		EffectDefinition.EffectType.ADD_STATUS:
@@ -379,7 +357,6 @@ func _apply_single_effect(effect: EffectDefinition, target: GridEntity, source: 
 				var dist = int(value)
 				if dist > 0:
 					var final_target = target.grid_position
-					var steps_moved = 0
 					
 					var grid = get_tree().get_first_node_in_group("grid")
 					if grid:
@@ -391,48 +368,17 @@ func _apply_single_effect(effect: EffectDefinition, target: GridEntity, source: 
 							if not grid.is_in_bounds(next_cell):
 								break
 								
-							# 2. 實體佔用檢查 (撞擊邏輯)
+							# 2. 實體佔用檢查（簡化：遇到障礙物直接停止）
 							var occupant = grid.get_occupant(next_cell)
 							if occupant and occupant != target:
-								# 只有撞到敵對方才觸發連續撞擊
-								var is_enemy = false
-								if target.faction and occupant.faction:
-									is_enemy = (target.faction != occupant.faction)
-								
-								if is_enemy:
-									# 觸發撞擊：剩餘距離轉化為撞擊次數
-									var ram_count = (dist - steps_moved)
-									for j in range(ram_count):
-										_execute_ramming_hit(target, occupant)
-								
-								# 無論敵友，只要被擋住就停止位移
+								# 遇到障礙物，停止移動
 								break
 							
 							# 格子可通行，更新落點
 							final_target = next_cell
-							steps_moved += 1
 					
 					# 執行最終位移 (此時路徑已確保無障礙)
 					await mover.move_to(final_target)
-
-func _execute_ramming_hit(source: GridEntity, target: GridEntity) -> void:
-	if not source.character_data or not target.character_data: return
-	
-	# 1. 獲取連擊加成 (Snapshot)
-	var combo_mult = 1.0
-	if AttackManager:
-		var scaling = source.character_data.combo_damage_scaling
-		combo_mult = AttackManager.get_combo_damage_multiplier(scaling)
-	
-	# 2. 計算傷害：基礎撞擊力 (5) + 追擊 (Pursuit)
-	var base_ram_dmg = 5
-	var pursuit = source.character_data.get_effective_pursuit()
-	
-	# 核心修正：套用連擊加成，並使用 round 確保 0.1 的增幅能正確反映
-	var total_dmg = int(round((base_ram_dmg + pursuit) * combo_mult))
-	
-	# 3. 執行傷害
-	target.apply_damage(total_dmg, false, false, source)
 
 func _play_skill_explosion_fx(cells: Array[Vector2i]) -> void:
 	var grid = get_tree().get_first_node_in_group("grid")
@@ -478,3 +424,52 @@ func _spawn_shard_explosion(pos: Vector2) -> void:
 			if is_instance_valid(particles):
 				particles.queue_free()
 		)
+
+func _fire_cross_arrows(caster: GridEntity) -> void:
+	var map_loader = get_tree().get_first_node_in_group("map_loader")
+	if not map_loader: return
+	
+	var directions = [Vector2.UP, Vector2.DOWN, Vector2.LEFT, Vector2.RIGHT]
+	var arrow_scene = load("res://Scenes/Shared/ArrowProjectile.tscn")
+	
+	for dir in directions:
+		map_loader.spawn_projectile(arrow_scene, caster, dir, {"speed": 100.0})
+
+func _fire_whirlwind_axes(caster: GridEntity) -> void:
+	var map_loader = get_tree().get_first_node_in_group("map_loader")
+	if not map_loader: return
+	
+	var axe_scene = load("res://Scenes/Shared/AxeProjectile.tscn")
+	
+	# 尋找場上所有敵人
+	var all_entities = get_tree().get_nodes_in_group("grid_entities")
+	var target_enemies = []
+	var is_caster_player = caster.is_in_group("player")
+	
+	for entity in all_entities:
+		if entity is GridEntity and entity != caster:
+			var is_target_player = entity.is_in_group("player")
+			if is_caster_player != is_target_player:
+				if not target_enemies.has(entity):
+					target_enemies.append(entity)
+	
+	print("[SkillManager] Firing whirlwind axes for ", caster.name, " | Targets found: ", target_enemies.size())
+	
+	for enemy in target_enemies:
+		var target_dir = (enemy.global_position - caster.global_position).normalized()
+		if target_dir == Vector2.ZERO: target_dir = Vector2.RIGHT
+		
+		# 傷害倍率 50%
+		var dmg = int((caster.character_data.get_effective_attack() if caster.character_data else 10) * 0.5)
+		map_loader.spawn_projectile(axe_scene, caster, target_dir, {"speed": 400.0, "damage": dmg})
+
+func create_lightning_chain(caster: GridEntity, target: GridEntity, damage: int) -> void:
+	var lightning_scene = load("res://Scenes/Shared/LightningChain.tscn")
+	if not lightning_scene: return
+	
+	var lightning = lightning_scene.instantiate()
+	get_tree().current_scene.add_child(lightning)
+	
+	if lightning.has_method("setup"):
+		lightning.setup(caster, target, damage, 2.0)
+		print("[SkillManager] Lightning chain created between ", caster.name, " and ", target.name)

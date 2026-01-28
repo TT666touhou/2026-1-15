@@ -1,13 +1,10 @@
-[gd_scene load_steps=41 format=4 uid="uid://0ete046rt74c"]
+[gd_scene load_steps=39 format=4 uid="uid://0ete046rt74c"]
 
 [ext_resource type="TileSet" uid="uid://b1bitenv" path="res://Tilesheet/1bit_environment.tres" id="1_1bit"]
-[ext_resource type="Script" uid="uid://3mdluplcpbaa" path="res://Scripts/MapLoader.gd" id="2"]
-[ext_resource type="Texture2D" uid="uid://ceqrqmjxupqa7" path="res://Tilesheet/1bit_assetpack/1bit_assetpack/environment/tilemap_full.png" id="2_irg3d"]
-[ext_resource type="PackedScene" path="res://Scenes/Card/hand.tscn" id="3"]
-[ext_resource type="Script" uid="uid://dlpiosr371sw" path="res://Scripts/Map/TileVariation.gd" id="3_y8a40"]
 [ext_resource type="Script" uid="uid://dpwf6ofa0hxkp" path="res://Scripts/Grid/Grid.gd" id="6"]
 [ext_resource type="PackedScene" path="res://Scenes/UI/MainTopBar.tscn" id="15"]
 [ext_resource type="Script" uid="uid://2ryo8hx4hhts" path="res://Scripts/Selection/GridSelector.gd" id="20"]
+[ext_resource type="Script" uid="uid://dxm76r7y06g8" path="res://Scripts/Input/SlingshotController.gd" id="20_slingshot"]
 [ext_resource type="Script" uid="uid://bjylahw5oal86" path="res://Scripts/Grid/GridPathfinder.gd" id="24"]
 [ext_resource type="Script" uid="uid://7kwee18qynbg" path="res://Scripts/Selection/Highlighter2D.gd" id="25"]
 [ext_resource type="Script" uid="uid://cwx1hg47nnmns" path="res://Scripts/Grid/GridLines.gd" id="26"]
@@ -15,18 +12,14 @@
 [ext_resource type="Script" uid="uid://b6bf3fl8nko33" path="res://Scripts/UI/MenuButton.gd" id="31"]
 [ext_resource type="Texture2D" uid="uid://igs8giojsm55" path="res://Tilesheet/colored-transparent_packed.png" id="32"]
 [ext_resource type="Script" uid="uid://csclqvjfs84" path="res://Scripts/UI/EndTurnButton.gd" id="33"]
-[ext_resource type="Script" uid="uid://bcmnl5jcgl138" path="res://Scripts/UI/DeckPileUI.gd" id="36"]
 [ext_resource type="Script" uid="uid://beyw1scg0s7mh" path="res://Scripts/Input/GridInputLayer.gd" id="38"]
 [ext_resource type="PackedScene" path="res://Scenes/UI/DebugResourceButton.tscn" id="39"]
 [ext_resource type="Script" uid="uid://cih2bv0i6lk6o" path="res://Scripts/UI/BattleUI.gd" id="41"]
-[ext_resource type="PackedScene" path="res://Scenes/UI/DisposalZone.tscn" id="43"]
 [ext_resource type="Script" uid="uid://bkdhg4l2ofkcm" path="res://Scripts/UI/HoverInfoController.gd" id="44"]
 [ext_resource type="Script" uid="uid://b8r80sd1w8jp8" path="res://Scripts/UI/TurnDebugInfo.gd" id="45"]
 [ext_resource type="PackedScene" path="res://Scenes/UI/DebugRoomLoader.tscn" id="46"]
 [ext_resource type="PackedScene" path="res://Scenes/UI/DebugGridToggler.tscn" id="48"]
 [ext_resource type="Script" uid="uid://drj0xx0jrpdeq" path="res://Scripts/Managers/GroupInputManager.gd" id="49_input"]
-[ext_resource type="Script" uid="uid://c1c1b78o2qsjm" path="res://Scripts/UI/Skills/SkillPreviewController.gd" id="51"]
-[ext_resource type="PackedScene" path="res://Scenes/UI/Skills/SkillManagerUI.tscn" id="52"]
 [ext_resource type="PackedScene" path="res://Scenes/UI/DebugStatusButton.tscn" id="100"]
 [ext_resource type="Resource" path="res://Resources/Status/Status_DefenseUp.tres" id="101"]
 [ext_resource type="Resource" path="res://Resources/Status/Status_Poison.tres" id="102"]
@@ -35,50 +28,36 @@
 [ext_resource type="Script" uid="uid://ckuhers5dw1k" path="res://Scripts/UI/DebugKillTransitionButton.gd" id="105"]
 [ext_resource type="PackedScene" path="res://Scenes/UI/ComboIndicatorUI.tscn" id="106"]
 [ext_resource type="Shader" uid="uid://ct5sptojmcqci" path="res://Shaders/EdgeFog.gdshader" id="107"]
-[ext_resource type="PackedScene" path="res://Scenes/UI/DeckView.tscn" id="108"]
-[ext_resource type="Script" path="res://Scripts/UI/MovementRangeIndicator.gd" id="109"]
+[ext_resource type="Shader" uid="uid://bn0mpa0f04ly0" path="res://Shaders/BackgroundDarkener.gdshader" id="107_bg"]
+[ext_resource type="Script" uid="uid://8hnyowbxg3av" path="res://Scripts/UI/EdgeFog.gd" id="108_fog"]
+[ext_resource type="Script" uid="uid://cdm62dfqbryd5" path="res://Scripts/UI/MovementRangeIndicator.gd" id="109"]
+[ext_resource type="PhysicsMaterial" uid="uid://b6rogmewx3wbu" path="res://Resources/Physics/NoFrictionBounce.tres" id="110_nofriction"]
+[ext_resource type="Script" uid="uid://3mdluplcpbaa" path="res://Scripts/MapLoader.gd" id="202_maploader"]
 
-[sub_resource type="AtlasTexture" id="AtlasTexture_n1aqv"]
-atlas = ExtResource("2_irg3d")
-region = Rect2(64, 96, 16, 16)
+[sub_resource type="RectangleShape2D" id="RectangleShape2D_wall_h"]
+size = Vector2(240, 100)
 
-[sub_resource type="AtlasTexture" id="AtlasTexture_d2jk0"]
-atlas = ExtResource("2_irg3d")
-region = Rect2(128, 96, 16, 16)
+[sub_resource type="RectangleShape2D" id="RectangleShape2D_wall_v"]
+size = Vector2(100, 128)
 
-[sub_resource type="Resource" id="Resource_5dli4"]
-script = ExtResource("3_y8a40")
-tile_visual = SubResource("AtlasTexture_d2jk0")
-metadata/_custom_type_script = "uid://dlpiosr371sw"
+[sub_resource type="ShaderMaterial" id="ShaderMaterial_bg_darken"]
+shader = ExtResource("107_bg")
 
 [sub_resource type="ShaderMaterial" id="ShaderMaterial_fog"]
 shader = ExtResource("107")
 shader_parameter/fog_color = Color(0, 0, 0, 1)
 shader_parameter/star_color = Color(1, 1, 1, 1)
 shader_parameter/speed = 0.5
-shader_parameter/flame_intensity = 0.03
+shader_parameter/flame_intensity = 0.06
+shader_parameter/edge_breakup = 0.2
 shader_parameter/pixel_resolution = Vector2(320, 176)
 shader_parameter/star_density = 0.0
 shader_parameter/star_drift_speed = 0.02
 shader_parameter/star_flicker_speed = 1.2
-shader_parameter/mask_left = 0.425
-shader_parameter/mask_right = 0.825
+shader_parameter/mask_left = 0.33
+shader_parameter/mask_right = 0.93
 shader_parameter/mask_top = 0.046
 shader_parameter/mask_bottom = 0.772
-
-[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_deck"]
-bg_color = Color(0.1, 0.1, 0.3, 1)
-border_width_left = 2
-border_width_top = 2
-border_width_right = 2
-border_width_bottom = 2
-border_color = Color(0.5, 0.8, 1, 1)
-corner_radius_top_left = 4
-corner_radius_top_right = 4
-corner_radius_bottom_right = 4
-corner_radius_bottom_left = 4
-shadow_color = Color(0, 0, 0, 0.7)
-shadow_size = 6
 
 [sub_resource type="StyleBoxFlat" id="StyleBoxFlat_button"]
 bg_color = Color(0.1, 0.1, 0.1, 1)
@@ -95,15 +74,15 @@ shadow_color = Color(0, 0, 0, 0.5)
 shadow_size = 4
 
 [node name="World2" type="Node2D"]
-script = ExtResource("2")
-resources_layer_path = NodePath("Entities/ResourcesLayer")
-base_tile_visual = SubResource("AtlasTexture_n1aqv")
-variations = Array[ExtResource("3_y8a40")]([SubResource("Resource_5dli4")])
+script = ExtResource("202_maploader")
 
 [node name="Grid" type="Node" parent="."]
 script = ExtResource("6")
+origin_offset = Vector2(320, 0)
 
 [node name="GridLines" type="Node2D" parent="."]
+visible = false
+position = Vector2(320, 0)
 script = ExtResource("26")
 
 [node name="GridPathfinder" type="Node" parent="."]
@@ -112,22 +91,59 @@ script = ExtResource("24")
 [node name="PlayerResourceLedger" type="Node" parent="."]
 script = ExtResource("30")
 
+[node name="ArenaBoundaries" type="Node2D" parent="."]
+
+[node name="WallTop" type="StaticBody2D" parent="ArenaBoundaries" groups=["wall"]]
+position = Vector2(416, -50)
+collision_layer = 2
+physics_material_override = ExtResource("110_nofriction")
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="ArenaBoundaries/WallTop"]
+shape = SubResource("RectangleShape2D_wall_h")
+
+[node name="WallBottom" type="StaticBody2D" parent="ArenaBoundaries" groups=["wall"]]
+position = Vector2(416, 178)
+collision_layer = 2
+physics_material_override = ExtResource("110_nofriction")
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="ArenaBoundaries/WallBottom"]
+shape = SubResource("RectangleShape2D_wall_h")
+
+[node name="WallLeft" type="StaticBody2D" parent="ArenaBoundaries" groups=["wall"]]
+position = Vector2(270, 64)
+collision_layer = 2
+physics_material_override = ExtResource("110_nofriction")
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="ArenaBoundaries/WallLeft"]
+shape = SubResource("RectangleShape2D_wall_v")
+
+[node name="WallRight" type="StaticBody2D" parent="ArenaBoundaries" groups=["wall"]]
+position = Vector2(562, 64)
+collision_layer = 2
+physics_material_override = ExtResource("110_nofriction")
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="ArenaBoundaries/WallRight"]
+shape = SubResource("RectangleShape2D_wall_v")
+
 [node name="BackgroundGround" type="TileMapLayer" parent="."]
 texture_filter = 1
 texture_repeat = 1
-position = Vector2(-64, -32)
-tile_map_data = PackedByteArray("AAADAP//AAAEAAUAAAAAAP//AAAEAAUAAAABAP//AAAGAAUAAAACAP//AAAIAAUAAAAEAP//AAAGAAUAAAAFAP//AAAEAAUAAAAGAP//AAAIAAUAAAAHAP//AAAGAAUAAAAIAP//AAAEAAUAAAAAAAkAAAAEAAUAAAABAAkAAAAEAAUAAAACAAkAAAAEAAUAAAADAAkAAAAEAAUAAAAEAAkAAAAEAAUAAAAFAAkAAAAEAAUAAAAGAAkAAAAEAAUAAAAHAAkAAAAEAAUAAAAIAAkAAAAEAAUAAAD/////AAAEAAUAAAAJAP//AAAEAAUAAAAJAAkAAAAEAAUAAAD//wkAAAAEAAUAAAAKAP//AAAEAAUAAAAKAAAAAAAEAAUAAAAKAAEAAAAEAAUAAAAKAAIAAAAEAAUAAAAKAAMAAAAEAAUAAAAKAAQAAAAEAAUAAAAKAAUAAAAEAAUAAAAKAAYAAAAEAAUAAAAKAAcAAAAEAAUAAAAKAAgAAAAEAAUAAAAKAAkAAAAEAAUAAAD+////AAAEAAUAAAD+/wAAAAAEAAUAAAD+/wEAAAAEAAUAAAD+/wIAAAAEAAUAAAD+/wMAAAAEAAUAAAD+/wQAAAAEAAUAAAD+/wUAAAAEAAUAAAD+/wYAAAAEAAUAAAD+/wcAAAAEAAUAAAD+/wgAAAAEAAUAAAD+/wkAAAAEAAUAAAD9////AAAEAAUAAAD9/wAAAAAEAAUAAAD9/wEAAAAEAAUAAAD9/wIAAAAEAAUAAAD9/wMAAAAEAAUAAAD9/wQAAAAEAAUAAAD9/wUAAAAEAAUAAAD9/wYAAAAEAAUAAAD9/wcAAAAEAAUAAAD9/wgAAAAEAAUAAAD9/wkAAAAEAAUAAAALAP//AAAEAAUAAAALAAAAAAAEAAUAAAALAAEAAAAEAAUAAAALAAIAAAAEAAUAAAALAAMAAAAEAAUAAAALAAQAAAAEAAUAAAALAAUAAAAEAAUAAAALAAYAAAAEAAUAAAALAAcAAAAEAAUAAAALAAgAAAAEAAUAAAALAAkAAAAEAAUAAAD//wAAAAAEAAUAAAD//wEAAAAEAAUAAAD//wIAAAAEAAUAAAD//wMAAAAEAAUAAAD//wQAAAAEAAUAAAD//wUAAAAEAAUAAAD//wcAAAAEAAUAAAD//wgAAAAEAAUAAAD//wYAAAAEAAUAAAAMAP//AAAEAAUAAAAMAAAAAAAEAAUAAAAMAAEAAAAEAAUAAAAMAAIAAAAEAAUAAAAMAAMAAAAEAAUAAAAMAAQAAAAEAAUAAAAMAAUAAAAEAAUAAAAMAAYAAAAEAAUAAAAMAAcAAAAEAAUAAAAMAAgAAAAEAAUAAAAMAAkAAAAEAAUAAAAHAAEAAAAEAAUAAAAHAAIAAAAEAAUAAAAHAAMAAAAEAAUAAAAHAAQAAAAEAAUAAAAHAAUAAAAEAAUAAAAHAAYAAAAEAAUAAAAHAAcAAAAEAAUAAAAHAAgAAAAEAAUAAAAIAAEAAAAEAAUAAAAIAAIAAAAEAAUAAAAIAAMAAAAEAAUAAAAIAAQAAAAEAAUAAAAIAAUAAAAEAAUAAAAIAAYAAAAEAAUAAAAIAAcAAAAEAAUAAAAIAAgAAAAEAAUAAAAJAAEAAAAEAAUAAAAJAAIAAAAEAAUAAAAJAAMAAAAEAAUAAAAJAAQAAAAEAAUAAAAJAAUAAAAEAAUAAAAJAAYAAAAEAAUAAAAJAAcAAAAEAAUAAAAJAAgAAAAEAAUAAAAAAAcAAAAEAAUAAAAAAAgAAAAEAAUAAAABAAcAAAAEAAUAAAABAAgAAAAEAAUAAAACAAcAAAAEAAUAAAACAAgAAAAEAAUAAAADAAcAAAAEAAUAAAADAAgAAAAEAAUAAAAEAAcAAAAEAAUAAAAEAAgAAAAEAAUAAAAFAAcAAAAEAAUAAAAFAAgAAAAEAAUAAAAGAAcAAAAEAAUAAAAGAAgAAAAEAAUAAAAHAAAAAAAEAAUAAAAIAAAAAAAEAAUAAAAJAAAAAAAEAAUAAAAAAAAAAAAEAAUAAAAAAAEAAAAEAAUAAAAAAAIAAAAEAAUAAAAAAAMAAAAEAAUAAAAAAAQAAAAEAAUAAAAAAAUAAAAEAAUAAAAAAAYAAAAEAAUAAAABAAAAAAAEAAUAAAABAAEAAAAEAAUAAAABAAIAAAAEAAUAAAABAAMAAAAEAAUAAAABAAQAAAAEAAUAAAABAAUAAAAEAAUAAAABAAYAAAAEAAUAAAACAAAAAAAEAAUAAAACAAEAAAAEAAUAAAACAAIAAAAEAAUAAAACAAMAAAAEAAUAAAACAAQAAAAEAAUAAAACAAUAAAAEAAUAAAACAAYAAAAEAAUAAAADAAAAAAAEAAUAAAADAAEAAAAEAAUAAAADAAIAAAAEAAUAAAADAAMAAAAEAAUAAAADAAQAAAAEAAUAAAADAAUAAAAEAAUAAAADAAYAAAAEAAUAAAAEAAAAAAAEAAUAAAAEAAEAAAAEAAUAAAAEAAIAAAAEAAUAAAAEAAMAAAAEAAUAAAAEAAQAAAAEAAUAAAAEAAUAAAAEAAUAAAAEAAYAAAAEAAUAAAAFAAAAAAAEAAUAAAAFAAEAAAAEAAUAAAAFAAIAAAAEAAUAAAAFAAMAAAAEAAUAAAAFAAQAAAAEAAUAAAAFAAUAAAAEAAUAAAAFAAYAAAAEAAUAAAAGAAAAAAAEAAUAAAAGAAEAAAAEAAUAAAAGAAIAAAAEAAUAAAAGAAMAAAAEAAUAAAAGAAQAAAAEAAUAAAAGAAUAAAAEAAUAAAAGAAYAAAAEAAUAAAA=")
+material = SubResource("ShaderMaterial_bg_darken")
+position = Vector2(320, 0)
+tile_map_data = PackedByteArray("AAD5//7/AAAEAAUAAAD5////AAAEAAUAAAD5/wAAAAAEAAUAAAD5/wEAAAAEAAUAAAD5/wIAAAAEAAUAAAD5/wMAAAAEAAUAAAD5/wQAAAAEAAUAAAD5/wUAAAAEAAUAAAD5/wYAAAAEAAUAAAD5/wcAAAAEAAUAAAD5/wgAAAAEAAUAAAD5/wkAAAAEAAUAAAD5/woAAAAEAAUAAAD6//7/AAAEAAUAAAD6////AAAEAAUAAAD6/wAAAAAEAAUAAAD6/wEAAAAEAAUAAAD6/wIAAAAEAAUAAAD6/wMAAAAEAAUAAAD6/wQAAAAEAAUAAAD6/wUAAAAEAAUAAAD6/wYAAAAEAAUAAAD6/wcAAAAEAAUAAAD6/wgAAAAEAAUAAAD6/wkAAAAEAAUAAAD6/woAAAAEAAUAAAD7//7/AAAEAAUAAAD7////AAAEAAUAAAD7/wAAAAAEAAUAAAD7/wEAAAAEAAUAAAD7/wIAAAAEAAUAAAD7/wMAAAAEAAUAAAD7/wQAAAAEAAUAAAD7/wUAAAAEAAUAAAD7/wYAAAAEAAUAAAD7/wcAAAAEAAUAAAD7/wgAAAAEAAUAAAD7/wkAAAAEAAUAAAD7/woAAAAEAAUAAAD8//7/AAAEAAUAAAD8////AAAEAAUAAAD8/wAAAAAEAAUAAAD8/wEAAAAEAAUAAAD8/wIAAAAEAAUAAAD8/wMAAAAEAAUAAAD8/wQAAAAEAAUAAAD8/wUAAAAEAAUAAAD8/wYAAAAEAAUAAAD8/wcAAAAEAAUAAAD8/wgAAAAEAAUAAAD8/wkAAAAEAAUAAAD8/woAAAAEAAUAAAD9//7/AAAEAAUAAAD9////AAAEAAUAAAD9/wAAAAAEAAUAAAD9/wEAAAAEAAUAAAD9/wIAAAAEAAUAAAD9/wMAAAAEAAUAAAD9/wQAAAAEAAUAAAD9/wUAAAAEAAUAAAD9/wYAAAAEAAUAAAD9/wcAAAAEAAUAAAD9/wgAAAAEAAUAAAD9/wkAAAAEAAUAAAD9/woAAAAEAAUAAAD+//7/AAAEAAUAAAD+////AAAEAAUAAAD+/wAAAAAEAAUAAAD+/wEAAAAEAAUAAAD+/wIAAAAEAAUAAAD+/wMAAAAEAAUAAAD+/wQAAAAEAAUAAAD+/wUAAAAEAAUAAAD+/wYAAAAEAAUAAAD+/wcAAAAEAAUAAAD+/wgAAAAEAAUAAAD+/wkAAAAEAAUAAAD+/woAAAAEAAUAAAD///7/AAAEAAUAAAD/////AAAEAAUAAAD//wAAAAAEAAUAAAD//wEAAAAEAAUAAAD//wIAAAAEAAUAAAD//wMAAAAEAAUAAAD//wQAAAAEAAUAAAD//wUAAAAEAAUAAAD//wYAAAAEAAUAAAD//wcAAAAEAAUAAAD//wgAAAAEAAUAAAD//wkAAAAEAAUAAAD//woAAAAEAAUAAAAAAP7/AAAEAAUAAAAAAP//AAAEAAUAAAAAAAAAAAAEAAUAAAAAAAEAAAAEAAUAAAAAAAIAAAAEAAUAAAAAAAMAAAAEAAUAAAAAAAQAAAAEAAUAAAAAAAUAAAAEAAUAAAAAAAYAAAAEAAUAAAAAAAcAAAAEAAUAAAAAAAgAAAAEAAUAAAAAAAkAAAAEAAUAAAAAAAoAAAAEAAUAAAABAP7/AAAEAAUAAAABAP//AAAEAAUAAAABAAAAAAAEAAUAAAABAAEAAAAEAAUAAAABAAIAAAAEAAUAAAABAAMAAAAEAAUAAAABAAQAAAAEAAUAAAABAAUAAAAEAAUAAAABAAYAAAAEAAUAAAABAAcAAAAEAAUAAAABAAgAAAAEAAUAAAABAAkAAAAEAAUAAAABAAoAAAAEAAUAAAACAP7/AAAEAAUAAAACAP//AAAEAAUAAAACAAAAAAAEAAUAAAACAAEAAAAEAAUAAAACAAIAAAAEAAUAAAACAAMAAAAEAAUAAAACAAQAAAAEAAUAAAACAAUAAAAEAAUAAAACAAYAAAAEAAUAAAACAAcAAAAEAAUAAAACAAgAAAAEAAUAAAACAAkAAAAEAAUAAAACAAoAAAAEAAUAAAADAP7/AAAEAAUAAAADAP//AAAEAAUAAAADAAAAAAAEAAUAAAADAAEAAAAEAAUAAAADAAIAAAAEAAUAAAADAAMAAAAEAAUAAAADAAQAAAAEAAUAAAADAAUAAAAEAAUAAAADAAYAAAAEAAUAAAADAAcAAAAEAAUAAAADAAgAAAAEAAUAAAADAAkAAAAEAAUAAAADAAoAAAAEAAUAAAAEAP7/AAAEAAUAAAAEAP//AAAEAAUAAAAEAAAAAAAEAAUAAAAEAAEAAAAEAAUAAAAEAAIAAAAEAAUAAAAEAAMAAAAEAAUAAAAEAAQAAAAEAAUAAAAEAAUAAAAEAAUAAAAEAAYAAAAEAAUAAAAEAAcAAAAEAAUAAAAEAAgAAAAEAAUAAAAEAAkAAAAEAAUAAAAEAAoAAAAEAAUAAAAFAP7/AAAEAAUAAAAFAP//AAAEAAUAAAAFAAAAAAAEAAUAAAAFAAEAAAAEAAUAAAAFAAIAAAAEAAUAAAAFAAMAAAAEAAUAAAAFAAQAAAAEAAUAAAAFAAUAAAAEAAUAAAAFAAYAAAAEAAUAAAAFAAcAAAAEAAUAAAAFAAgAAAAEAAUAAAAFAAkAAAAEAAUAAAAFAAoAAAAEAAUAAAAGAP7/AAAEAAUAAAAGAP//AAAEAAUAAAAGAAAAAAAEAAUAAAAGAAEAAAAEAAUAAAAGAAIAAAAEAAUAAAAGAAMAAAAEAAUAAAAGAAQAAAAEAAUAAAAGAAUAAAAEAAUAAAAGAAYAAAAEAAUAAAAGAAcAAAAEAAUAAAAGAAgAAAAEAAUAAAAGAAkAAAAEAAUAAAAGAAoAAAAEAAUAAAAHAP7/AAAEAAUAAAAHAP//AAAEAAUAAAAHAAAAAAAEAAUAAAAHAAEAAAAEAAUAAAAHAAIAAAAEAAUAAAAHAAMAAAAEAAUAAAAHAAQAAAAEAAUAAAAHAAUAAAAEAAUAAAAHAAYAAAAEAAUAAAAHAAcAAAAEAAUAAAAHAAgAAAAEAAUAAAAHAAkAAAAEAAUAAAAHAAoAAAAEAAUAAAAIAP7/AAAEAAUAAAAIAP//AAAEAAUAAAAIAAAAAAAEAAUAAAAIAAEAAAAEAAUAAAAIAAIAAAAEAAUAAAAIAAMAAAAEAAUAAAAIAAQAAAAEAAUAAAAIAAUAAAAEAAUAAAAIAAYAAAAEAAUAAAAIAAcAAAAEAAUAAAAIAAgAAAAEAAUAAAAIAAkAAAAEAAUAAAAIAAoAAAAEAAUAAAAJAP7/AAAEAAUAAAAJAP//AAAEAAUAAAAJAAAAAAAEAAUAAAAJAAEAAAAEAAUAAAAJAAIAAAAEAAUAAAAJAAMAAAAEAAUAAAAJAAQAAAAEAAUAAAAJAAUAAAAEAAUAAAAJAAYAAAAEAAUAAAAJAAcAAAAEAAUAAAAJAAgAAAAEAAUAAAAJAAkAAAAEAAUAAAAJAAoAAAAEAAUAAAAKAP7/AAAEAAUAAAAKAP//AAAEAAUAAAAKAAAAAAAEAAUAAAAKAAEAAAAEAAUAAAAKAAIAAAAEAAUAAAAKAAMAAAAEAAUAAAAKAAQAAAAEAAUAAAAKAAUAAAAEAAUAAAAKAAYAAAAEAAUAAAAKAAcAAAAEAAUAAAAKAAgAAAAEAAUAAAAKAAkAAAAEAAUAAAAKAAoAAAAEAAUAAAALAP7/AAAEAAUAAAALAP//AAAEAAUAAAALAAAAAAAEAAUAAAALAAEAAAAEAAUAAAALAAIAAAAEAAUAAAALAAMAAAAEAAUAAAALAAQAAAAEAAUAAAALAAUAAAAEAAUAAAALAAYAAAAEAAUAAAALAAcAAAAEAAUAAAALAAgAAAAEAAUAAAALAAkAAAAEAAUAAAALAAoAAAAEAAUAAAAMAP7/AAAEAAUAAAAMAP//AAAEAAUAAAAMAAAAAAAEAAUAAAAMAAEAAAAEAAUAAAAMAAIAAAAEAAUAAAAMAAMAAAAEAAUAAAAMAAQAAAAEAAUAAAAMAAUAAAAEAAUAAAAMAAYAAAAEAAUAAAAMAAcAAAAEAAUAAAAMAAgAAAAEAAUAAAAMAAkAAAAEAAUAAAAMAAoAAAAEAAUAAAANAP7/AAAEAAUAAAANAP//AAAEAAUAAAANAAAAAAAEAAUAAAANAAEAAAAEAAUAAAANAAIAAAAEAAUAAAANAAMAAAAEAAUAAAANAAQAAAAEAAUAAAANAAUAAAAEAAUAAAANAAYAAAAEAAUAAAANAAcAAAAEAAUAAAANAAgAAAAEAAUAAAANAAkAAAAEAAUAAAANAAoAAAAEAAUAAAAOAP7/AAAEAAUAAAAOAP//AAAEAAUAAAAOAAAAAAAEAAUAAAAOAAEAAAAEAAUAAAAOAAIAAAAEAAUAAAAOAAMAAAAEAAUAAAAOAAQAAAAEAAUAAAAOAAUAAAAEAAUAAAAOAAYAAAAEAAUAAAAOAAcAAAAEAAUAAAAOAAgAAAAEAAUAAAAOAAkAAAAEAAUAAAAOAAoAAAAEAAUAAAAPAP7/AAAEAAUAAAAPAP//AAAEAAUAAAAPAAAAAAAEAAUAAAAPAAEAAAAEAAUAAAAPAAIAAAAEAAUAAAAPAAMAAAAEAAUAAAAPAAQAAAAEAAUAAAAPAAUAAAAEAAUAAAAPAAYAAAAEAAUAAAAPAAcAAAAEAAUAAAAPAAgAAAAEAAUAAAAPAAkAAAAEAAUAAAAPAAoAAAAEAAUAAAAQAP7/AAAEAAUAAAAQAP//AAAEAAUAAAAQAAAAAAAEAAUAAAAQAAEAAAAEAAUAAAAQAAIAAAAEAAUAAAAQAAMAAAAEAAUAAAAQAAQAAAAEAAUAAAAQAAUAAAAEAAUAAAAQAAYAAAAEAAUAAAAQAAcAAAAEAAUAAAAQAAgAAAAEAAUAAAAQAAkAAAAEAAUAAAAQAAoAAAAEAAUAAAARAP7/AAAEAAUAAAARAP//AAAEAAUAAAARAAAAAAAEAAUAAAARAAEAAAAEAAUAAAARAAIAAAAEAAUAAAARAAMAAAAEAAUAAAARAAQAAAAEAAUAAAARAAUAAAAEAAUAAAARAAYAAAAEAAUAAAARAAcAAAAEAAUAAAARAAgAAAAEAAUAAAARAAkAAAAEAAUAAAARAAoAAAAEAAUAAAA=")
 tile_set = ExtResource("1_1bit")
 
 [node name="Ground" type="TileMapLayer" parent="."]
 texture_filter = 1
 texture_repeat = 1
-tile_map_data = PackedByteArray("AAABAAIAAAAEAAYAAAACAAIAAAAEAAYAAAACAAMAAAAIAAYAAAADAAMAAAAEAAYAAAAEAAMAAAAEAAYAAAAFAAMAAAAEAAYAAAAGAAMAAAAEAAYAAAAFAAIAAAAEAAYAAAAGAAIAAAAEAAYAAAAEAAIAAAAEAAYAAAADAAIAAAAEAAYAAAACAAQAAAAIAAYAAAADAAQAAAAEAAYAAAAGAAEAAAAEAAYAAAAGAAAAAAAEAAYAAAAFAAAAAAAEAAYAAAAEAAEAAAAEAAYAAAADAAEAAAAEAAYAAAABAAEAAAAEAAYAAAACAAEAAAAEAAYAAAAEAAQAAAAEAAYAAAAFAAEAAAAIAAYAAAAFAAQAAAAEAAYAAAAGAAQAAAAEAAYAAAAAAAEAAAAEAAYAAAAAAAIAAAAEAAYAAAAAAAMAAAAEAAYAAAAAAAQAAAAEAAYAAAABAAMAAAAEAAYAAAABAAQAAAAEAAYAAAABAAUAAAAEAAYAAAACAAUAAAAEAAYAAAAAAAUAAAAEAAYAAAADAAUAAAAEAAYAAAAEAAUAAAAEAAYAAAAFAAUAAAAIAAYAAAAGAAUAAAAEAAYAAAAAAAYAAAAEAAYAAAABAAYAAAAIAAYAAAACAAYAAAAEAAYAAAADAAYAAAAEAAYAAAAEAAYAAAAEAAYAAAAFAAYAAAAEAAYAAAAGAAYAAAAEAAYAAAAAAAAAAAAEAAYAAAABAAAAAAAIAAYAAAACAAAAAAAEAAYAAAADAAAAAAAEAAYAAAAEAAAAAAAEAAYAAAA=")
+position = Vector2(320, 0)
+tile_map_data = PackedByteArray("AAACAAIAAAAEAAYAAAADAAMAAAAEAAYAAAAEAAMAAAAEAAYAAAAFAAMAAAAEAAYAAAAGAAMAAAAEAAYAAAAFAAIAAAAEAAYAAAAGAAIAAAAEAAYAAAAEAAIAAAAEAAYAAAADAAIAAAAEAAYAAAADAAQAAAAEAAYAAAAGAAEAAAAEAAYAAAAGAAAAAAAEAAYAAAAFAAAAAAAEAAYAAAAEAAEAAAAEAAYAAAADAAEAAAAEAAYAAAACAAEAAAAEAAYAAAAEAAQAAAAEAAYAAAAFAAEAAAAEAAYAAAAFAAQAAAAEAAYAAAAGAAQAAAAEAAYAAAACAAUAAAAEAAYAAAADAAUAAAAEAAYAAAAEAAUAAAAEAAYAAAAFAAUAAAAEAAYAAAAGAAUAAAAEAAYAAAABAAYAAAAEAAYAAAACAAYAAAAEAAYAAAADAAYAAAAEAAYAAAAEAAYAAAAEAAYAAAAFAAYAAAAEAAYAAAAGAAYAAAAEAAYAAAACAAAAAAAEAAYAAAADAAAAAAAEAAYAAAAEAAAAAAAEAAYAAAAHAAAAAAAEAAYAAAAHAAEAAAAEAAYAAAAHAAIAAAAEAAYAAAAHAAMAAAAEAAYAAAAHAAQAAAAEAAYAAAAHAAUAAAAEAAYAAAAHAAYAAAAEAAYAAAAIAAAAAAAEAAYAAAAIAAEAAAAEAAYAAAAIAAIAAAAEAAYAAAAIAAMAAAAEAAYAAAAIAAQAAAAEAAYAAAAIAAUAAAAEAAYAAAAIAAYAAAAEAAYAAAAJAAAAAAAEAAYAAAAJAAEAAAAEAAYAAAAJAAIAAAAEAAYAAAAJAAMAAAAEAAYAAAAJAAQAAAAEAAYAAAAJAAUAAAAEAAYAAAAJAAYAAAAEAAYAAAAKAAAAAAAEAAYAAAAKAAEAAAAEAAYAAAAKAAIAAAAEAAYAAAAKAAMAAAAEAAYAAAAKAAQAAAAEAAYAAAAKAAUAAAAEAAYAAAAKAAYAAAAEAAYAAAALAAAAAAAEAAYAAAALAAEAAAAEAAYAAAALAAIAAAAEAAYAAAALAAMAAAAEAAYAAAALAAQAAAAEAAYAAAALAAUAAAAEAAYAAAALAAYAAAAEAAYAAAAMAAAAAAAEAAYAAAAMAAEAAAAEAAYAAAAMAAIAAAAEAAYAAAAMAAMAAAAEAAYAAAAMAAQAAAAEAAYAAAAMAAUAAAAEAAYAAAAMAAYAAAAEAAYAAAANAAAAAAAEAAYAAAANAAEAAAAEAAYAAAANAAIAAAAEAAYAAAANAAMAAAAEAAYAAAANAAQAAAAEAAYAAAANAAUAAAAEAAYAAAANAAYAAAAEAAYAAAAAAAAAAAAEAAYAAAAAAAEAAAAEAAYAAAABAAEAAAAEAAYAAAABAAIAAAAEAAYAAAACAAMAAAAEAAYAAAACAAQAAAAEAAYAAAABAAUAAAAEAAYAAAABAAQAAAAEAAYAAAABAAMAAAAEAAYAAAABAAAAAAAEAAYAAAAAAAIAAAAEAAYAAAAAAAMAAAAEAAYAAAAAAAQAAAAEAAYAAAAAAAUAAAAEAAYAAAAAAAYAAAAEAAYAAAA=")
 tile_set = ExtResource("1_1bit")
 
 [node name="MovementRangeIndicator" type="TileMapLayer" parent="."]
 visible = false
 z_index = 5
+position = Vector2(320, 0)
 tile_set = ExtResource("1_1bit")
 script = ExtResource("109")
 indicator_layer_path = NodePath(".")
@@ -147,6 +163,9 @@ script = ExtResource("20")
 selection_layer_path = NodePath("../SelectionHighlight")
 enable_debug_log = true
 
+[node name="SlingshotController" type="Node" parent="."]
+script = ExtResource("20_slingshot")
+
 [node name="GroupInputManager" type="Node" parent="."]
 script = ExtResource("49_input")
 
@@ -154,15 +173,8 @@ script = ExtResource("49_input")
 z_index = 100
 script = ExtResource("25")
 
-[node name="SkillPreviewLayer" type="CanvasLayer" parent="."]
-follow_viewport_enabled = true
-
-[node name="SkillPreviewController" type="Node2D" parent="SkillPreviewLayer"]
-z_index = 100
-script = ExtResource("51")
-
 [node name="Camera2D" type="Camera2D" parent="."]
-position = Vector2(16, 72)
+position = Vector2(376, 64)
 zoom = Vector2(4, 4)
 
 [node name="UI" type="CanvasLayer" parent="."]
@@ -176,6 +188,7 @@ grow_horizontal = 2
 grow_vertical = 2
 mouse_filter = 2
 color = Color(0, 0, 0, 1)
+script = ExtResource("108_fog")
 
 [node name="GridInputLayer" type="Control" parent="UI"]
 layout_mode = 3
@@ -209,102 +222,9 @@ script = ExtResource("41")
 [node name="MainTopBar" parent="UI" instance=ExtResource("15")]
 
 [node name="ComboIndicatorUI" parent="UI" groups=["global_combo_ui"] instance=ExtResource("106")]
-anchors_preset = 0
-anchor_left = 0.0
-anchor_right = 0.0
 offset_left = 395.0
 offset_top = 25.0
-grow_horizontal = 1
 scale = Vector2(0.5, 0.5)
-
-[node name="Hand" parent="UI" instance=ExtResource("3")]
-anchors_preset = 7
-anchor_left = 0.5
-anchor_right = 0.5
-offset_left = -480.0
-offset_top = -112.0
-offset_right = 800.0
-grow_vertical = 0
-hand_card_size = Vector2(120, 180)
-hand_bottom_offset = 60.0
-
-[node name="DeckPileButton" type="Button" parent="UI"]
-z_index = 10
-visible = true
-anchors_preset = 3
-anchor_left = 1.0
-anchor_top = 1.0
-anchor_right = 1.0
-anchor_bottom = 1.0
-offset_left = -140.0
-offset_top = -200.0
-offset_right = -20.0
-offset_bottom = -20.0
-grow_horizontal = 0
-grow_vertical = 0
-theme_override_colors/font_color = Color(0.4, 0.8, 1, 1)
-theme_override_font_sizes/font_size = 14
-theme_override_styles/normal = SubResource("StyleBoxFlat_deck")
-theme_override_styles/hover = SubResource("StyleBoxFlat_deck")
-theme_override_styles/pressed = SubResource("StyleBoxFlat_deck")
-theme_override_styles/disabled = SubResource("StyleBoxFlat_deck")
-theme_override_styles/focus = SubResource("StyleBoxFlat_deck")
-text = "DECK"
-script = ExtResource("36")
-hand_reference = NodePath("../Hand")
-deck_view_path = NodePath("../DeckView")
-
-[node name="DeckView" parent="UI" instance=ExtResource("108")]
-visible = false
-layout_mode = 3
-anchors_preset = 15
-anchor_right = 1.0
-anchor_bottom = 1.0
-grow_horizontal = 2
-grow_vertical = 2
-
-[node name="PlayArea" type="Control" parent="UI" groups=["play_area"]]
-visible = false
-layout_mode = 3
-anchors_preset = 8
-anchor_left = 0.5
-anchor_top = 0.5
-anchor_right = 0.5
-anchor_bottom = 0.5
-offset_left = -300.0
-offset_top = -150.0
-offset_right = 300.0
-offset_bottom = 150.0
-grow_horizontal = 2
-grow_vertical = 2
-mouse_filter = 2
-
-[node name="PlayHandButton" type="Button" parent="UI"]
-visible = false
-anchors_preset = 2
-anchor_top = 1.0
-anchor_bottom = 1.0
-offset_left = 340.0
-offset_top = -260.0
-offset_right = 460.0
-offset_bottom = -210.0
-grow_vertical = 0
-theme_override_styles/normal = SubResource("StyleBoxFlat_button")
-theme_override_styles/pressed = SubResource("StyleBoxFlat_button")
-theme_override_styles/hover = SubResource("StyleBoxFlat_button")
-text = "PLAY HAND"
-
-[node name="DisposalZone" parent="UI" instance=ExtResource("43")]
-z_index = 10
-visible = true
-anchors_preset = 2
-anchor_top = 1.0
-anchor_bottom = 1.0
-offset_left = 340.0
-offset_top = -200.0
-offset_right = 460.0
-offset_bottom = -20.0
-grow_vertical = 0
 
 [node name="TopRightToolbar" type="HBoxContainer" parent="UI"]
 anchors_preset = 1
@@ -319,7 +239,6 @@ theme_override_constants/separation = 10
 alignment = 2
 
 [node name="TurnDebugInfo" type="HBoxContainer" parent="UI/TopRightToolbar"]
-visible = true
 layout_mode = 2
 script = ExtResource("45")
 
@@ -331,7 +250,6 @@ layout_mode = 2
 layout_mode = 2
 
 [node name="EndTurnButton" type="Button" parent="UI/TopRightToolbar"]
-visible = true
 layout_mode = 2
 focus_mode = 0
 theme_override_styles/normal = SubResource("StyleBoxFlat_button")
@@ -438,8 +356,5 @@ theme_override_styles/pressed = SubResource("StyleBoxFlat_button")
 theme_override_styles/hover = SubResource("StyleBoxFlat_button")
 text = "Kill & Transition"
 script = ExtResource("105")
-
-[node name="SkillManagerUI" parent="UI/DebugLayer" instance=ExtResource("52")]
-visible = false
 
 [editable path="UI/MainTopBar"]

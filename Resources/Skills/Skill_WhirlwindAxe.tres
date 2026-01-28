@@ -1,0 +1,25 @@
+[gd_resource type="Resource" script_class="UnitSkillData" load_steps=3 format=3]
+
+[ext_resource type="Script" path="res://Scripts/SkillSystem/UnitSkillData.gd" id="1_script"]
+[ext_resource type="Texture2D" path="res://Tilesheet/1bit_assetpack/1bit_assetpack/items/weapon_axe1.png" id="2_icon"]
+
+[resource]
+script = ExtResource("1_script")
+skill_name = "迴旋飛斧"
+manual_description = "【迴旋飛斧】\n撞擊牆壁時觸發。向場上所有敵人投擲飛斧，造成 50% 攻擊力的物理傷害。飛斧具有穿透效果。"
+manual_description_en = ""
+description = ""
+icon = ExtResource("2_icon")
+execution_mode = 1
+targeting_type = 0
+cooldown_turns = 0
+is_accurate = true
+scaling_configs = Array[Dictionary]([{
+"stat": "attack",
+"weight": 0.5
+}])
+scaling_multiplier = 1.0
+effects = Array[Resource]([])
+is_move_skill = false
+post_move_effects = Array[Resource]([])
+trigger_distance = 0.0

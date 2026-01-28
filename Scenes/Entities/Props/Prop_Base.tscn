@@ -5,13 +5,22 @@
 [ext_resource type="Texture2D" path="res://Tilesheet/1bit_assetpack/1bit_assetpack/environment/tilemap_full.png" id="3"]
 [ext_resource type="Script" path="res://Scripts/Entities/UnitVisuals.gd" id="4"]
 [ext_resource type="Script" path="res://Scripts/Entities/CardProvider.gd" id="5"]
+[ext_resource type="PhysicsMaterial" path="res://Resources/Physics/NoFrictionBounce.tres" id="30_nofriction"]
 
-[sub_resource type="RectangleShape2D" id="1"]
-size = Vector2(16, 16)
+[sub_resource type="CircleShape2D" id="1"]
+radius = 8.0
 
-[node name="PropBase" type="CharacterBody2D"]
-collision_layer = 0
-collision_mask = 0
+[node name="PropBase" type="RigidBody2D"]
+collision_layer = 1
+collision_mask = 3
+physics_material_override = ExtResource("30_nofriction")
+linear_damp_mode = 1
+linear_damp = 0.0
+angular_damp_mode = 1
+angular_damp = 0.0
+gravity_scale = 0.0
+can_sleep = false
+freeze = true
 script = ExtResource("1")
 footprint_data = ExtResource("2")
 

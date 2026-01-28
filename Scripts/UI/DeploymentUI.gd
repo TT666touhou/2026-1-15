@@ -3,14 +3,17 @@ class_name DeploymentUI
 
 @onready var left_panel: Panel = $LeftPanel
 @onready var member_list: VBoxContainer = $LeftPanel/VBox/ScrollContainer/MemberList
+@onready var skill_container: VBoxContainer = %SkillContainer
 @onready var drop_indicator: ColorRect = $DropIndicator
 
 const MemberCardScene = preload("res://Scenes/UI/DeploymentMemberCard.tscn")
+const SkillSlotScene = preload("res://Scenes/UI/Skills/SkillChargeSlot.tscn")
 
 # Drag Ghost
 var _drag_ghost: Control = null
 var _drag_source_card: DeploymentMemberCard = null
 var _current_drop_index: int = -1
+var _current_selected_unit: GridEntity = null
 
 func _ready() -> void:
 	add_to_group("deployment_ui")
@@ -20,9 +23,54 @@ func _ready() -> void:
 		if not PartyManager.party_updated.is_connected(_on_party_updated):
 			PartyManager.party_updated.connect(_on_party_updated)
 	
+	# 連接單選信號 (由 SlingshotController 發出)
+	call_deferred("_connect_slingshot_signals")
+	
 	# F6 獨立運行測試
 	if get_parent() == get_tree().root:
 		_run_test_mode()
+
+func _connect_slingshot_signals() -> void:
+	var slingshot = get_tree().get_first_node_in_group("slingshot")
+	if not slingshot:
+		# 嘗試按路徑查找 (針對 World2 場景)
+		slingshot = get_node_or_null("/root/World2/SlingshotController")
+	
+	if slingshot:
+		if not slingshot.unit_selected.is_connected(update_skill_ui):
+			slingshot.unit_selected.connect(update_skill_ui)
+			print("[DeploymentUI] Connected to SlingshotController.unit_selected")
+
+func update_skill_ui(unit: GridEntity) -> void:
+	if not unit: return
+	_current_selected_unit = unit
+	
+	# 清除舊的技能槽位
+	for child in skill_container.get_children():
+		child.queue_free()
+		
+	if not unit.character_data: return
+	
+	# 顯示該單位的運行時技能
+	if unit.character_data.runtime_skill:
+		var slot = SkillSlotScene.instantiate()
+		skill_container.add_child(slot)
+		if slot.has_method("setup"):
+			slot.setup(unit.character_data.runtime_skill, unit.character_data)
+			
+	print("[DeploymentUI] Updated skill UI for ", unit.name)
+
+func _ensure_ui_refs() -> bool:
+	if left_panel == null:
+		left_panel = get_node_or_null("LeftPanel")
+	if member_list == null:
+		member_list = get_node_or_null("LeftPanel/VBox/ScrollContainer/MemberList")
+	if drop_indicator == null:
+		drop_indicator = get_node_or_null("DropIndicator")
+	if member_list == null:
+		push_warning("[DeploymentUI] MemberList not found; UI not ready yet.")
+		return false
+	return true
 
 func _process(_delta: float) -> void:
 	if _drag_ghost and _drag_ghost.visible:
@@ -49,6 +97,8 @@ func _on_party_updated() -> void:
 		initialize_party(PartyManager.get_members())
 
 func initialize_party(members: Array[CharacterData]) -> void:
+	if not _ensure_ui_refs():
+		return
 	# 清除現有列表
 	for child in member_list.get_children():
 		child.queue_free()
@@ -72,8 +122,7 @@ func add_member_card(data: CharacterData, parent_node: Control, is_leader: bool 
 		card.set_highlight(true)
 		
 	# Connect drag signals
-	card.right_drag_started.connect(_on_card_right_drag_started)
-	card.right_drag_ended.connect(_on_card_right_drag_ended)
+	# Drag to reorder/ghost is disabled for now
 
 # --- Right Drag Implementation ---
 

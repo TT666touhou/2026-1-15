@@ -12,6 +12,8 @@ enum RoomDifficulty {
 
 @export var room_name: String = "New Room"
 @export var difficulty: RoomDifficulty = RoomDifficulty.EASY
+@export var width: int = 12
+@export var height: int = 8
 @export_multiline var description: String = ""
 
 # 存儲實體配置

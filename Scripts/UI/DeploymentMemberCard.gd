@@ -20,6 +20,7 @@ class_name DeploymentMemberCard
 @onready var crit_dmg_label: Label = $HBox/InfoBox/StatsGrid/CritDmgLabel
 @onready var pen_label: Label = $HBox/InfoBox/StatsGrid/PenLabel
 @onready var combo_label: Label = $HBox/InfoBox/ComboLabel
+@onready var skill_slot: SkillChargeSlot = $HBox/InfoBox/SkillSlot
 
 # Leader Skill UI
 @onready var leader_skill_box: VBoxContainer = $HBox/LeaderSkillBox
@@ -35,17 +36,12 @@ class_name DeploymentMemberCard
 # Border for Leader
 @onready var border: NinePatchRect = $Border
 
-# Signals for Right-Click Drag
-signal right_drag_started(card: DeploymentMemberCard)
-signal right_drag_ended(card: DeploymentMemberCard, end_pos: Vector2)
-
 enum DisplayState { STATS, TRAITS, EQUIPMENT }
 
 var character_data: CharacterData
 var _current_state: DisplayState = DisplayState.STATS
 var _pre_drag_state: DisplayState = DisplayState.STATS
 var _is_right_pressed: bool = false
-var _drag_start_pos: Vector2 = Vector2.ZERO
 var _is_dragging_right: bool = false
 const DRAG_THRESHOLD = 10.0
 
@@ -139,12 +135,12 @@ func setup(data: CharacterData) -> void:
 	
 	_update_stats()
 	_update_info_display()
+	_update_skill_ui()
 	
 	# Connect signals for dynamic updates
 	if not character_data.health_changed.is_connected(_on_health_changed):
 		character_data.health_changed.connect(_on_health_changed)
-	if not character_data.combo_count_changed.is_connected(_on_combo_changed):
-		character_data.combo_count_changed.connect(_on_combo_changed)
+	# CharacterData 無 combo_count_changed 信號；combo 顯示由 stats_changed 觸發 _update_stats 更新
 	
 	# Listen for stat recalculation updates
 	if not character_data.stats_changed.is_connected(_on_stats_changed):
@@ -204,8 +200,9 @@ func _update_stats(_unused = null) -> void:
 	_update_barriers(barriers)
 	
 	# Primary Stats
-	atk_label.text = "ATK: %d" % eff_atk
-	spd_label.text = "SPD: %d" % int(character_data.get_move_distance(false))
+	var crt = character_data.get_effective_crit_rate()
+	atk_label.text = "ATK: %d (CRT: %d%%)" % [eff_atk, int(crt * 100)]
+	spd_label.text = "SPD: %.1f" % character_data.get_effective_speed()
 	
 	# 處理精簡模式
 	var is_simplified = false
@@ -271,8 +268,20 @@ func _update_info_display() -> void:
 	leader_skill_box.visible = (_current_state == DisplayState.TRAITS)
 	equipment_box.visible = (_current_state == DisplayState.EQUIPMENT)
 	
+	# 技能槽位在 STATS 狀態下始終顯示
+	_update_skill_ui()
+	
 	if _current_state == DisplayState.EQUIPMENT:
 		_update_equipment_icons()
+
+func _update_skill_ui() -> void:
+	if not skill_slot: return
+	
+	if character_data and character_data.runtime_skill:
+		skill_slot.visible = (_current_state == DisplayState.STATS) # 僅在 STATS 狀態顯示，或依需求決定
+		skill_slot.setup(character_data.runtime_skill, character_data)
+	else:
+		skill_slot.visible = false
 
 func _update_equipment_icons() -> void:
 	if character_data == null: 
@@ -290,9 +299,6 @@ func _update_equipment_icons() -> void:
 	accessory_slot.set_equipment(character_data.accessory)
 
 func _on_health_changed(_current: int, _max: int) -> void:
-	_update_stats()
-
-func _on_combo_changed(_new_val: float) -> void:
 	_update_stats()
 
 func _on_stats_changed() -> void:
@@ -326,14 +332,9 @@ func _gui_input(event: InputEvent) -> void:
 	# Right-Click Logic
 	if event is InputEventMouseButton:
 		if event.button_index == MOUSE_BUTTON_RIGHT:
-			if event.pressed:
-				_is_right_pressed = true
-				_drag_start_pos = event.position
-			else:
-				if _is_dragging_right:
-					right_drag_ended.emit(self, get_global_mouse_position())
-				_is_right_pressed = false
-				_is_dragging_right = false
+			# Disable right-drag reordering
+			_is_right_pressed = false
+			_is_dragging_right = false
 				
 		# Left-Click Logic (Toggle Info)
 		elif event.button_index == MOUSE_BUTTON_LEFT and not event.pressed:
@@ -341,10 +342,7 @@ func _gui_input(event: InputEvent) -> void:
 			_update_info_display()
 			
 	if event is InputEventMouseMotion:
-		if _is_right_pressed and not _is_dragging_right:
-			if _drag_start_pos.distance_to(event.position) > DRAG_THRESHOLD:
-				_is_dragging_right = true
-				right_drag_started.emit(self)
+		pass
 
 func _can_drop_data(_at_position: Vector2, data: Variant) -> bool:
 	return typeof(data) == TYPE_DICTIONARY and data.get("type") == "equipment"
@@ -363,20 +361,5 @@ func _drop_data(_at_position: Vector2, data: Variant) -> void:
 			entity.queue_free()
 
 func _get_drag_data(_at_position: Vector2) -> Variant:
-	if character_data == null: return null
-	
-	var unit_def = character_data.unit_def
-	if unit_def == null or unit_def.unit_scene == null:
-		return null
-		
-	# 創建容器腳本
-	var preview_container = Control.new()
-	preview_container.set_script(preload("res://Scripts/UI/DragPreview.gd"))
-	
-	# 使用實際場景與數據初始化
-	preview_container.call("setup_with_data", unit_def.unit_scene, character_data)
-	
-	# 設置預覽
-	set_drag_preview(preview_container)
-	
-	return character_data
+	# Disable drag-and-drop deployment
+	return null

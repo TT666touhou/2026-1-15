@@ -36,6 +36,8 @@ func _apply_to_components() -> void:
 	if card == null:
 		return
 	
+	print("[CardProvider] Applying card to: ", _parent.name, " | Card: ", card.resource_path)
+	
 	# GridEntity footprint_data 和 faction 同步
 	var grid_entity = _parent as GridEntity
 	if grid_entity != null:

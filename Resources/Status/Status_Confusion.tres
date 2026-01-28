@@ -1,0 +1,18 @@
+[gd_resource type="Resource" script_class="StatusDefinition" load_steps=3 format=3]
+
+[ext_resource type="Script" path="res://Scripts/SkillSystem/StatusDefinition.gd" id="1_script"]
+[ext_resource type="Texture2D" path="res://Tilesheet/1bit_assetpack/1bit_assetpack/items/offhand_magicorb.png" id="2_icon"]
+
+[resource]
+script = ExtResource("1_script")
+id = "confusion"
+display_name = "混亂"
+icon = ExtResource("2_icon")
+icon_scene_path = ""
+is_debuff = true
+behavior_type = 1
+stacking_rule = 0
+duration_turns = 1
+params = {
+"type": "confusion"
+}

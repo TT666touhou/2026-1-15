@@ -85,7 +85,7 @@ func execute_faction_move(units: Array, direction: Vector2i) -> void:
 		# 結束回合
 		if TurnManager and TurnManager.is_player_turn() and not TurnManager.is_free_roam_mode:
 			print("[GroupMovementController] Player move sequence completed, advancing turn.")
-			await TurnManager.advance_turn()
+			TurnManager.advance_turn()
 		
 		if TurnManager: TurnManager.unlock_input()
 	else:
@@ -192,14 +192,14 @@ func _can_unit_step_to(unit: GridEntity, target_cell: Vector2i, group: Array, cu
 		if grid.is_cell_occupied(c):
 			var occupant = grid.get_occupant(c)
 			if occupant != unit and not occupant in group:
-				var occ_name = occupant.name if "name" in occupant else "Unnamed"
+				var occ_name = str(occupant.name) if "name" in occupant else "Unnamed"
 				print("[GroupMovement]     ", unit.name, " block reason: STATIC OCCUPANT (", occ_name, ") at ", c)
 				return false
 				
 	return true
 
 func _run_mover(mover: GridMover, target: Vector2i) -> void:
-	await mover.move_to(target)
+	mover.move_to(target)
 
 func _wait_for_movers(movers: Array) -> void:
 	# 給一點啟動時間，確保 Tween 已經開始

@@ -91,14 +91,63 @@ theme_override_constants/margin_bottom = 5
 layout_mode = 2
 alignment = 1
 
-[node name="ScrollContainer" type="ScrollContainer" parent="LeftPanel/VBox"]
-layout_mode = 2
-size_flags_vertical = 3
+	[node name="ScrollContainer" type="ScrollContainer" parent="LeftPanel/VBox"]
+	layout_mode = 2
+	size_flags_vertical = 3
 
-[node name="MemberList" type="VBoxContainer" parent="LeftPanel/VBox/ScrollContainer"]
-layout_mode = 2
-size_flags_horizontal = 3
-theme_override_constants/separation = 10
+	[node name="MemberList" type="VBoxContainer" parent="LeftPanel/VBox/ScrollContainer"]
+	layout_mode = 2
+	size_flags_horizontal = 3
+	theme_override_constants/separation = 10
+
+	[node name="SkillPanel" type="Panel" parent="LeftPanel/VBox"]
+	unique_name_in_owner = true
+	visible = false
+	custom_minimum_size = Vector2(0, 180)
+	layout_mode = 2
+	theme_override_styles/panel = SubResource("StyleBoxFlat_opaque")
+
+	[node name="Background" type="NinePatchRect" parent="LeftPanel/VBox/SkillPanel"]
+	texture_filter = 1
+	texture_repeat = 1
+	layout_mode = 1
+	anchors_preset = 15
+	anchor_right = 1.0
+	anchor_bottom = 1.0
+	grow_horizontal = 2
+	grow_vertical = 2
+	texture = ExtResource("2_vnffd")
+	region_rect = Rect2(860, 226, 48, 48)
+	patch_margin_left = 16
+	patch_margin_top = 16
+	patch_margin_right = 16
+	patch_margin_bottom = 16
+
+	[node name="Margin" type="MarginContainer" parent="LeftPanel/VBox/SkillPanel"]
+	layout_mode = 1
+	anchors_preset = 15
+	anchor_right = 1.0
+	anchor_bottom = 1.0
+	grow_horizontal = 2
+	grow_vertical = 2
+	theme_override_constants/margin_left = 10
+	theme_override_constants/margin_top = 10
+	theme_override_constants/margin_right = 10
+	theme_override_constants/margin_bottom = 10
+
+	[node name="VBox" type="VBoxContainer" parent="LeftPanel/VBox/SkillPanel/Margin"]
+	layout_mode = 2
+	theme_override_constants/separation = 10
+
+	[node name="Title" type="Label" parent="LeftPanel/VBox/SkillPanel/Margin/VBox"]
+	layout_mode = 2
+	text = "單位技能"
+	horizontal_alignment = 1
+
+	[node name="SkillContainer" type="VBoxContainer" parent="LeftPanel/VBox/SkillPanel/Margin/VBox"]
+	unique_name_in_owner = true
+	layout_mode = 2
+	size_flags_vertical = 3
 
 [node name="LeaderContainer" type="PanelContainer" parent="LeftPanel/VBox"]
 visible = false

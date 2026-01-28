@@ -6,6 +6,7 @@
 [ext_resource type="Resource" path="res://Resources/MovementRanges/MovementRange_OneStep.tres" id="4_movement"]
 [ext_resource type="Resource" path="res://Resources/Factions/Faction_Player.tres" id="5_faction"]
 [ext_resource type="Texture2D" path="res://Tilesheet/1bit_assetpack/1bit_assetpack/characters/wizard.png" id="6_icon"]
+[ext_resource type="Resource" path="res://Resources/Skills/Skill_LightningChain.tres" id="7_skill"]
 
 [sub_resource type="AtlasTexture" id="AtlasTexture_icon"]
 atlas = ExtResource("6_icon")
@@ -44,4 +45,4 @@ cost = {
 }
 display_name = "Wizard"
 max_playable_count = 0
-default_skills = Array[Resource]([])
+default_skill = ExtResource("7_skill")

@@ -1,0 +1,16 @@
+[gd_scene load_steps=2 format=3]
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_puddle"]
+bg_color = Color(0.2, 0.8, 0.2, 0.4)
+corner_radius_top_left = 50
+corner_radius_top_right = 50
+corner_radius_bottom_right = 50
+corner_radius_bottom_left = 50
+
+[node name="SlimePuddle" type="Panel"]
+custom_minimum_size = Vector2(24, 24)
+offset_left = -12.0
+offset_top = -12.0
+offset_right = 12.0
+offset_bottom = 12.0
+theme_override_styles/panel = SubResource("StyleBoxFlat_puddle")

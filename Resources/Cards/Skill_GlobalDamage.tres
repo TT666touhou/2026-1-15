@@ -1,44 +1,27 @@
-[gd_resource type="Resource" script_class="SkillCard" load_steps=6 format=3]
-[ext_resource type="Resource" path="res://Resources/Skills/TestSkills/Effect_Damage_10.tres" id="1_effect"]
-[ext_resource type="Script" path="res://Scripts/SkillSystem/TargetingDefinition.gd" id="2_target"]
-[ext_resource type="Script" path="res://Scripts/SkillSystem/SkillCard.gd" id="3_skill_card"]
+[gd_resource type="Resource" script_class="SkillCard" load_steps=7 format=3 uid="uid://tn7mclvv10da"]
 
-[sub_resource type="Resource" id="Resource_target"]
-script = ExtResource("2_target")
-scope_type = 0
-aoe_radius = 0
-origin_is_self = true
-target_filter = 1
-can_target_empty = false
-pattern_7x7 = Array[bool]([])
+[ext_resource type="Script" uid="uid://u70paxa457ic" path="res://Scripts/SkillSystem/EffectDefinition.gd" id="1_d8n8e"]
+[ext_resource type="Resource" path="res://Resources/Skills/TestSkills/Effect_Damage_10.tres" id="1_effect"]
+[ext_resource type="Script" uid="uid://lth0uqqdu3fq" path="res://Scripts/SkillSystem/TargetingDefinition.gd" id="2_target"]
+[ext_resource type="Script" uid="uid://b1slvqs16tldm" path="res://Scripts/SkillSystem/SkillCard.gd" id="3_skill_card"]
 
 [sub_resource type="Resource" id="Resource_effect"]
 script = ExtResource("2_target")
 scope_type = 4
-aoe_radius = 0
 origin_is_self = true
-target_filter = 1
-can_target_empty = false
-pattern_7x7 = Array[bool]([])
+
+[sub_resource type="Resource" id="Resource_target"]
+script = ExtResource("2_target")
+origin_is_self = true
 
 [resource]
 script = ExtResource("3_skill_card")
 soul_cost = 2
-exclusive_unit_id = ""
 card_id = "global_damage"
-manual_description_en = "Deals {scaling} damage to all enemies across the entire map."
 skill_name = "末日審判"
+manual_description_en = "Deals {scaling} damage to all enemies across the entire map."
 description = "立刻發動：對全圖敵人造成 100% 攻擊力傷害"
-execution_mode = 0
-targeting_type = 0
 cooldown_turns = 5
-scaling_configs = Array[Dictionary]([{
-"stat": "attack",
-"weight": 1.0
-}])
-scaling_multiplier = 1.0
 targeting = SubResource("Resource_target")
-effects = Array[Resource]([ExtResource("1_effect")])
-is_move_skill = false
+effects = Array[ExtResource("1_d8n8e")]([ExtResource("1_effect")])
 post_move_targeting = SubResource("Resource_effect")
-post_move_effects = Array[Resource]([])

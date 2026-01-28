@@ -37,6 +37,9 @@ enum TargetingType {
 @export var post_move_targeting: TargetingDefinition 
 @export var post_move_effects: Array[EffectDefinition] = []
 
+@export_group("Physics Movement")
+@export var trigger_distance: float = 300.0
+
 func validate_config() -> bool:
 	var is_valid = true
 	
@@ -176,6 +179,4 @@ func _get_stat_display_name(stat_key: String, use_en: bool = false) -> String:
 			return "Max HP" if use_en else "最大生命值"
 		"luck": 
 			return "Luck" if use_en else "幸運"
-		"speed": 
-			return "Speed" if use_en else "速度"
 	return stat_key

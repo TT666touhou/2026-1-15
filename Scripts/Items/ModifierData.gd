@@ -14,9 +14,17 @@ enum ModifierType {
 	DRAIN_ADDITIVE,
 	CRIT_DMG_ADDITIVE,
 	PEN_ADDITIVE,
+	CRIT_RATE_ADDITIVE,
+	LUCK_ADDITIVE,
+	SHIELD_ADDITIVE,
+	BARRIER_ADDITIVE,
+	SPEED_ADDITIVE,
+	SPEED_MULTIPLIER,
 	ATK_MULTIPLIER,
 	HP_MULTIPLIER
 }
+
+# Added a comment to force re-parse
 
 @export var type: ModifierType
 @export var value: float
@@ -61,6 +69,20 @@ func get_modifier_text() -> String:
 			is_percent = true
 		ModifierType.PEN_ADDITIVE: 
 			val_str = "PEN"
+			is_percent = true
+		ModifierType.CRIT_RATE_ADDITIVE:
+			val_str = "CRT"
+			is_percent = true
+		ModifierType.LUCK_ADDITIVE:
+			val_str = "LUK"
+		ModifierType.SHIELD_ADDITIVE:
+			val_str = "SHD"
+		ModifierType.BARRIER_ADDITIVE:
+			val_str = "BAR"
+		ModifierType.SPEED_ADDITIVE:
+			val_str = "SPD"
+		ModifierType.SPEED_MULTIPLIER:
+			val_str = "SPD %"
 			is_percent = true
 			
 		ModifierType.ATK_MULTIPLIER: 

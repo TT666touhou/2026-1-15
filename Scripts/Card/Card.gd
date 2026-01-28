@@ -347,7 +347,7 @@ func _update_display() -> void:
 	if top_bar:
 		top_bar.visible = true
 	
-	# --- 技能 UI 鑲嵌邏輯 ---
+	# --- 技能 UI 鑲嵌邏輯（簡化版：只顯示名稱，不渲染網格）---
 	if card_data:
 		var skill_card = null
 		if card_data.has_method("get_skill_card"):
@@ -356,33 +356,20 @@ func _update_display() -> void:
 			skill_card = card_data
 			
 		if skill_card:
-			# 1. 將技能名稱填入卡片頂部的名稱標籤
+			# 將技能名稱填入卡片頂部的名稱標籤
 			if NameLabel:
 				NameLabel.text = skill_card.skill_name if "skill_name" in skill_card else "Unknown Skill"
 			
-			# 2. 渲染範圍網格
+			# 隱藏範圍網格（grid-based 技能系統已移除）
 			if MiniRangeGrid:
-				MiniRangeGrid.visible = true
-				# 尋找移動方向
-				var move_dir = Vector2i.ZERO
-				for effect in skill_card.effects:
-					if effect.effect_type == EffectDefinition.EffectType.MOVE:
-						move_dir = effect.move_direction
-						break
-				
-				var is_pure_move = skill_card.get("execution_mode") == UnitSkillData.ExecutionMode.MOVEMENT or skill_card.get("is_move_skill")
-				var color = Color(1, 0.9, 0.2) if is_pure_move else Color(1.0, 0.4, 0.1)
-				
-				# 關鍵修正：優先使用 post_move_targeting 作為效果範圍展示 (針對戰鬥技能)
-				var target_to_show = skill_card.post_move_targeting if skill_card.get("post_move_targeting") != null else skill_card.targeting
-				
-				# 使用靜態工具函數渲染網格 (縮小單元格尺寸至 26x26 以調整佔比)
-				SkillTooltipUI.render_skill_grid(MiniRangeGrid, target_to_show, color, is_pure_move, Vector2(26, 26), move_dir, 3.0)
+				MiniRangeGrid.visible = false
 		else:
 			# 如果不是技能卡，隱藏網格
-			if MiniRangeGrid: MiniRangeGrid.visible = false
+			if MiniRangeGrid:
+				MiniRangeGrid.visible = false
 	else:
-		if MiniRangeGrid: MiniRangeGrid.visible = false
+		if MiniRangeGrid:
+			MiniRangeGrid.visible = false
 
 func return_to_hand(animated := true) -> void:
 	var hand = get_parent()

@@ -2,19 +2,18 @@
 
 [ext_resource type="Resource" path="res://Footprints/Footprint_1x1.tres" id="2_footprint"]
 [ext_resource type="Texture2D" path="res://Tilesheet/1bit_assetpack/1bit_assetpack/characters/wizard.png" id="3_wizard"]
-[ext_resource type="Script" path="res://Scripts/Entities/UnitMovementController.gd" id="6"]
 [ext_resource type="Script" path="res://Scripts/Entities/CardProvider.gd" id="12"]
 [ext_resource type="Script" path="res://Scripts/Entities/UnitVisuals.gd" id="13"]
 [ext_resource type="Script" path="res://Scripts/Entities/GridMover.gd" id="20"]
 [ext_resource type="Script" path="res://Scripts/Entities/GridEntity.gd" id="21"]
 [ext_resource type="Script" path="res://Scripts/Managers/StatusManager.gd" id="22_status"]
 [ext_resource type="PackedScene" path="res://Scenes/Managers/StatusDisplayManager.tscn" id="23_display"]
-[ext_resource type="PackedScene" path="res://Scenes/UI/UnitMovementArrows.tscn" id="25_arrows"]
 [ext_resource type="ParticleProcessMaterial" path="res://Resources/Shared/MovementParticlesMaterial.tres" id="26_material"]
 [ext_resource type="Texture2D" path="res://Resources/Shared/ParticlePixel.tres" id="27_texture"]
+[ext_resource type="PhysicsMaterial" path="res://Resources/Physics/NoFrictionBounce.tres" id="30_nofriction"]
 
-[sub_resource type="RectangleShape2D" id="RectangleShape2D_kbo38"]
-size = Vector2(16, 16)
+[sub_resource type="CircleShape2D" id="CircleShape2D_kbo38"]
+radius = 6.4
 
 [sub_resource type="Animation" id="Animation_idle"]
 resource_name = "idle"
@@ -39,11 +38,18 @@ _data = {
 &"idle": SubResource("Animation_idle")
 }
 
-[node name="Unit003" type="CharacterBody2D"]
-collision_layer = 0
-collision_mask = 0
+[node name="Unit003" type="RigidBody2D"]
+collision_mask = 3
+physics_material_override = ExtResource("30_nofriction")
+gravity_scale = 0.0
+can_sleep = false
+linear_damp = 0.5
+angular_damp = 0.0
+linear_damp_mode = 1
+angular_damp_mode = 1
 script = ExtResource("21")
 footprint_data = ExtResource("2_footprint")
+is_player = true
 
 [node name="Sprite2D" type="Sprite2D" parent="."]
 texture_filter = 1
@@ -52,10 +58,7 @@ hframes = 4
 vframes = 2
 
 [node name="CollisionShape2D" type="CollisionShape2D" parent="."]
-shape = SubResource("RectangleShape2D_kbo38")
-
-[node name="UnitMovementController" type="Node" parent="."]
-script = ExtResource("6")
+shape = SubResource("CircleShape2D_kbo38")
 
 [node name="GridMover" type="Node" parent="."]
 script = ExtResource("20")
@@ -73,17 +76,22 @@ script = ExtResource("22_status")
 offset_top = -12.0
 offset_bottom = -12.0
 
-[node name="UnitMovementArrows" parent="." instance=ExtResource("25_arrows")]
-z_index = 5
-
 [node name="MoveParticles" type="GPUParticles2D" parent="."]
 texture_filter = 1
 emitting = false
 amount = 12
-process_material = ExtResource("26_material")
 texture = ExtResource("27_texture")
 lifetime = 0.4
 local_coords = false
+process_material = ExtResource("26_material")
+
+[node name="CollisionParticles_Left" type="GPUParticles2D" parent="."]
+
+[node name="CollisionParticles_Right" type="GPUParticles2D" parent="."]
+
+[node name="CollisionParticles_Top" type="GPUParticles2D" parent="."]
+
+[node name="CollisionParticles_Bottom" type="GPUParticles2D" parent="."]
 
 [node name="AnimationPlayer" type="AnimationPlayer" parent="."]
 libraries = {

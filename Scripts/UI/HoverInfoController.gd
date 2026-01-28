@@ -8,6 +8,7 @@ var _equip_panel_instance: Control = null
 var _skill_tooltip_instance: Control = null
 var _grid: Node = null
 var _last_hovered_entity_id: int = -1 # Track instance ID to force updates
+var _current_entity: GridEntity = null # 目前懸停的實體
 var _is_ui_hovering: bool = false # 標記目前是否由 UI 元素觸發懸停顯示
 
 const EnemyInfoCardScene = preload("res://Scenes/UI/EnemyInfoCard.tscn")
@@ -96,37 +97,36 @@ func _process(_delta: float) -> void:
 		_hide_all()
 
 func _get_entity_under_mouse() -> GridEntity:
-	if not _grid or not _grid.has_method("world_to_grid") or not _grid.has_method("get_occupant"):
-		return null
-		
-	# 關鍵修正：獲取世界座標而非 UI 座標
+	# 關鍵修正：改用物理查詢而非網格佔用，以支援移動中的實體偵測
 	var mouse_pos = get_global_mouse_position()
 	var camera = get_viewport().get_camera_2d()
 	if camera:
 		mouse_pos = camera.get_global_mouse_position()
 		
-	var cell = _grid.world_to_grid(mouse_pos)
+	var space_state = get_viewport().get_world_2d().direct_space_state
+	var query = PhysicsPointQueryParameters2D.new()
+	query.position = mouse_pos
+	query.collision_mask = 1 | 4 # 偵測 Unit Layer (1) 與 Prop/Trap Layer (4)
+	query.collide_with_areas = true
+	query.collide_with_bodies = true
 	
-	# Priority 1: Units/Buildings
-	var entity = _grid.get_occupant(cell) as GridEntity
-	
-	# Priority 2: Traps
-	if entity == null and _grid.has_method("get_trap"):
-		entity = _grid.get_trap(cell) as GridEntity
-		if entity:
-			pass
-	
-	if entity:
-		# Add minimal log for debugging visibility
-		pass
-	
-	return entity
+	var results = space_state.intersect_point(query)
+	if results.is_empty():
+		return null
+		
+	for res in results:
+		var collider = res.collider
+		if collider is GridEntity:
+			return collider
+			
+	return null
 
 func _update_display_logic(entity: GridEntity) -> void:
 	if not _card_instance or not _trap_card_instance or not _equip_panel_instance: 
 		print("[HoverInfoController] ERROR: Card instances missing!")
 		return
 	
+	_current_entity = entity
 	var current_id = entity.get_instance_id()
 	var is_new_entity = (current_id != _last_hovered_entity_id)
 	
@@ -143,9 +143,9 @@ func _update_display_logic(entity: GridEntity) -> void:
 		return
 		
 	# 2. 檢查是否為敵對單位或陷阱
-	if entity is TrapEntity:
+	if entity is TrapEntity or entity.is_in_group("traps"):
 		if is_new_entity or not _trap_card_instance.visible:
-			print("[HoverInfoController] Showing Trap Card")
+			print("[HoverInfoController] Showing Trap Card for: ", entity.name)
 			_last_hovered_entity_id = current_id
 			if _trap_card_instance.has_method("update_info"):
 				_trap_card_instance.update_info(entity)
@@ -155,7 +155,9 @@ func _update_display_logic(entity: GridEntity) -> void:
 		return
 
 	var show_enemy_info = false
-	if entity.faction:
+	if entity.is_in_group("enemy"):
+		show_enemy_info = true
+	elif entity.faction:
 		if entity.faction.resource_path.to_lower().contains("enemy"):
 			show_enemy_info = true
 		elif not entity.faction.resource_path.to_lower().contains("player"):
@@ -163,7 +165,7 @@ func _update_display_logic(entity: GridEntity) -> void:
 			
 	if show_enemy_info:
 		if is_new_entity or not _card_instance.visible:
-			print("[HoverInfoController] Showing Enemy Card")
+			# print("[HoverInfoController] Showing Enemy Card for: ", entity.name)
 			_last_hovered_entity_id = current_id
 			if _card_instance.has_method("update_info"):
 				_card_instance.update_info(entity)
@@ -185,26 +187,32 @@ func _update_position() -> void:
 		active_panel = _skill_tooltip_instance
 		
 	if active_panel:
-		# 獲取滑鼠在螢幕上的位置 (Viewport 座標)
-		# 使用 get_viewport().get_mouse_position() 確保不受父級 CanvasLayer 的 Transform 影響
-		var mouse_pos = get_viewport().get_mouse_position()
-		var target_pos = mouse_pos + offset_from_mouse
+		# 決定錨點位置 (Anchor Position)
+		# 如果有正在懸停的實體，錨點為實體位置；否則為滑鼠位置
+		var anchor_pos = get_viewport().get_mouse_position()
+		
+		if not _is_ui_hovering and is_instance_valid(_current_entity):
+			# 獲取實體在螢幕上的位置
+			anchor_pos = _current_entity.get_global_transform_with_canvas().origin
+		
+		var target_pos = anchor_pos + offset_from_mouse
 		
 		var viewport_rect = get_viewport_rect()
 		# Use combined minimum size to ensure we handle adaptive containers correctly
 		var panel_size = active_panel.get_combined_minimum_size()
 			
 		if target_pos.x + panel_size.x > viewport_rect.size.x:
-			target_pos.x = mouse_pos.x - panel_size.x - offset_from_mouse.x
+			target_pos.x = anchor_pos.x - panel_size.x - offset_from_mouse.x
 			
 		if target_pos.y + panel_size.y > viewport_rect.size.y:
-			target_pos.y = mouse_pos.y - panel_size.y - offset_from_mouse.y
+			target_pos.y = anchor_pos.y - panel_size.y - offset_from_mouse.y
 			
 		active_panel.global_position = target_pos
 
 func _hide_all() -> void:
 	_is_ui_hovering = false
 	_last_hovered_entity_id = -1
+	_current_entity = null
 	if _card_instance: _card_instance.visible = false
 	if _trap_card_instance: _trap_card_instance.visible = false
 	if _equip_panel_instance: _equip_panel_instance.visible = false

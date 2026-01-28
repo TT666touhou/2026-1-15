@@ -10,8 +10,8 @@ var active_gates: Array[Node] = []
 # 必須與 MapLoader 的 extra_cell_coords 保持一致，或者從 MapLoader 獲取
 # 為了簡單，這裡我們複製一份配置，實際運作時應以 MapLoader 為準
 var extra_cells: Array[Vector2i] = [
-	Vector2i(7, 1), # 上
-	Vector2i(7, 3), # 中
+	Vector2i(7, 2), # 上
+	Vector2i(7, 4), # 中
 	Vector2i(7, 5)  # 下
 ]
 var _spawned_gates_by_index: Dictionary = {}
@@ -123,7 +123,7 @@ func check_gate_trigger(entity: Node, cell: Vector2i) -> void:
 		return
 		
 	if entity.get("faction") != null and entity.faction.resource_path.contains("Player"):
-		if cell.x >= 7:
+		if cell.x >= 12:
 			print("[DungeonManager] Player reached boundary at ", cell, ". Triggering transition...")
 			# 建立一個臨時對象來攜帶 next_room_name
 			var transition_info = { "next_room_name": "T001" } # 預設前往 T001
@@ -133,15 +133,30 @@ func check_gate_trigger(entity: Node, cell: Vector2i) -> void:
 			call_deferred("play_gate_transition", transition_info)
 
 func load_room_by_name(room_name: String, skip_spawn_anim: bool = false, skip_ground_init: bool = false) -> Dictionary:
-	var path = "res://Resources/Rooms/" + room_name + ".tres"
+	# 嘗試多種路徑格式以增加相容性 (大小寫)
+	var paths_to_try = [
+		"res://Resources/Rooms/" + room_name + ".tres",
+		"res://Resources/Rooms/" + room_name.to_upper() + ".tres",
+		"res://Resources/Rooms/" + room_name.capitalize() + ".tres"
+	]
+	
+	var path = ""
+	for p in paths_to_try:
+		if FileAccess.file_exists(p):
+			path = p
+			break
+			
+	if path == "":
+		path = paths_to_try[0] # Fallback to original for warning
+		
 	print("[DungeonManager] Attempting to load room: ", path)
-	if !FileAccess.file_exists(path):
-		push_error("[DungeonManager] Room not found: " + path)
+	if not FileAccess.file_exists(path):
+		push_warning("[DungeonManager] Room not found: " + path + " - returning empty room")
 		return {"players": [], "enemies": []}
 		
 	var template = load(path)
 	if template is RoomTemplate:
-		return _load_room_template(template, skip_spawn_anim, skip_ground_init)
+		return await _load_room_template(template, skip_spawn_anim, skip_ground_init)
 	else:
 		push_error("[DungeonManager] Invalid resource type at: " + path)
 		return {"players": [], "enemies": []}
@@ -190,7 +205,11 @@ func _load_room_template(template: RoomTemplate, skip_spawn_anim: bool = false, 
 	
 	# 4. 播放進場動畫序列 (如果沒有跳過)
 	if not skip_spawn_anim:
-		_play_spawn_sequence(spawned_players, spawned_enemies)
+		print("[DungeonManager] Starting spawn sequence with ", spawned_players.size(), " players and ", spawned_enemies.size(), " enemies")
+		await _play_spawn_sequence(spawned_players, spawned_enemies)
+		print("[DungeonManager] Spawn sequence completed")
+	else:
+		print("[DungeonManager] Spawn animation skipped")
 	
 	# 5. 重置回合 (假設 TurnManager 存在)
 	if TurnManager:
@@ -222,53 +241,22 @@ func spawn_player_party(map_loader: Node) -> Array[GridEntity]:
 	print("[DungeonManager] Spawning party of size: ", party.size())
 	
 	for i in range(party.size()):
-		if i >= spawn_points.size():
-			push_warning("[DungeonManager] Not enough spawn points for party member " + str(i))
-			break
+		var spawn_pos = Vector2i(0, 3 + i) # Fallback: default to left side
+		if i < spawn_points.size():
+			spawn_pos = spawn_points[i]
 			
 		var char_data = party[i]
-		var spawn_pos = spawn_points[i]
-		
-		var card = null
-		if char_data.get("unit_def"):
-			card = char_data.unit_def
+		var card = char_data.unit_def
 		
 		if card and card.unit_scene:
-			var instance = card.unit_scene.instantiate()
-			
-			# 設定 Grid Position
-			if instance.has_method("set_grid_position"):
-				# 1. 配置 CardProvider (獲取靜態配置：移動、陣營等)
-				var card_provider = instance.get_node_or_null("CardProvider")
-				if card_provider:
-					# 使用完整套用流程，確保 faction / footprint / movement_range_data 以及 CharacterData 初始化正確
-					card_provider.set_card_and_apply(card)
-
-				# 3. 先加入場景 (確保 _ready 執行)
-				if map_loader.has_method("add_unit_to_scene"):
-					map_loader.add_unit_to_scene(instance)
-
-				# 4. 注入 CharacterData (狀態保持)
-				# 必須在加入場景之後執行，因為 CardProvider 會在 _ready 中創建新的 CharacterData
-				if instance.has_method("setup_character"):
-					instance.setup_character(char_data)
-
-				# 5. 再設定 Grid Position (觸發視覺同步與網格註冊)
-				instance.set_grid_position(spawn_pos)
+			# 使用 MapLoader 統一生成 API
+			var unit = map_loader.spawn_entity(card.unit_scene, card, spawn_pos, "player")
+			if unit:
+				# 注入持久化的 CharacterData (包含當前血量、狀態等)
+				unit.setup_character(char_data)
+				spawned_units.append(unit)
+				print("[DungeonManager] <<< Party member ", i, " spawned successfully via API")
 				
-				# 6. 準備進場 (隱藏) - 不再直接播放動畫
-				if instance.has_method("prepare_for_entry"):
-					instance.prepare_for_entry()
-
-				spawned_units.append(instance as GridEntity)
-			else:
-				instance.queue_free()
-		else:
-			push_error("[DungeonManager] Could not instantiate unit for party member " + str(i))
-			
-	# 單次、集中的佔用註冊與驗證流程
-	_force_player_units_occupancy(spawned_units)
-
 	return spawned_units
 
 
@@ -288,6 +276,8 @@ func _force_player_units_occupancy(units: Array[GridEntity]) -> void:
 			# print("[SpawnForce] Occupancy set for ", u.name, " at ", u.grid_position, " cells:", cells.size()) # Debug removed
 
 func _play_spawn_sequence(players: Array[GridEntity], enemies: Array[GridEntity]) -> void:
+	# 確保在動畫期間鎖定輸入
+	if TurnManager: TurnManager.lock_input()
 	"""
 	依序播放進場動畫：
 	1. 裝備/物件 (由上而下, 由左而右)
@@ -347,18 +337,30 @@ func _play_spawn_sequence(players: Array[GridEntity], enemies: Array[GridEntity]
 	combatants.append_array(players)
 	combatants.append_array(real_enemies)
 	
-	for unit in combatants:
+	print("[DungeonManager] _play_spawn_sequence: Starting entry animations for ", combatants.size(), " combatants")
+	for i in range(combatants.size()):
+		var unit = combatants[i]
 		if is_instance_valid(unit):
+			print("[DungeonManager] Processing combatant ", i, ": ", unit.name, " | grid_pos: ", unit.grid_position, " | global_pos: ", unit.global_position, " | visible: ", unit.visible)
 			unit.visible = true
 			if unit.has_method("play_entry_animation"):
+				print("[DungeonManager] Calling play_entry_animation for ", unit.name)
 				unit.play_entry_animation(0.0)
 				if unit.has_signal("entry_animation_finished"):
 					await unit.entry_animation_finished
 				else:
 					await get_tree().create_timer(0.3).timeout
 			else:
+				print("[DungeonManager] Unit does not have play_entry_animation, showing Sprite2D directly")
 				if unit.has_node("Sprite2D"):
-					unit.get_node("Sprite2D").modulate.a = 1.0
+					var sprite = unit.get_node("Sprite2D")
+					sprite.modulate.a = 1.0
+					print("[DungeonManager] Sprite2D modulate.a set to 1.0 for ", unit.name)
+		else:
+			print("[DungeonManager] WARNING: Combatant ", i, " is not valid!")
+
+	# 動畫結束，解鎖輸入
+	if TurnManager: TurnManager.unlock_input()
 
 func on_gate_entered(gate: Node) -> void:
 	print("[DungeonManager] Player entered gate: ", gate.name)
@@ -435,14 +437,14 @@ func play_gate_transition(gate: Variant) -> void:
 	if !map_loader:
 		print("[DungeonManager] MapLoader not found, falling back to basic load")
 		if gate.get("next_room_name"):
-			load_room_by_name(gate.next_room_name)
+			await load_room_by_name(gate.next_room_name)
 		return
 
 	# 1. 關閉輸入
 	if selector: selector.set_process_unhandled_input(false)
 	
 	# 設定參數
-	var stream_distance = 112.0 # 捲動/跑步的總距離 (7格)
+	var stream_distance = 192.0 # 捲動/跑步的總距離 (12格)
 	var duration = 1.0
 	
 	# --- 階段一：出鏡 (Exit) ---
@@ -477,7 +479,7 @@ func play_gate_transition(gate: Variant) -> void:
 	
 	var result = {"players": [], "enemies": []}
 	if next_room and next_room != "":
-		result = load_room_by_name(next_room, true, true) 
+		result = await load_room_by_name(next_room, true, true) 
 	
 	var new_players = result.get("players", [])
 	var new_enemies = result.get("enemies", [])
@@ -581,12 +583,12 @@ func _play_step_transition(units: Array, duration: float, delta_x: float, is_ent
 	for i in range(grid_steps):
 		if !is_entry:
 			# 出鏡：在地圖 right 之外生成，在 left 刪除
-			map_loader.generate_column(7 + i, true) 
+			map_loader.generate_column(12 + i, true) 
 			map_loader.erase_column(i, true)
 		else:
-			# 入鏡：單位從 -7 格開始跑向 0 格
+			# 入鏡：單位從 -12 格開始跑向 0 格
 			var current_gx = -grid_steps + i
-			map_loader.generate_column(current_gx + 7, true) # 在視窗右緣生成
+			map_loader.generate_column(current_gx + 12, true) # 在視窗右緣生成
 			map_loader.erase_column(current_gx, true)        # 在視窗左緣擦除
 		
 		# 每 5 步印一次進度

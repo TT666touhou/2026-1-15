@@ -8,8 +8,8 @@ extends Node
 @export var resources_layer_path: NodePath = "ResourcesLayer"
 
 @export_group("Map Settings")
-@export var map_width: int = 7
-@export var map_height: int = 7
+@export var map_width: int = 12
+@export var map_height: int = 8
 
 @export_group("Tile Assets")
 ## 基礎地塊 (4,5) 的視覺預覽 (AtlasTexture)
@@ -19,7 +19,7 @@ extends Node
 
 # 內部解析後的數據
 var _base_source_id: int = -1
-var _base_coords: Vector2i = Vector2i(4, 5) # 預設值
+var _base_coords: Vector2i = Vector2i(4, 6) # 預設值
 var _resolved_variations: Array[Dictionary] = [] # {source_id, coords, chance}
 
 const FACTION_PLAYER = preload("res://Resources/Factions/Faction_Player.tres")
@@ -119,73 +119,163 @@ func clear_current_map(skip_ground_init: bool = false) -> void:
 func instantiate_room(template: RoomTemplate) -> Array[GridEntity]:
 	print("[MapLoader] Instantiating room: ", template.room_name)
 	
+	# 更新地圖尺寸以符合模板
+	if template.width > 0: map_width = template.width
+	if template.height > 0: map_height = template.height
+	
+	var grid_node = get_tree().get_first_node_in_group("grid")
+	if grid_node:
+		grid_node.map_width = map_width
+		grid_node.map_height = map_height
+		if grid_node.has_signal("size_changed"):
+			grid_node.size_changed.emit()
+		
+	print("[MapLoader] Map dimensions updated to: ", map_width, "x", map_height)
+	
 	var spawned_enemies: Array[GridEntity] = []
 	
 	for entity_data in template.entities:
-		var pos = entity_data.pos
+		var grid_pos = entity_data.pos
 		var card_path = entity_data.get("card_path", "")
 		var scene_path = entity_data.get("scene_path", "")
+		var overrides = entity_data.get("overrides", {})
 		
-		var instance: Node = null
-		
-		# 支援直接生成場景 (如裝備、門等)
+		var card = null
+		if card_path != "" and FileAccess.file_exists(card_path):
+			card = load(card_path)
+			
+		var scene_to_spawn = null
 		if scene_path != "" and FileAccess.file_exists(scene_path):
-			var scn = load(scene_path)
-			if scn is PackedScene:
-				instance = scn.instantiate()
-		
-		# 卡牌生成邏輯 (支援 UnitCard, BuildingCard, PropCard)
-		elif card_path != "" and FileAccess.file_exists(card_path):
-			var card = load(card_path)
-			if card:
-				var scene_to_spawn = null
-				if card.has_method("get") or card is Resource:
-					if "unit_scene" in card: scene_to_spawn = card.get("unit_scene")
-					elif "building_scene" in card: scene_to_spawn = card.get("building_scene")
-					elif "prop_scene" in card: scene_to_spawn = card.get("prop_scene")
-					elif "trap_scene" in card: scene_to_spawn = card.get("trap_scene")
-				
-				if scene_to_spawn:
-					instance = scene_to_spawn.instantiate()
-					var card_provider = instance.get_node_or_null("CardProvider")
-					if card_provider:
-						card_provider.card = card
-					
-					# 陷阱特殊初始化
-					if instance.has_method("setup_trap"):
-						instance.setup_trap(card)
-		
-		if instance:
-			# 先加入場景 (確保 _ready 執行)
-			add_unit_to_scene(instance)
+			scene_to_spawn = load(scene_path)
+		elif card:
+			if "unit_scene" in card: scene_to_spawn = card.get("unit_scene")
+			elif "building_scene" in card: scene_to_spawn = card.get("building_scene")
+			elif "prop_scene" in card: scene_to_spawn = card.get("prop_scene")
+			elif "trap_scene" in card: scene_to_spawn = card.get("trap_scene")
 			
-			if instance.has_method("set_grid_position"):
-				# 設定初始位置
-				instance.set_grid_position(pos)
+		if scene_to_spawn is PackedScene:
+			# 統一使用新的 spawn_entity API
+			var entity = spawn_entity(scene_to_spawn, card, grid_pos, "enemy", overrides)
+			if entity:
+				spawned_enemies.append(entity)
 				
-				# 應用數值覆蓋 (僅對單位有效)
-				if entity_data.has("overrides") and instance.has_method("apply_overrides"):
-					print("[MapLoader] Applying overrides for ", instance.name, ": ", entity_data.overrides)
-					instance.apply_overrides(entity_data.overrides)
-				
-				# 收集已生成的敵人 (如果是 GridEntity)
-				if instance is GridEntity:
-					spawned_enemies.append(instance)
-				
-				# 準備進場 (隱藏)
-				if instance.has_method("prepare_for_entry"):
-					instance.prepare_for_entry()
-				
-			print("[MapLoader] Spawned entity at ", pos)
-			
 	return spawned_enemies
 
+## 統一實體生成 API
+## is_dynamic: 如果為 true，則立即顯示實體（用於戰鬥中分裂/召喚）；否則隱藏等待進場動畫
+func spawn_entity(scene: PackedScene, card: Resource, grid_pos: Vector2i, faction_group: String, overrides: Dictionary = {}, is_dynamic: bool = false) -> GridEntity:
+	if not scene: return null
+	
+	# 1. 實例化
+	var instance = scene.instantiate()
+	if not instance is GridEntity:
+		# 支援非 GridEntity 的基礎 Node (如單純的裝備)
+		add_unit_to_scene(instance)
+		if instance.has_method("set_grid_position"):
+			instance.set_grid_position(grid_pos)
+		return null
+		
+	var unit = instance as GridEntity
+	
+	# 2. 準備數據
+	var char_data = null
+	if card and card is UnitCard:
+		var CharacterDataScript = load("res://Scripts/Entities/CharacterData.gd")
+		char_data = CharacterDataScript.create(card)
+	
+	# 3. 統一初始化 (物理、群組、UI 偵測)
+	var is_player_unit = (faction_group == "player")
+	unit.initialize_runtime(char_data, faction_group, is_player_unit)
+	
+	# 4. 應用數值覆蓋
+	if not overrides.is_empty() and unit.has_method("apply_overrides"):
+		unit.apply_overrides(overrides)
+		
+	# 5. 加入場景樹 (UnitsLayer)
+	add_unit_to_scene(unit)
+	
+	# 6. 網格定位與系統註冊
+	unit.set_grid_position(grid_pos)
+	
+	if BoardManager:
+		BoardManager.register_entity(unit)
+		
+	# 7. 視覺準備
+	if is_dynamic:
+		# 動態生成（如分裂）不隱藏，確保外觀可見
+		unit.visible = true
+		var sprite = unit.get_node_or_null("Sprite2D")
+		if sprite: sprite.modulate.a = 1.0
+		var visuals = unit.get_node_or_null("UnitVisuals")
+		if visuals and "sprite" in visuals and visuals.sprite:
+			visuals.sprite.modulate.a = 1.0
+		
+		# 核心修正：動態生成的單位需要立即解鎖物理，以便接收初始衝力
+		if unit.has_method("unlock_physics"):
+			unit.unlock_physics()
+	elif unit.has_method("prepare_for_entry"):
+		# 初始生成則隱藏，等待進場動畫
+		unit.prepare_for_entry()
+		
+	print("[MapLoader] Successfully spawned entity: ", unit.name, " at grid ", grid_pos, " (Dynamic: ", is_dynamic, ")")
+	return unit
+
+## 統一投射物生成 API
+## params: { "speed": float, "damage": int, "texture": Texture2D, "is_piercing": bool }
+func spawn_projectile(scene: PackedScene, source: GridEntity, target_dir: Vector2, params: Dictionary = {}) -> Node:
+	if not scene or not source: return null
+	
+	# 1. 實例化
+	var projectile = scene.instantiate()
+	
+	# 2. 獲取基礎參數
+	var spd = params.get("speed", 300.0)
+	var dmg = params.get("damage", 1)
+	if source.character_data and not params.has("damage"):
+		dmg = source.character_data.get_effective_attack()
+	
+	# 3. 穿透屬性判定
+	var is_piercing = params.get("is_piercing", false)
+	if params.has("texture") and params["texture"].resource_path.contains("magicorb"):
+		is_piercing = true
+	
+	if "is_piercing" in projectile:
+		projectile.is_piercing = is_piercing
+	
+	# 4. 統一初始化
+	if projectile.has_method("setup"):
+		projectile.setup(source.global_position, target_dir, dmg, spd, source)
+	
+	# 5. 特殊外觀設置
+	if params.has("texture") and projectile.has_method("set_texture"):
+		projectile.set_texture(params["texture"])
+	
+	# 6. 加入場景樹
+	add_child(projectile)
+	
+	# 6. 告知 TurnManager 追蹤此投射物，確保回合系統監控
+	if TurnManager and TurnManager.has_method("on_unit_launched"):
+		TurnManager.on_unit_launched(projectile, target_dir.normalized() * spd)
+		
+	# 7. 確保加入群組
+	if not projectile.is_in_group("projectiles"):
+		projectile.add_to_group("projectiles")
+		
+	print("[MapLoader] Projectile spawned: ", projectile.name, " from ", source.name, " Dir: ", target_dir)
+	return projectile
+
 func add_unit_to_scene(unit: Node) -> void:
+	print("[MapLoader] add_unit_to_scene called for: ", unit.name)
 	var units_layer = get_node_or_null("Entities/UnitsLayer")
 	if units_layer:
+		print("[MapLoader] Adding unit to UnitsLayer: ", units_layer.get_path())
 		units_layer.add_child(unit)
+		var parent_node = unit.get_parent()
+		var parent_name = str(parent_node.name) if parent_node else "NULL"
+		print("[MapLoader] Unit added, parent: ", parent_name, " | global_pos: ", unit.global_position)
 	else:
 		# Fallback: add as child of MapLoader if layer is missing
+		print("[MapLoader] WARNING: UnitsLayer not found, adding unit as direct child of MapLoader")
 		add_child(unit)
 		push_warning("[MapLoader] UnitsLayer not found, adding unit as direct child")
 
@@ -370,7 +460,7 @@ func _resolve_visual_tiles(layer: TileMapLayer) -> void:
 		if ts.get_source_count() > 0:
 			_base_source_id = ts.get_source_id(0)
 		# _base_coords 已初始化為 (4, 5)
-		print("[MapLoader] No base visual set, using default source %d and coords (4,5)" % _base_source_id)
+		print("[MapLoader] No base visual set, using default source %d and coords (4,6)" % _base_source_id)
 
 	# 2. 解析變體
 	_resolved_variations.clear()

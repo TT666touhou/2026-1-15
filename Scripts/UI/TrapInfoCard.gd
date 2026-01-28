@@ -21,7 +21,8 @@ func _set_mouse_filter_recursive(node: Node, filter: int) -> void:
 func update_info(entity: GridEntity) -> void:
 	# 兼容 GridEntity 但預期是 TrapEntity
 	if not entity is TrapEntity:
-		print("[TrapInfoCard] Entity is NOT a TrapEntity: ", entity.name if entity else "null")
+		var name_str = str(entity.name) if entity else "null"
+		print("[TrapInfoCard] Entity is NOT a TrapEntity: " + name_str)
 		visible = false
 		return
 		

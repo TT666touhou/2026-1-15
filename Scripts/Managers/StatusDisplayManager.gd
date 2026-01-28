@@ -84,6 +84,7 @@ func _update_position_to_top_left() -> void:
 	position = adjusted_pos + offset_padding
 
 func _on_status_applied(def: StatusDefinition, duration: int) -> void:
+	print("[StatusDisplayManager] Received status_applied: ", def.id, " duration: ", duration)
 	if _icon_instances.has(def.id):
 		var icon = _icon_instances[def.id]
 		if icon.has_method("update_turns"):

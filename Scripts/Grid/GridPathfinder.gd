@@ -12,6 +12,7 @@ func _ready() -> void:
 	_initialize()
 
 func _initialize() -> void:
+	add_to_group("grid_pathfinder")
 	grid = get_tree().get_first_node_in_group("grid")
 	if grid == null:
 		push_error("[GridPathfinder] Grid not found")

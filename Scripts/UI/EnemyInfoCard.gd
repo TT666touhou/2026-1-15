@@ -162,14 +162,6 @@ func _update_barriers(count: int) -> void:
 		barrier_container.add_child(triangle)
 
 func _update_skills_info() -> void:
-	if not skills_container or not current_entity: return
-	
-	var attack_comp = current_entity.get_node_or_null("EnemyAttackComponent")
-	if attack_comp and attack_comp.enabled and attack_comp.skill_resource:
-		skills_container.visible = true
-		var skill = attack_comp.skill_resource
-		var skill_name = skill.skill_name
-		var skill_desc = skill.get_dynamic_description()
-		skill_label.text = "[color=yellow]%s:[/color] %s" % [skill_name, skill_desc]
-	else:
+	# 已移除敵人AI，不再顯示敵人技能信息
+	if skills_container:
 		skills_container.visible = false

@@ -1,44 +1,28 @@
-[gd_resource type="Resource" script_class="SkillCard" load_steps=6 format=3]
-[ext_resource type="Resource" path="res://Resources/Skills/CustomSkills/Effect_Penetration_100.tres" id="1_effect"]
-[ext_resource type="Script" path="res://Scripts/SkillSystem/TargetingDefinition.gd" id="2_target"]
-[ext_resource type="Script" path="res://Scripts/SkillSystem/SkillCard.gd" id="3_skill_card"]
+[gd_resource type="Resource" script_class="SkillCard" load_steps=7 format=3 uid="uid://c77nt2my73hbh"]
 
-[sub_resource type="Resource" id="Resource_selection"]
-script = ExtResource("2_target")
-scope_type = 0
-aoe_radius = 0
-origin_is_self = true
-target_filter = 1
-can_target_empty = false
-pattern_7x7 = Array[bool]([])
+[ext_resource type="Resource" path="res://Resources/Skills/CustomSkills/Effect_Penetration_100.tres" id="1_effect"]
+[ext_resource type="Script" uid="uid://u70paxa457ic" path="res://Scripts/SkillSystem/EffectDefinition.gd" id="1_xb44d"]
+[ext_resource type="Script" uid="uid://lth0uqqdu3fq" path="res://Scripts/SkillSystem/TargetingDefinition.gd" id="2_target"]
+[ext_resource type="Script" uid="uid://b1slvqs16tldm" path="res://Scripts/SkillSystem/SkillCard.gd" id="3_skill_card"]
 
 [sub_resource type="Resource" id="Resource_effect_range"]
 script = ExtResource("2_target")
 scope_type = 9
 aoe_radius = 10
 origin_is_self = true
-target_filter = 1
-can_target_empty = false
-pattern_7x7 = Array[bool]([])
+
+[sub_resource type="Resource" id="Resource_selection"]
+script = ExtResource("2_target")
+origin_is_self = true
 
 [resource]
 script = ExtResource("3_skill_card")
-soul_cost = 1
-exclusive_unit_id = ""
 card_id = "x_penetration"
-manual_description_en = "Deals {scaling} piercing damage to enemies in an X-shaped area."
 skill_name = "貫穿震擊"
+manual_description_en = "Deals {scaling} piercing damage to enemies in an X-shaped area."
 description = "【移動後觸發】對 X 型無限距離（10格）內的敵人造成 100% 攻擊力穿透傷害"
 execution_mode = 1
-targeting_type = 0
 cooldown_turns = 3
-scaling_configs = Array[Dictionary]([{
-"stat": "attack",
-"weight": 1.0
-}])
-scaling_multiplier = 1.0
 targeting = SubResource("Resource_selection")
-effects = Array[Resource]([ExtResource("1_effect")])
-is_move_skill = false
+effects = Array[ExtResource("1_xb44d")]([ExtResource("1_effect")])
 post_move_targeting = SubResource("Resource_effect_range")
-post_move_effects = Array[Resource]([])

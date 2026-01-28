@@ -5,10 +5,12 @@ class_name Grid
 ## 管理網格地圖大小、座標轉換、佔用狀態
 
 signal cell_occupied_changed(cell: Vector2i, is_occupied: bool)
+signal size_changed()
 
 @export var cell_size: Vector2i = Vector2i(16, 16)
-@export var map_width: int = 7
-@export var map_height: int = 7
+@export var map_width: int = 12
+@export var map_height: int = 8
+@export var origin_offset: Vector2 = Vector2.ZERO
 
 # 佔用狀態：{Vector2i: Node} - 格子座標 -> 實體
 var _occupied_cells: Dictionary = {}
@@ -21,6 +23,8 @@ var _extra_valid_cells: Dictionary = {}
 
 func _ready() -> void:
 	add_to_group("grid")
+	# 觸發初始大小更新以確保相關 UI (如 EdgeFog) 能正確初始化
+	size_changed.emit()
 
 # ============================================================================
 # 額外格子管理
@@ -50,11 +54,12 @@ func is_extra_cell(cell: Vector2i) -> bool:
 
 func world_to_grid(world_pos: Vector2) -> Vector2i:
 	"""世界座標轉網格座標"""
-	return Vector2i(floori(world_pos.x / float(cell_size.x)), floori(world_pos.y / float(cell_size.y)))
+	var local = world_pos - origin_offset
+	return Vector2i(floori(local.x / float(cell_size.x)), floori(local.y / float(cell_size.y)))
 
 func grid_to_world(cell: Vector2i) -> Vector2:
 	"""網格座標轉世界座標（左上角）"""
-	return Vector2(cell.x * cell_size.x, cell.y * cell_size.y)
+	return origin_offset + Vector2(cell.x * cell_size.x, cell.y * cell_size.y)
 
 func grid_to_world_center(cell: Vector2i) -> Vector2:
 	"""網格座標轉世界座標（中心）"""
@@ -103,7 +108,14 @@ func clear_cell(cell: Vector2i) -> void:
 
 func get_occupant(cell: Vector2i) -> Node:
 	"""獲取佔用格子的實體"""
-	return _occupied_cells.get(cell, null)
+	var occupant = _occupied_cells.get(cell, null)
+	if is_instance_valid(occupant):
+		return occupant
+	else:
+		# 如果實體已失效，從字典中移除並返回 null
+		if _occupied_cells.has(cell):
+			_occupied_cells.erase(cell)
+		return null
 
 func set_trap_occupied(cell: Vector2i, trap: Node) -> void:
 	"""設置陷阱佔用"""
@@ -116,7 +128,13 @@ func clear_trap(cell: Vector2i) -> void:
 
 func get_trap(cell: Vector2i) -> Node:
 	"""獲取該格子的陷阱"""
-	return _traps.get(cell, null)
+	var trap = _traps.get(cell, null)
+	if is_instance_valid(trap):
+		return trap
+	else:
+		if _traps.has(cell):
+			_traps.erase(cell)
+		return null
 
 func get_cells_in_rect(cell: Vector2i, size: Vector2i) -> Array[Vector2i]:
 	"""取得矩形區域內的所有格子座標"""
@@ -136,13 +154,17 @@ func clear_cells_rect(cell: Vector2i, size: Vector2i) -> void:
 func grid_to_world_center_footprint(cell: Vector2i, footprint_data) -> Vector2:
 	"""計算不規則形狀的中心世界座標"""
 	if footprint_data == null:
-		return grid_to_world_center(cell)
+		var result_null = grid_to_world_center(cell)
+		print("[Grid] grid_to_world_center_footprint (null footprint) | cell: ", cell, " -> world: ", result_null)
+		return result_null
 	
 	var bounds = footprint_data.get_bounds()
 	# 計算邊界框的中心
 	var top_left = grid_to_world(cell + Vector2i(bounds.position.x, bounds.position.y))
 	var bottom_right = grid_to_world(cell + Vector2i(bounds.position.x + bounds.size.x, bounds.position.y + bounds.size.y))
-	return (top_left + bottom_right) * 0.5
+	var result = (top_left + bottom_right) * 0.5
+	print("[Grid] grid_to_world_center_footprint | cell: ", cell, " | bounds: ", bounds, " | top_left: ", top_left, " | bottom_right: ", bottom_right, " | center: ", result, " | cell_size: ", cell_size)
+	return result
 
 func clear_cells_footprint(cell: Vector2i, footprint_data) -> void:
 	"""清除不規則形狀佔用的所有格子"""
@@ -175,4 +197,3 @@ func is_footprint_occupied(cell: Vector2i, footprint_data) -> bool:
 		if is_cell_occupied(check_cell):
 			return true
 	return false
-

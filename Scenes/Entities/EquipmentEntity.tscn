@@ -4,13 +4,24 @@
 [ext_resource type="Texture2D" path="res://Tilesheet/colored-transparent_packed.png" id="2_o3i4b"]
 [ext_resource type="Script" path="res://Scripts/Items/EquipmentDragProxy.gd" id="3_proxy"]
 [ext_resource type="Script" path="res://Scripts/Entities/UnitVisuals.gd" id="4_visuals"]
+[ext_resource type="PhysicsMaterial" path="res://Resources/Physics/NoFrictionBounce.tres" id="30_nofriction"]
 
 [sub_resource type="AtlasTexture" id="AtlasTexture_ring"]
 atlas = ExtResource("2_o3i4b")
 region = Rect2(480, 288, 16, 16)
 
-[node name="EquipmentEntity" type="CharacterBody2D"]
+[node name="EquipmentEntity" type="RigidBody2D"]
 script = ExtResource("1_script")
+collision_layer = 1
+collision_mask = 3
+physics_material_override = ExtResource("30_nofriction")
+linear_damp_mode = 1
+linear_damp = 0.0
+angular_damp_mode = 1
+angular_damp = 0.0
+gravity_scale = 0.0
+can_sleep = false
+freeze = true
 
 [node name="Sprite2D" type="Sprite2D" parent="."]
 texture_filter = 1

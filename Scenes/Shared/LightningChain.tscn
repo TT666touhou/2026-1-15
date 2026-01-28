@@ -1,0 +1,20 @@
+[gd_scene load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://Scripts/Entities/LightningChain.gd" id="1_script"]
+
+[node name="LightningChain" type="Node2D"]
+script = ExtResource("1_script")
+
+[node name="Line2D" type="Line2D" parent="."]
+points = PackedVector2Array(0, 0, 100, 0)
+width = 0.8
+default_color = Color(0.439216, 0.721569, 1, 1)
+joint_mode = 2
+begin_cap_mode = 2
+end_cap_mode = 2
+
+[node name="RayCast2D" type="RayCast2D" parent="."]
+target_position = Vector2(100, 0)
+
+[node name="Timer" type="Timer" parent="."]
+one_shot = true

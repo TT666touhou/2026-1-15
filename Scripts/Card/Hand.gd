@@ -42,8 +42,6 @@ var is_interactable: bool = true # 是否可交互
 # Hand border reference (created at runtime)
 var _hand_border: Node = null
 
-# Cached reference
-var _skill_preview_controller: Node = null
 
 func set_interactable(value: bool) -> void:
 	# if enable_debug_log:
@@ -90,15 +88,6 @@ func _ready() -> void:
 	z_index = 500
 	visible = true
 	
-	# Connect to SkillManager signals for auto-lock
-	var sm = get_node_or_null("/root/SkillManager")
-	if sm:
-		if not sm.skill_cast_started.is_connected(_on_skill_cast_started):
-			sm.skill_cast_started.connect(_on_skill_cast_started)
-		if not sm.skill_cast_completed.is_connected(_on_skill_cast_completed):
-			sm.skill_cast_completed.connect(_on_skill_cast_completed)
-		if not sm.skill_cast_failed.is_connected(_on_skill_cast_failed):
-			sm.skill_cast_failed.connect(_on_skill_cast_failed)
 	
 	# 向 DeckManager 註冊自己 (確保 Autoload 知道要往哪發牌)
 	if DeckManager:
@@ -284,9 +273,6 @@ func on_drag_move(mouse_global_pos: Vector2) -> void:
 			if reflow_on_drag_preview:
 				_arrange()
 	
-	# Update Skill Preview if dragging a skill card
-	if dragging_card:
-		_update_skill_preview(dragging_card, mouse_global_pos)
 
 func end_drag() -> void:
 	if dragging_card == null:
@@ -343,15 +329,14 @@ func end_drag() -> void:
 			# Outside hand area: TRY TO PLACE/PLAY
 			_handle_card_placement(dragging_card, mouse_pos)
 	
-	_clear_skill_preview()
 	dragging_card = null
 	drag_from_idx = -1
 	preview_insert_idx = -1
 	_arrange()
 
-## Helper to handle async placement to avoid coroutine issues in end_drag
+## Helper to handle card placement
 func _handle_card_placement(card, pos: Vector2) -> void:
-	var played = await request_place(card, pos)
+	var played = request_place(card, pos)
 	if not played and is_instance_valid(card):
 		card.return_to_hand(true)
 	_arrange()
@@ -397,7 +382,6 @@ func request_dispose(card, mouse_global_pos: Vector2) -> bool:
 		var rect = zone.get_global_rect()
 		if rect.has_point(mouse_global_pos):
 			if zone.has_method("dispose_card"):
-				_clear_skill_preview()
 				detach_card(card)
 				zone.dispose_card(card)
 				return true
@@ -431,37 +415,6 @@ func request_place(card, drop_global_pos: Vector2) -> bool:
 		mouse_world_pos = drop_global_pos
 	
 	var cell = grid.world_to_grid(mouse_world_pos)
-	
-	# Skill Card logic
-	var is_skill := false
-	if card_data is RuntimeCardData and card_data.is_skill_card():
-		is_skill = true
-	elif card_data is SkillCard:
-		is_skill = true
-		
-	if is_skill:
-		var skill_card = card_data.get_skill_card() if card_data is RuntimeCardData else card_data as SkillCard
-		if skill_card == null: return false
-		
-		var skill_manager = get_node_or_null("/root/SkillManager")
-		if not skill_manager: return false
-		
-		if AttackManager:
-			AttackManager.reset_action_hit_flag()
-			
-		var success = await skill_manager.cast_skill(skill_card, cell, null)
-		if success:
-			if AttackManager and not AttackManager.has_hit_this_action:
-				AttackManager.reset_global_combo()
-				
-			if DeckManager and card_data is RuntimeCardData:
-				DeckManager.on_card_played(card_data)
-				detach_card(card)
-				card.queue_free()
-			else:
-				remove_card(card)
-			return true
-		return false
 	
 	# Unit/Building Card logic
 	var is_building := (card_data is BuildingCard)
@@ -631,7 +584,6 @@ func cancel_reorder_preview() -> void:
 	_arrange()
 
 func cancel_drag() -> void:
-	_clear_skill_preview()
 	dragging_card = null
 	drag_from_idx = -1
 	preview_insert_idx = -1
@@ -644,19 +596,7 @@ func hide_hand_border() -> void:
 	if _hand_border and _hand_border.has_method("hide_border"):
 		_hand_border.hide_border()
 
-func _on_skill_cast_started(card, _source) -> void:
-	var skill_card = card
-	if card.has_method("get_skill_card"):
-		skill_card = card.get_skill_card()
-	
-	if skill_card.get("is_move_skill") == true:
-		set_interactable(false)
 
-func _on_skill_cast_completed(_card) -> void:
-	set_interactable(true)
-
-func _on_skill_cast_failed(_reason) -> void:
-	set_interactable(true)
 
 func is_point_in_hand_area(global_pos: Vector2) -> bool:
 	var viewport_rect := get_viewport().get_visible_rect()
@@ -692,36 +632,3 @@ func _can_afford_cost(ledger: Node, cost_dict: Dictionary, _context: String) -> 
 func _spend_cost(ledger: Node, cost_dict: Dictionary) -> void:
 	if ledger == null or cost_dict.is_empty(): return
 	ledger.call("spend_resource", cost_dict.duplicate(true))
-
-func _update_skill_preview(card: Node, _mouse_pos: Vector2) -> void:
-	if not is_instance_valid(card): return
-	var card_data = card.get("card_data")
-	if not card_data: return
-
-	var skill_card = null
-	if card_data is RuntimeCardData and card_data.is_skill_card():
-		skill_card = card_data.get_skill_card()
-	elif card_data is SkillCard:
-		skill_card = card_data
-	
-	if not skill_card: return
-
-	var scene = get_tree().current_scene
-	if not scene: return
-	var grid = get_tree().get_first_node_in_group("grid")
-	if not grid or not grid.has_method("world_to_grid"): return
-	
-	if not _skill_preview_controller:
-		_skill_preview_controller = scene.find_child("SkillPreviewController", true, false)
-		
-	if _skill_preview_controller and _skill_preview_controller.has_method("update_preview"):
-		# 不再需要計算 cell，預覽控制器會根據技能類型自動定位
-		_skill_preview_controller.update_preview(null, skill_card, Vector2i.ZERO)
-
-func _clear_skill_preview() -> void:
-	if not _skill_preview_controller:
-		var scene = get_tree().current_scene
-		if scene: _skill_preview_controller = scene.find_child("SkillPreviewController", true, false)
-			
-	if _skill_preview_controller and _skill_preview_controller.has_method("clear_preview"):
-		_skill_preview_controller.clear_preview()

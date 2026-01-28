@@ -1,437 +1,48 @@
-extends CharacterBody2D
+extends RigidBody2D
 class_name GridEntity
 
-# 預載入 FootprintData 以確保類型可被找到
-const FootprintDataScript = preload("res://Footprints/FootprintData.gd")
-const TraitServiceScript = preload("res://Scripts/Managers/TraitService.gd")
+## GridEntity
+## 網格實體基類，管理物理、網格定位、戰鬥結算與視覺表現
 
-## 網格實體基類
-## 所有可放置在網格上的實體的基類
-
-var grid: Node  # Grid 類型（使用 Node 避免循環依賴）
-var grid_position: Vector2i = Vector2i.ZERO  # 左上角位置
-@export var footprint_data: Resource  # 實體大小（佔用的格子），類型為 FootprintData
-@export var faction: FactionDefinition # 陣營定義
+# --- 基礎屬性 ---
+var grid: Node
+var grid_position: Vector2i = Vector2i.ZERO
+@export var footprint_data: Resource
+@export var faction: FactionDefinition
+@export var is_player: bool = false
+@export var enable_debug_log: bool = true
 var is_selected: bool = false
 var character_data: CharacterData
-var movement_range_data: MovementRangeData # 運行時移動數據實例
-var move_limit: int = -1 # 移動距離限制 (-1 為無限制)
-var attack_range_depth: int = 1 # 攻擊範圍深度
-var is_boss: bool = false # 是否為 BOSS (死亡後通關)
+var movement_range_data: MovementRangeData
+var move_limit: int = -1
+var is_boss: bool = false
 
-# 箭頭與指示器相關
-var arrow_texture = preload("res://Tilesheet/1bit_assetpack/selfmade/ARROW.png")
+# --- 物理參數 ---
+@export var friction: float = 0.0
+@export var linear_damp_value: float = 1.0
+@export var angular_damp_value: float = 0.0
+var last_position: Vector2 = Vector2.ZERO
+var _last_trap_cell: Vector2i = Vector2i(-1, -1)
+var _init_frames: int = 5
+var _collision_cooldowns: Dictionary = {}
 
-# Shader 相關：控制受傷裂痕與閃爍
+# --- Shader 與 視覺 ---
 var combined_shader = preload("res://Shaders/UnitCombined.gdshader")
 var _combined_material: ShaderMaterial
 
-signal movement_data_changed # 通知 UI 更新移動範圍
-signal entry_animation_finished # 進場動畫結束
+# --- 信號 ---
+@warning_ignore("unused_signal")
+signal movement_data_changed
+@warning_ignore("unused_signal")
+signal entry_animation_finished
 
-func _ready() -> void:
-	# Debug Camera: Add a camera if running this scene standalone
-	if get_tree().current_scene == self:
-		var cam = Camera2D.new()
-		cam.zoom = Vector2(4, 4)
-		add_child(cam)
-		print("[GridEntity] Debug Camera Added for standalone scene execution")
+# ============================================================================
+# 公開配置 API
+# ============================================================================
 
-	# 預設 Z Index (單位/敵人較高，陷阱/裝飾較低)
-	z_index = 5
-	
-	# 註冊到 BoardManager
-	if BoardManager:
-		BoardManager.register_entity(self)
-	
-	# 加入群組以便 TurnManager 檢索
-	add_to_group("grid_entities")
-
-	grid = get_tree().get_first_node_in_group("grid")
-	if grid == null or not grid.has_method("world_to_grid"):
-		push_warning("[GridEntity] Grid not found")
-		return
-	
-	# 如果沒有 footprint_data，報錯（所有實體都必須有）
-	if footprint_data == null:
-		push_error("[GridEntity] FootprintData is null for " + name + " (" + get_path().get_concatenated_names() + ")! Entity must have footprint_data assigned in Inspector or by CardProvider.")
-		return
-	
-	if BoardManager:
-		if not BoardManager.is_inside_tree():
-			push_warning("[GridEntity] BoardManager is not in tree")
-	# 否則從 global_position 計算 grid_position
-	if grid_position == Vector2i(-1, -1) or grid_position == Vector2i.ZERO:
-		var bounds = footprint_data.get_bounds()
-		if bounds.size.x > 1 or bounds.size.y > 1:
-			# 多格實體：從中心位置計算左上角
-			var center_cell = grid.world_to_grid(global_position)
-			grid_position = center_cell - Vector2i(bounds.position.x + bounds.size.x / 2, bounds.position.y + bounds.size.y / 2)
-		else:
-			# 單格實體：直接使用
-			grid_position = grid.world_to_grid(global_position)
-	
-	# 註冊所有佔用的格子 (移至 set_grid_position 或由 MapLoader 觸發，避免預設 (0,0) 幽靈佔用)
-	# _register_cells()
-	_update_ui_positions()
-
-	# 單位移動與攻擊方向指示器 (自動為敵人添加)
-	if faction and not faction.is_controllable:
-		var arrow_node = get_node_or_null("UnitMovementArrows")
-		if not arrow_node:
-			var arrow_scene = load("res://Scenes/UI/UnitMovementArrows.tscn")
-			if arrow_scene:
-				arrow_node = arrow_scene.instantiate()
-				arrow_node.name = "UnitMovementArrows"
-				add_child(arrow_node)
-		
-		call_deferred("update_attack_indicators", 0.0)
-	elif faction and faction.is_controllable:
-		# 玩家單位加入群組
-		add_to_group("player")
-
-func update_attack_indicators(progress: float = 0.0, direction: Vector2i = Vector2i.ZERO) -> void:
-	"""更新攻擊指示器進度 (進場動畫中、或攻擊預警中)"""
-	var arrow_node = get_node_or_null("UnitMovementArrows")
-	if arrow_node and arrow_node.has_method("set_attack_progress"):
-		arrow_node.set_attack_progress(progress, direction)
-	elif arrow_node:
-		# 如果還沒更新過進度，則根據移動規則顯示箭頭
-		if arrow_node.has_method("update_display"):
-			arrow_node.update_display()
-
-func _update_ui_positions() -> void:
-	pass
-
-func get_attack_results(at_cell: Vector2i) -> Dictionary:
-	"""
-	獲取指定位置的攻擊結果 (Hitbox Logic)
-	返回: { TargetEntity: { "hits": int, "directions": Array[Vector2i] } }
-	"""
-	var results = {}
-	if grid == null:
-		# 嘗試獲取 grid (針對預覽模式)
-		grid = get_tree().get_first_node_in_group("grid")
-		
-	if grid == null:
-		return results
-		
-	# 如果沒有 movement_range_data，無法判斷攻擊方向
-	if movement_range_data == null:
-		return results
-		
-	var directions = [
-		Vector2i(0, -1), Vector2i(0, 1), Vector2i(-1, 0), Vector2i(1, 0),
-		Vector2i(-1, -1), Vector2i(1, -1), Vector2i(-1, 1), Vector2i(1, 1)
-	]
-	
-	for dir in directions:
-		# 檢查該方向是否有箭頭 (非 BLOCKED)
-		if movement_range_data.get_movement_type(dir) == MovementRangeData.MovementType.BLOCKED:
-			continue
-			
-		# 1. 獲取該方向的 Hitbox 格子集合
-		var hitbox_cells = _get_hitbox_cells(dir, at_cell)
-		
-		# 用於記錄此 Hitbox 中已經判定過的實體 (避免同一實體佔多格被重複計算)
-		var hit_entities_in_this_box = {}
-		
-		# 2. 檢查 Hitbox 內的每個格子
-		for cell in hitbox_cells:
-			# 邊界檢查
-			if not grid.has_method("is_in_bounds") or not grid.is_in_bounds(cell):
-				continue
-				
-			var occupant = grid.get_occupant(cell) as GridEntity
-			
-			if occupant and occupant != self:
-				# 陣營檢查 (Faction 資源不同即為敵對)
-				if faction and occupant.faction and faction != occupant.faction:
-					
-					# 每個 Hitbox 內，每個實體只算一次
-					if hit_entities_in_this_box.has(occupant):
-						continue
-					
-					hit_entities_in_this_box[occupant] = true
-					
-					# 初始化結果結構
-					if not results.has(occupant):
-						results[occupant] = { "hits": 0, "directions": [] }
-					
-					# 累加 Hits 並記錄方向
-					results[occupant]["hits"] += 1
-					if not results[occupant]["directions"].has(dir):
-						results[occupant]["directions"].append(dir)
-				
-	return results
-
-func _get_hitbox_cells(direction: Vector2i, at_grid_pos: Vector2i) -> Array[Vector2i]:
-	"""
-	根據方向和攻擊深度計算 Hitbox 格子
-	"""
-	var cells: Array[Vector2i] = []
-	if footprint_data == null:
-		return cells
-		
-	# 判斷是否為斜向 (x和y都不為0)
-	var is_diagonal = direction.x != 0 and direction.y != 0
-	var depth = attack_range_depth
-	
-	if is_diagonal:
-		# --- 斜向 (Diagonal) ---
-		# 1. 找到對應的角落 (Corner)
-		var bounds = footprint_data.get_bounds() # relative to (0,0)
-		var corner_offset = Vector2i.ZERO
-		
-		# 根據方向決定使用哪個角落
-		if direction.x < 0: # West
-			corner_offset.x = bounds.position.x
-		else: # East
-			corner_offset.x = bounds.end.x - 1
-			
-		if direction.y < 0: # North
-			corner_offset.y = bounds.position.y
-		else: # South
-			corner_offset.y = bounds.end.y - 1
-			
-		var corner_pos = at_grid_pos + corner_offset
-		
-		# 2. 從角落向外延伸 N x N
-		for x in range(1, depth + 1):
-			for y in range(1, depth + 1):
-				var offset = Vector2i(x * direction.x, y * direction.y)
-				cells.append(corner_pos + offset)
-				
-	else:
-		# --- 直線 (Orthogonal) ---
-		# 1. 找到對應的邊緣 (Edge)
-		var bounds = footprint_data.get_bounds()
-		var edge_cells_relative: Array[Vector2i] = []
-		
-		if direction.y == -1: # North
-			for x in range(bounds.position.x, bounds.end.x):
-				edge_cells_relative.append(Vector2i(x, bounds.position.y))
-		elif direction.y == 1: # South
-			for x in range(bounds.position.x, bounds.end.x):
-				edge_cells_relative.append(Vector2i(x, bounds.end.y - 1))
-		elif direction.x == -1: # West
-			for y in range(bounds.position.y, bounds.end.y):
-				edge_cells_relative.append(Vector2i(bounds.position.x, y))
-		elif direction.x == 1: # East
-			for y in range(bounds.position.y, bounds.end.y):
-				edge_cells_relative.append(Vector2i(bounds.end.x - 1, y))
-				
-		# 2. 從邊緣向外延伸 N 層
-		for rel_pos in edge_cells_relative:
-			var start_pos = at_grid_pos + rel_pos
-			for d in range(1, depth + 1):
-				cells.append(start_pos + (direction * d))
-				
-	return cells
-
-func execute_attack() -> void:
-	"""[已棄用] 由 TurnManager 的序列化攻擊取代"""
-	pass
-
-func play_attack_animation_towards(direction: Vector2i) -> void:
-	"""播放攻擊動畫 (不造成傷害)"""
-	var visuals = get_node_or_null("UnitVisuals")
-	if visuals and visuals.has_method("play_attack_animation"):
-		visuals.play_attack_animation(direction)
-
-func apply_damage(amount: int, ignore_barrier: bool = false, ignore_shield: bool = false, attacker: GridEntity = null, is_pursuit: bool = false) -> int:
-	"""直接造成傷害 (不處理動畫，動畫由 take_damage 觸發)"""
-	var attacker_data = attacker.character_data if attacker != null else null
-	var actual_damage = take_damage(amount, ignore_barrier, ignore_shield, attacker_data, is_pursuit)
-	
-	# 核心修正：如果攻擊者是玩家單位，增加全局連擊
-	if actual_damage > 0 and attacker and attacker.is_in_group("player"):
-		if AttackManager:
-			AttackManager.increase_global_combo(1)
-			
-	return actual_damage
-
-func show_damage_number(amount: int) -> void:
-	"""顯示受傷浮動文字"""
-	var scene = load("res://Scenes/UI/FloatingText.tscn")
-	if scene:
-		var text_instance = scene.instantiate() as FloatingText
-		# 核心修正：先設定位置，再加入場景，最後開啟 top_level
-		text_instance.global_position = global_position + Vector2(0, -16)
-		text_instance.top_level = true
-		get_tree().current_scene.add_child(text_instance)
-		
-		text_instance.popup_damage(amount)
-
-func show_pursuit_number(amount: int) -> void:
-	"""顯示追擊浮動文字"""
-	var scene = load("res://Scenes/UI/FloatingText.tscn")
-	if scene:
-		var instance = scene.instantiate() as FloatingText
-		instance.global_position = global_position + Vector2(0, -16)
-		instance.top_level = true
-		get_tree().current_scene.add_child(instance)
-		
-		if instance.has_method("popup_pursuit"):
-			instance.popup_pursuit(amount)
-		else:
-			instance.popup_damage(amount)
-
-func show_heal_number(amount: int) -> void:
-	"""顯示治療浮動文字"""
-	var scene = load("res://Scenes/UI/FloatingText.tscn")
-	if scene:
-		var instance = scene.instantiate() as FloatingText
-		instance.global_position = global_position + Vector2(0, -16)
-		instance.top_level = true
-		get_tree().current_scene.add_child(instance)
-		
-		# 傳入負值，FloatingText 會自動切換為治療樣式並加上 "+"
-		instance.popup_damage(-amount)
-
-func show_avoid_text() -> void:
-	"""顯示閃避浮動文字"""
-	var scene = load("res://Scenes/UI/FloatingText.tscn")
-	if scene:
-		var instance = scene.instantiate() as FloatingText
-		instance.global_position = global_position + Vector2(0, -16)
-		instance.top_level = true
-		get_tree().current_scene.add_child(instance)
-		
-		# 假設 FloatingText 有支援文字彈出
-		if instance.has_method("popup_text"):
-			instance.popup_text("AVOID", Color.PURPLE)
-		else:
-			# 回退：使用受傷樣式但傳入 0 (如果支援)
-			instance.popup_damage(0)
-
-func show_resisted_text() -> void:
-	"""顯示抵抗浮動文字"""
-	var scene = load("res://Scenes/UI/FloatingText.tscn")
-	if scene:
-		var instance = scene.instantiate() as FloatingText
-		instance.global_position = global_position + Vector2(0, -16)
-		instance.top_level = true
-		get_tree().current_scene.add_child(instance)
-		
-		if instance.has_method("popup_text"):
-			instance.popup_text("RESISTED", Color.BLUE_VIOLET)
-		else:
-			# 回退：使用受傷樣式但傳入 0 (如果支援)
-			instance.popup_damage(0)
-
-func show_parry_text() -> void:
-	"""顯示格擋浮動文字"""
-	var scene = load("res://Scenes/UI/FloatingText.tscn")
-	if scene:
-		var instance = scene.instantiate() as FloatingText
-		instance.global_position = global_position + Vector2(0, -16)
-		instance.top_level = true
-		get_tree().current_scene.add_child(instance)
-		
-		if instance.has_method("popup_parry"):
-			instance.popup_parry()
-		else:
-			instance.popup_text("PARRY", Color.PURPLE)
-
-func show_barrier_text() -> void:
-	"""顯示防護罩抵擋浮動文字"""
-	var scene = load("res://Scenes/UI/FloatingText.tscn")
-	if scene:
-		var instance = scene.instantiate() as FloatingText
-		instance.global_position = global_position + Vector2(0, -16)
-		instance.top_level = true
-		get_tree().current_scene.add_child(instance)
-		
-		if instance.has_method("popup_barrier"):
-			instance.popup_barrier()
-		else:
-			instance.popup_text("防護罩", Color.GOLD)
-
-var current_attack_text: FloatingText = null
-
-func show_attack_number(amount: int) -> void:
-	"""顯示攻擊預告浮動文字"""
-	# 清除舊的 (如果存在)
-	dismiss_attack_number()
-	
-	var scene = load("res://Scenes/UI/FloatingText.tscn")
-	if scene:
-		var text_instance = scene.instantiate() as FloatingText
-		text_instance.global_position = global_position + Vector2(0, -16)
-		text_instance.top_level = true
-		get_tree().current_scene.add_child(text_instance)
-		
-		text_instance.popup_attack(amount)
-		current_attack_text = text_instance
-
-func dismiss_attack_number() -> void:
-	"""隱藏攻擊預告文字"""
-	if is_instance_valid(current_attack_text):
-		current_attack_text.dismiss()
-	current_attack_text = null
-
-func set_movement_data(data: MovementRangeData) -> void:
-	"""設置移動數據（通常由 CardProvider 調用）"""
-	movement_range_data = data
-	movement_data_changed.emit()
-
-func modify_movement(direction: Vector2i, type: int) -> void:
-	"""動態修改移動規則（供 Buff/Debuff 使用）"""
-	if movement_range_data:
-		movement_range_data.set_movement_type(direction, type)
-		movement_data_changed.emit()
-
-func setup_character(data: CharacterData) -> void:
-	character_data = data
-	
-	# 套用受傷裂痕與閃爍 Shader
-	var sprite = get_node_or_null("Sprite2D")
-	if sprite:
-		_combined_material = ShaderMaterial.new()
-		_combined_material.shader = combined_shader
-		sprite.material = _combined_material
-		
-		# 初始化血量百分比
-		if character_data:
-			var hp_percent = float(character_data.current_health) / float(character_data.get_effective_max_health())
-			_combined_material.set_shader_parameter("health_percent", hp_percent)
-
-	if data.unit_def:
-		if "attack_depth" in data.unit_def:
-			attack_range_depth = data.unit_def.attack_depth
-			
-	if not character_data.health_changed.is_connected(_on_health_changed):
-		character_data.health_changed.connect(_on_health_changed)
-	if not character_data.died.is_connected(_on_died):
-		character_data.died.connect(_on_died)
-	if not character_data.reflect_triggered.is_connected(_on_reflect_triggered):
-		character_data.reflect_triggered.connect(_on_reflect_triggered)
-	if not character_data.parry_triggered.is_connected(_on_parry_triggered):
-		character_data.parry_triggered.connect(_on_parry_triggered)
-	if not character_data.barrier_triggered.is_connected(_on_barrier_triggered):
-		character_data.barrier_triggered.connect(_on_barrier_triggered)
-	
-	var status_mgr = get_node_or_null("StatusManager")
-	if status_mgr:
-		character_data.set_status_manager(status_mgr)
-		if not status_mgr.status_applied.is_connected(_on_status_changed):
-			status_mgr.status_applied.connect(_on_status_changed.unbind(2))
-		if not status_mgr.status_removed.is_connected(_on_status_changed):
-			status_mgr.status_removed.connect(_on_status_changed.unbind(1))
-		if not status_mgr.status_updated.is_connected(_on_status_changed):
-			status_mgr.status_updated.connect(_on_status_changed.unbind(2))
-			
-		if not data.saved_status_data.is_empty():
-			status_mgr.load_save_data(data.saved_status_data)
-	
-	# 確保在設置角色後更新 Shader 狀態
-	_on_health_changed(data.current_health, data.get_effective_max_health())
-
-func apply_overrides(overrides: Dictionary) -> void:
-	"""應用來自編輯器的數值覆蓋"""
-	if overrides.is_empty():
-		return
+func apply_overrides(overrides) -> void:
+	"""應用來自編輯器或模板的數值覆蓋"""
+	if not overrides is Dictionary or overrides.is_empty(): return
 		
 	if overrides.has("move_limit"):
 		move_limit = int(overrides["move_limit"])
@@ -449,395 +60,359 @@ func apply_overrides(overrides: Dictionary) -> void:
 	if character_data:
 		if overrides.has("max_health"):
 			character_data.max_health = int(overrides["max_health"])
-			character_data.current_health = character_data.max_health # 重置血量
+			character_data.current_health = character_data.max_health
 			
 		if overrides.has("attack_damage"):
 			character_data.attack_damage = int(overrides["attack_damage"])
 
-		# 新增：支援護盾與防護罩的覆蓋
 		if overrides.has("base_shield"):
 			character_data.shield = int(overrides["base_shield"])
-			print("[GridEntity] Override applied: shield = ", character_data.shield)
 		if overrides.has("base_barriers"):
 			character_data.barriers = int(overrides["base_barriers"])
-			print("[GridEntity] Override applied: barriers = ", character_data.barriers)
 		if overrides.has("base_dr"):
 			character_data.base_dr = float(overrides["base_dr"])
-			print("[GridEntity] Override applied: base_dr = ", character_data.base_dr)
 		
-		# Boss 標記
 		if overrides.has("is_boss"):
 			is_boss = bool(overrides["is_boss"])
-			print("[GridEntity] Override applied: is_boss = ", is_boss)
 		
 		character_data.recalculate_stats()
-		# 強制發送信號更新 UI
 		character_data.stats_changed.emit()
 
-func save_runtime_data() -> void:
-	"""保存執行時數據到 CharacterData (過場前調用)"""
-	if character_data and has_node("StatusManager"):
-		var sm = get_node("StatusManager")
-		if sm.has_method("get_save_data"):
-			character_data.saved_status_data = sm.get_save_data()
-			print("[GridEntity] Saved runtime status data for ", name)
-
-func prepare_for_entry() -> void:
-	"""準備進場（隱藏實體）"""
-	var visuals = get_node_or_null("UnitVisuals")
-	if visuals:
-		if visuals.sprite:
-			visuals.sprite.modulate.a = 0.0
-
-func play_entry_animation(delay: float = 0.0) -> void:
-	var visuals = get_node_or_null("UnitVisuals")
-	if not visuals: 
-		# 如果沒有視覺組件，確保 Sprite 直接顯示並發送信號
-		var sprite = get_node_or_null("Sprite2D")
-		if sprite:
-			sprite.modulate.a = 1.0
-		entry_animation_finished.emit.call_deferred()
-		return
+func initialize_runtime(data: CharacterData, faction_group: String, is_player_unit: bool) -> void:
+	"""運行時統一初始化介面"""
+	is_player = is_player_unit
+	faction = load("res://Resources/Factions/Faction_Player.tres" if faction_group == "player" else "res://Resources/Factions/Faction_Enemy.tres")
+	if data: setup_character(data)
 	
-	# 嘗試從多個來源獲取動畫類型 (UnitCard, PropCard, TrapCard)
-	var anim_type = 0 # 預設 DROP
-	var source_name = "DEFAULT_FALLBACK"
+	input_pickable = true
+	collision_layer = 1
+	collision_mask = (1 | 2 | 4) if faction_group == "player" else (1 | 2)
 	
-	if character_data and character_data.unit_def:
-		anim_type = character_data.unit_def.spawn_animation
-		source_name = "CharacterData.unit_def"
-	else:
-		# 如果沒有角色資料，嘗試從 CardProvider 獲取
-		var card_provider = get_node_or_null("CardProvider")
-		if card_provider:
-			var card = card_provider.get("card")
-			if card and "spawn_animation" in card:
-				anim_type = card.spawn_animation
-				source_name = "CardProvider.card"
-			else:
-				source_name = "CardProvider (NO_CARD_OR_NO_ANIM_FIELD)"
-		else:
-			source_name = "NO_CARD_PROVIDER"
-	
-	print("[GridEntity] play_entry_animation for ", name, " | anim_type: ", anim_type, " | Source: ", source_name)
-	
-	if delay > 0:
-		await get_tree().create_timer(delay).timeout
-		
-	if visuals.has_signal("spawn_animation_finished"):
-		if not visuals.spawn_animation_finished.is_connected(_on_entry_animation_finished):
-			visuals.spawn_animation_finished.connect(_on_entry_animation_finished, CONNECT_ONE_SHOT)
-		
-	if visuals.has_method("play_spawn_animation"):
-		visuals.play_spawn_animation(anim_type)
-	else:
-		entry_animation_finished.emit.call_deferred()
+	if not is_in_group(faction_group): add_to_group(faction_group)
+	if not is_in_group("grid_entities"): add_to_group("grid_entities")
 
-func _on_entry_animation_finished() -> void:
-	entry_animation_finished.emit()
-
-func _on_status_changed() -> void:
-	if character_data:
-		character_data.recalculate_stats()
-
-func set_editor_highlight(enabled: bool) -> void:
+func setup_character(data: CharacterData) -> void:
+	character_data = data
 	var sprite = get_node_or_null("Sprite2D")
-	if enabled:
-		# 選取時：變亮（Self Modulate 不會影響子節點）並提到最上層
-		if sprite:
-			sprite.self_modulate = Color(2.0, 2.0, 2.0, 1.0)
-		z_index = 100
-	else:
-		# 取消選取：恢復原狀
-		if sprite:
-			sprite.self_modulate = Color.WHITE
-		z_index = 5
-
-func take_damage(amount: int, ignore_barrier: bool = false, ignore_shield: bool = false, attacker: CharacterData = null, is_pursuit: bool = false) -> int:
-	var status_mgr = get_node_or_null("StatusManager")
-	var final_amount = float(amount)
+	if sprite:
+		_combined_material = ShaderMaterial.new()
+		_combined_material.shader = combined_shader
+		sprite.material = _combined_material
 	
-	if status_mgr and status_mgr.has_method("get_damage_received_multiplier"):
-		var multiplier = status_mgr.get_damage_received_multiplier()
-		final_amount *= multiplier
-	
-	var damage_int = int(final_amount)
+	_connect_data_signals()
+	_update_shader_health()
 
-	if character_data:
-		# 只有在「沒被格擋或防護罩抵擋」的情況下才執行後續視覺邏輯
-		var actual_damage = character_data.take_damage(damage_int, ignore_barrier, ignore_shield, attacker)
-		if actual_damage != -1:
-			_apply_damage_visuals(actual_damage, is_pursuit)
-		return actual_damage
-		
-	# 處理沒有 character_data 的對象 (如建築物)
-	_apply_damage_visuals(damage_int, is_pursuit)
-	
-	var building_stat = get_node_or_null("BuildingStat")
-	if building_stat:
-		if building_stat.has_method("take_damage"):
-			building_stat.take_damage(damage_int)
-	
-	return damage_int
+# ============================================================================
+# 生命週期與內部初始化
+# ============================================================================
 
-func _apply_damage_visuals(damage_int: int, is_pursuit: bool) -> void:
-	"""套用受傷相關的視覺與 UI 更新"""
-	if is_pursuit:
-		show_pursuit_number(damage_int)
-	else:
-		show_damage_number(damage_int)
-	
-	var visuals = get_node_or_null("UnitVisuals")
-	if visuals:
-		if visuals.has_method("play_damage_animation"):
-			visuals.play_damage_animation()
-			
-	if TraitServiceScript:
-		TraitServiceScript.apply_trigger(TraitEffect.TriggerType.ON_DAMAGED, {
-			"damaged_entity": self,
-			"amount": damage_int
-		})
-		return
-
-func heal(amount: int) -> void:
-	if character_data:
-		character_data.heal(amount)
-		show_heal_number(amount)
-
-func _on_health_changed(_current: int, _max_h: int) -> void:
-	# 更新 Shader 中的血量百分比
-	if _combined_material:
-		var hp_percent = float(_current) / float(_max_h)
-		_combined_material.set_shader_parameter("health_percent", hp_percent)
-
-func _on_died() -> void:
-	_handle_death()
-
-func _on_reflect_triggered(attacker_data: CharacterData, amount: int, reflector_data: CharacterData) -> void:
-	# 透過 attacker_data 的 status_manager_ref 找回攻擊者的 GridEntity 實體
-	if attacker_data and attacker_data.status_manager_ref:
-		var attacker_entity = attacker_data.status_manager_ref.get_parent() as GridEntity
-		if attacker_entity and attacker_entity.has_method("apply_damage"):
-			# 反射傷害無視防護罩與護盾 (ignore_barrier=true, ignore_shield=true)
-			# 傳入反射者資料 (reflector_data) 以套用其貫穿效果
-			attacker_entity.apply_damage(amount, true, true, reflector_data.status_manager_ref.get_parent() if reflector_data.status_manager_ref != null else null)
-
-func _on_parry_triggered() -> void:
-	show_parry_text()
-
-func _on_barrier_triggered() -> void:
-	show_barrier_text()
-
-var _is_combo_locked: bool = false
-var _death_pending: bool = false
-
-func start_combo_sequence() -> void:
-	_is_combo_locked = true
-	_death_pending = false
-
-func end_combo_sequence() -> void:
-	_is_combo_locked = false
-	if _death_pending:
-		_handle_death()
-
-func _handle_death() -> void:
-	if _is_combo_locked:
-		_death_pending = true
-		return
-
-	var scene = get_tree().current_scene
-	if scene:
-		var layer = scene.get_node_or_null("PathVisualizationLayer") as Node2D
-		if layer:
-			var node = layer.get_node_or_null("PathVisualization_%d" % get_instance_id())
-			if node:
-				node.queue_free()
-
-	var bt_player = get_node_or_null("BTPlayer")
-	if bt_player and bt_player.has_method("stop"):
-		bt_player.stop()
-
-	var search_area = get_node_or_null("SearchArea") as Area2D
-	var attack_area = get_node_or_null("AttackArea") as Area2D
-	if search_area: search_area.monitoring = false
-	if attack_area: attack_area.monitoring = false
-
-	await play_death_animation()
-
-	if TraitServiceScript:
-		TraitServiceScript.apply_trigger(TraitEffect.TriggerType.ON_KILL, {
-			"killed_entity": self
-		})
-	call_deferred("queue_free")
-
-func play_death_animation() -> void:
-	var visuals = get_node_or_null("UnitVisuals")
-	if not is_instance_valid(visuals) or not "sprite" in visuals or not is_instance_valid(visuals.sprite):
-		await get_tree().process_frame
-		return
-		
-	var tween = create_tween()
-	if not tween:
-		await get_tree().process_frame
-		return
-
-	tween.set_parallel(true)
-	var target = visuals.sprite
-	
-	var tweener1 = tween.tween_property(target, "scale", Vector2(1.2, 1.2), 0.1)
-	if tweener1:
-		tweener1.set_ease(Tween.EASE_OUT).set_trans(Tween.TRANS_QUAD)
-	
-	tween.chain().set_parallel(true)
-	var tweener2 = tween.tween_property(target, "scale", Vector2(0.0, 0.0), 0.3)
-	if tweener2:
-		tweener2.set_ease(Tween.EASE_IN).set_trans(Tween.TRANS_BACK)
-	
-	var tweener3 = tween.tween_property(target, "modulate:a", 0.0, 0.3)
-	if tweener3:
-		tweener3.set_ease(Tween.EASE_IN)
-	
-	await tween.finished
-
-func set_grid_position(cell: Vector2i) -> void:
-	if grid == null or footprint_data == null:
-		return
-	if not grid.has_method("clear_cell") or not grid.has_method("grid_to_world_center_footprint"):
-		return
-		
-	# 無論座標是否相同，只要調用此函式就確保先清除舊佔用 (特別是針對初次設定從 (0,0) 移走的情況)
-	_unregister_cells()
-	
-	grid_position = cell
-	
-	# 重新註冊新位置
+func _ready() -> void:
+	z_index = 5
+	_setup_groups()
+	_setup_physics_base()
+	_setup_grid_reference()
 	_register_cells()
 	
-	global_position = grid.grid_to_world_center_footprint(cell, footprint_data)
+	contact_monitor = true
+	max_contacts_reported = 4
+	if not body_entered.is_connected(_on_body_entered):
+		body_entered.connect(_on_body_entered)
 
-	var dm = get_node_or_null("/root/DungeonManager")
-	if dm and dm.has_method("check_gate_trigger"):
-		dm.check_gate_trigger(self, cell)
+func _setup_groups() -> void:
+	add_to_group("grid_entities")
+	if is_player or (faction and faction.is_controllable):
+		add_to_group("player")
+	else:
+		add_to_group("enemy")
 
-func get_grid_position() -> Vector2i:
-	return grid_position
+func _setup_physics_base() -> void:
+	linear_damp_mode = RigidBody2D.DAMP_MODE_REPLACE
+	linear_damp = linear_damp_value
+	angular_damp_mode = RigidBody2D.DAMP_MODE_REPLACE
+	angular_damp = angular_damp_value
+	lock_rotation = true
+	can_sleep = true
 
-func get_footprint_size() -> Vector2i:
-	if footprint_data != null:
-		return footprint_data.get_size()
-	return Vector2i(1, 1)
+func _setup_grid_reference() -> void:
+	grid = get_tree().get_first_node_in_group("grid")
+	if grid_position == Vector2i.ZERO and grid:
+		grid_position = grid.world_to_grid(global_position)
 
-func get_occupied_cells() -> Array[Vector2i]:
-	if footprint_data == null:
-		return [grid_position]
-	var result: Array[Vector2i] = []
-	for offset in footprint_data.occupied_cells:
-		result.append(grid_position + offset)
-	return result
+func _connect_data_signals() -> void:
+	if not character_data: return
+	character_data.health_changed.connect(_on_health_changed)
+	character_data.died.connect(_on_died)
+	character_data.reflect_triggered.connect(_on_reflect_triggered)
+	character_data.parry_triggered.connect(_on_parry_triggered)
+	character_data.barrier_triggered.connect(_on_barrier_triggered)
 
-func get_reachable_cells() -> Array[Vector2i]:
-	var reachable: Array[Vector2i] = []
-	var start = grid_position
-	if grid == null or movement_range_data == null:
-		return reachable
+# ============================================================================
+# 戰鬥結算與傷害
+# ============================================================================
+
+func apply_damage(amount: int, _ignore_barrier: bool = false, _ignore_shield: bool = false, attacker: GridEntity = null, is_pursuit: bool = false) -> int:
+	if not AttackManager: return 0
+	var report = AttackManager.resolve_combat(attacker, self, amount, false)
 	
-	var directions = [
-		Vector2i(0, -1), Vector2i(0, 1), Vector2i(-1, 0), Vector2i(1, 0),
-		Vector2i(-1, -1), Vector2i(1, -1), Vector2i(-1, 1), Vector2i(1, 1)
-	]
+	match report["result"]:
+		"avoid": show_avoid_text()
+		"barrier": show_barrier_text()
+		"parry": show_parry_text()
+		"hit":
+			var dmg = report["damage"]
+			if dmg > 0:
+				_apply_damage_visuals(dmg, is_pursuit)
+				if report["reflect_damage"] > 0 and attacker:
+					attacker.apply_damage(report["reflect_damage"], true, true, self)
+				if report["heal_amount"] > 0 and attacker:
+					attacker.heal(report["heal_amount"])
+				if report["pursuit_damage"] > 0:
+					apply_damage(report["pursuit_damage"], false, false, attacker, true)
+			return dmg
+	return 0
+
+func _apply_damage_visuals(dmg: int, is_pursuit: bool) -> void:
+	if is_pursuit: show_pursuit_number(dmg)
+	else: show_damage_number(dmg)
 	
-	for dir in directions:
-		if not movement_range_data.can_move_in_direction(dir, 1):
-			continue
-			
-		var max_dist = movement_range_data.get_max_distance(dir)
-		var dist = 0
-		var current = start
+	var visuals = get_node_or_null("UnitVisuals")
+	if visuals and visuals.has_method("play_damage_animation"):
+		visuals.play_damage_animation()
+
+# ============================================================================
+# 物理控制 API
+# ============================================================================
+
+func lock_physics() -> void:
+	linear_velocity = Vector2.ZERO
+	angular_velocity = 0.0
+	freeze = true
+	freeze_mode = RigidBody2D.FREEZE_MODE_STATIC
+	input_pickable = true
+	if character_data: character_data.is_moving_physics = false
+
+func unlock_physics() -> void:
+	freeze = false
+	freeze_mode = RigidBody2D.FREEZE_MODE_KINEMATIC
+	can_sleep = false
+	sleeping = false
+
+# ============================================================================
+# 碰撞與觸發邏輯
+# ============================================================================
+
+func _physics_process(_delta: float) -> void:
+	if not character_data: return
+	
+	if _init_frames > 0:
+		_init_frames -= 1
+		last_position = global_position
+		return
 		
-		while true:
-			var next_cell = current + dir
-			dist += 1
-			
-			var is_blocked = false
-			var cells_to_check = [next_cell]
-			if footprint_data != null and grid.has_method("get_cells_in_footprint"):
-				cells_to_check = grid.get_cells_in_footprint(next_cell, footprint_data)
-			
-			for check_cell in cells_to_check:
-				if not grid.is_in_bounds(check_cell):
-					is_blocked = true
-					break
-				if grid.is_cell_occupied(check_cell):
-					var occupant = grid.get_occupant(check_cell)
-					if occupant != self:
-						is_blocked = true
-						break
-			
-			if is_blocked:
-				break
-			if max_dist != -1 and dist > max_dist:
-				break
-			if move_limit != -1 and dist > move_limit:
-				break
-			
-			reachable.append(next_cell)
+	var current_velocity = linear_velocity.length()
+	if current_velocity > 5.0:
+		if not character_data.is_moving_physics:
+			character_data.is_moving_physics = true
+			last_position = global_position
+			# _set_visual_moving(true) # 已停用沙塵特效
+	elif current_velocity < 2.0 and character_data.is_moving_physics:
+		character_data.is_moving_physics = false
+		# _set_visual_moving(false) # 已停用沙塵特效
+
+	var distance_moved = global_position.distance_to(last_position)
+	if distance_moved > 0.1:
+		character_data.accumulated_distance += distance_moved
+		last_position = global_position
+		
+		if grid:
+			var current_cell = grid.world_to_grid(global_position)
+			if current_cell != grid_position:
+				grid_position = current_cell
 				
-			current = next_cell
-			if max_dist != -1 and dist >= max_dist:
-				break
+			if grid.has_method("get_trap") and current_cell != _last_trap_cell:
+				_last_trap_cell = current_cell
+				var trap = grid.get_trap(current_cell)
+				if trap and trap.has_method("on_stepped_on"):
+					trap.on_stepped_on(self)
 		
-	return reachable
+		_check_distance_skill_trigger()
 
-func get_leading_edge_cells(target_cell: Vector2i, from_cell: Vector2i) -> Array[Vector2i]:
-	if footprint_data == null or not grid:
-		return [target_cell]
-	var old_cells = grid.get_cells_in_footprint(from_cell, footprint_data)
-	var new_cells = grid.get_cells_in_footprint(target_cell, footprint_data)
-	var leading_edge: Array[Vector2i] = []
-	for cell in new_cells:
-		if not cell in old_cells:
-			leading_edge.append(cell)
-	if leading_edge.is_empty():
-		return new_cells
-	return leading_edge
+func _check_distance_skill_trigger() -> void:
+	var skill = character_data.runtime_skill
+	if skill and skill.trigger_distance > 0.0:
+		if character_data.accumulated_distance >= skill.trigger_distance:
+			character_data.accumulated_distance = 0.0
+			if SkillManager:
+				SkillManager.execute_skill(self, skill, grid_position)
+
+func _on_body_entered(body: Node) -> void:
+	if enable_debug_log:
+		print("[GridEntity] _on_body_entered with: ", body.name, " (Groups: ", body.get_groups(), ")")
+	
+	# 1. 環境碰撞
+	if body.is_in_group("wall") or (body is StaticBody2D and body.collision_layer & 2):
+		# 獲取碰撞法線
+		var state = PhysicsServer2D.body_get_direct_state(get_rid())
+		var normal = Vector2.ZERO
+		if state.get_contact_count() > 0:
+			normal = state.get_contact_local_normal(0)
+		
+		_handle_wall_collision(normal)
+		return
+
+	# 2. 單位碰撞
+	var target = body as GridEntity
+	if target:
+		if _is_hostile_to(target):
+			_handle_hostile_collision(target)
+		elif _is_friendly_to(target):
+			_handle_friendly_collision(target)
+
+func _is_hostile_to(other: GridEntity) -> bool:
+	return is_in_group("player") != other.is_in_group("player")
+
+func _is_friendly_to(other: GridEntity) -> bool:
+	return is_in_group("player") == other.is_in_group("player")
+
+func _handle_hostile_collision(target: GridEntity) -> void:
+	var tid = target.get_instance_id()
+	if _collision_cooldowns.get(tid, 0) > Time.get_ticks_msec() - 500: return
+	_collision_cooldowns[tid] = Time.get_ticks_msec()
+	
+	var is_resolving = TurnManager and TurnManager.current_state == TurnManager.State.RESOLVING
+	var is_free_roam = TurnManager and TurnManager.is_free_roam_mode
+	
+	if enable_debug_log:
+		print("[GridEntity] Collision: %s -> %s | State: %s | Res: %s | Free: %s" % [
+			name, target.name, 
+			TurnManager.get_phase_name() if TurnManager else "NoTM",
+			is_resolving, is_free_roam
+		])
+	
+	if TurnManager and (TurnManager.is_enemy_turn() or is_resolving or is_free_roam):
+		if is_in_group("enemy") and target.is_in_group("player"):
+			if enable_debug_log: print("[GridEntity] -> Enemy attacking Player")
+			var dmg = character_data.attack_damage if character_data else 10
+			target.apply_damage(dmg, false, false, self, false)
+	
+	if TurnManager and (TurnManager.is_player_turn() or is_resolving or is_free_roam):
+		if is_in_group("player") and target.is_in_group("enemy"):
+			if enable_debug_log: print("[GridEntity] -> Player attacking Enemy")
+			var dmg = character_data.attack_damage if character_data else 10
+			target.apply_damage(dmg, false, false, self, false)
+
+func _handle_wall_collision(normal: Vector2 = Vector2.ZERO) -> void:
+	# 播放牆體碰撞特效
+	var visuals = get_node_or_null("UnitVisuals")
+	if visuals and visuals.has_method("play_wall_collision_fx"):
+		visuals.play_wall_collision_fx(normal)
+	
+	if character_data and character_data.runtime_skill:
+		var s_name = character_data.runtime_skill.skill_name
+		if s_name.contains("迴旋飛斧"):
+			SkillManager.call_deferred("execute_skill", self, character_data.runtime_skill, grid_position)
+
+func _handle_friendly_collision(target: GridEntity) -> void:
+	# 法師 (Unit003) 撞擊隊友時觸發連鎖閃電
+	if name.contains("Unit003") or (character_data and character_data.unit_def and character_data.unit_def.resource_path.contains("Unit_003")):
+		if SkillManager and SkillManager.has_method("create_lightning_chain"):
+			var dmg = int((character_data.get_effective_attack() if character_data else 10) * 0.8)
+			SkillManager.create_lightning_chain(self, target, dmg)
+	
+	linear_velocity *= 1.03
+
+# ============================================================================
+# 視覺輔助與信號
+# ============================================================================
+
+func _on_health_changed(_c: int, _m: int) -> void: _update_shader_health()
+func _update_shader_health() -> void:
+	if _combined_material and character_data:
+		var hp_p = float(character_data.current_health) / float(character_data.get_effective_max_health())
+		_combined_material.set_shader_parameter("health_percent", hp_p)
+
+func _on_died() -> void: _handle_death()
+func _on_reflect_triggered(_a: CharacterData, _amt: int, _r: CharacterData) -> void: pass
+func _on_parry_triggered() -> void: show_parry_text()
+func _on_barrier_triggered() -> void: show_barrier_text()
+
+func _spawn_text(text: String, color: Color = Color.WHITE) -> void:
+	var scn = load("res://Scenes/UI/FloatingText.tscn")
+	if scn:
+		var inst = scn.instantiate()
+		inst.global_position = global_position + Vector2(0, -16)
+		inst.top_level = true
+		get_tree().current_scene.add_child(inst)
+		if inst.has_method("popup_text"): inst.popup_text(text, color)
+
+func show_damage_number(amt: int) -> void: _spawn_text(str(amt), Color.WHITE)
+func show_avoid_text() -> void: _spawn_text("AVOID", Color.WHITE)
+func show_parry_text() -> void: _spawn_text("PARRY", Color.WHITE)
+func show_barrier_text() -> void: _spawn_text("BARRIER", Color.WHITE)
+func show_pursuit_number(amt: int) -> void: _spawn_text(str(amt), Color.WHITE)
+
+# ============================================================================
+# 網格定位與生命週期
+# ============================================================================
 
 func on_selected() -> void:
+	"""選取時由 GridSelector 呼叫"""
 	is_selected = true
 
 func on_deselected() -> void:
+	"""取消選取時由 GridSelector 呼叫"""
 	is_selected = false
 
+func set_grid_position(cell: Vector2i) -> void:
+	if character_data and character_data.is_moving_physics:
+		grid_position = cell
+		return
+	_unregister_cells()
+	grid_position = cell
+	_register_cells()
+	if grid: global_position = grid.grid_to_world_center_footprint(cell, footprint_data)
+
 func _register_cells() -> void:
-	if grid == null or footprint_data == null:
-		return
-	if not grid.has_method("get_cells_in_footprint"):
-		return
-	var cells = grid.get_cells_in_footprint(grid_position, footprint_data)
-	for cell in cells:
-		if grid.has_method("set_cell_occupied"):
-			grid.set_cell_occupied(cell, self)
+	if grid and footprint_data:
+		for c in grid.get_cells_in_footprint(grid_position, footprint_data):
+			grid.set_cell_occupied(c, self)
 
 func _unregister_cells() -> void:
-	if grid == null or footprint_data == null:
-		return
-	if grid.has_method("clear_cells_footprint"):
+	if grid and footprint_data:
 		grid.clear_cells_footprint(grid_position, footprint_data)
-	elif grid.has_method("get_cells_in_footprint"):
-		var cells = grid.get_cells_in_footprint(grid_position, footprint_data)
-		for cell in cells:
-			if grid.has_method("clear_cell"):
-				grid.clear_cell(cell)
 
-func _exit_tree() -> void:
-	_unregister_cells()
-	if BoardManager:
-		BoardManager.unregister_entity(self)
+func _handle_death() -> void:
+	call_deferred("queue_free")
 
-func equip_item(item_data: Resource) -> bool:
-	if not character_data: return false
-	if not faction or not faction.is_controllable: return false
+func prepare_for_entry() -> void:
+	var sprite = get_node_or_null("Sprite2D")
+	if sprite: sprite.modulate.a = 0.0
+
+func _set_visual_moving(moving: bool) -> void:
+	if enable_debug_log:
+		print("[GridEntity] _set_visual_moving: ", moving, " for ", name)
+	var visuals = get_node_or_null("UnitVisuals")
+	if visuals and visuals.has_method("set_moving_fx"):
+		visuals.set_moving_fx(moving)
+	elif enable_debug_log:
+		print("[GridEntity] WARNING: UnitVisuals or set_moving_fx NOT FOUND for ", name)
+
+func play_entry_animation(delay: float = 0.0) -> void:
+	"""播放進場動畫，由 DungeonManager 或 TurnManager 呼叫"""
+	if delay > 0:
+		await get_tree().create_timer(delay).timeout
 	
-	character_data.equip(item_data)
-	# 通知 UI 更新
-	character_data.stats_changed.emit()
-	return true
+	var visuals = get_node_or_null("UnitVisuals")
+	if visuals and visuals.has_method("play_spawn_animation"):
+		# 使用 POP 動畫 (2)
+		visuals.play_spawn_animation(2)
+		if not visuals.spawn_animation_finished.is_connected(_on_entry_animation_finished):
+			visuals.spawn_animation_finished.connect(_on_entry_animation_finished, CONNECT_ONE_SHOT)
+	else:
+		# Fallback: 直接顯示
+		var sprite = get_node_or_null("Sprite2D")
+		if sprite: sprite.modulate.a = 1.0
+		_on_entry_animation_finished()
+
+func _on_entry_animation_finished() -> void:
+	entry_animation_finished.emit()

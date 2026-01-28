@@ -1,0 +1,42 @@
+[gd_resource type="Resource" script_class="UnitCard" load_steps=8 format=3]
+
+[ext_resource type="Script" path="res://Resources/Cards/UnitCard.gd" id="1"]
+[ext_resource type="PackedScene" path="res://Scenes/Entities/Enemy/Enemy003.tscn" id="2"]
+[ext_resource type="Resource" path="res://Footprints/Footprint_1x1.tres" id="3"]
+[ext_resource type="Resource" path="res://Resources/MovementRanges/MovementRange_OneStep.tres" id="4"]
+[ext_resource type="Resource" path="res://Resources/Factions/Faction_Enemy.tres" id="5"]
+[ext_resource type="Texture2D" path="res://Tilesheet/1bit_assetpack/1bit_assetpack/characters/slime.png" id="6_slime"]
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_icon"]
+atlas = ExtResource("6_slime")
+region = Rect2(0, 0, 16, 16)
+
+[resource]
+script = ExtResource("1")
+unit_scene = ExtResource("2")
+faction = ExtResource("5")
+icon = SubResource("AtlasTexture_icon")
+footprint_data = ExtResource("3")
+movement_range_data = ExtResource("4")
+max_health = 400.0
+attack_damage = 8
+attack_depth = 1
+card_id = "enemy_003"
+card_name = "Slime"
+description = "A basic slime monster."
+cost = {
+"soul": 0
+}
+display_name = "Slime"
+base_avoid = 0.05
+base_accuracy = 1.0
+base_shield = 0
+base_barriers = 0
+base_dr = 0.0
+base_resistance = 0.0
+base_reflect = 0.0
+base_pursuit = 0
+base_parry = 0.0
+base_drain = 0.0
+base_crit_dmg = 0.0
+base_penetration = 0.0

@@ -4,6 +4,7 @@ uniform vec4 fog_color : source_color = vec4(0.0, 0.0, 0.0, 1.0);
 uniform vec4 star_color : source_color = vec4(1.0, 1.0, 1.0, 1.0);
 uniform float speed : hint_range(0.0, 2.0) = 0.5;
 uniform float flame_intensity : hint_range(0.0, 1.0) = 0.03;
+uniform float edge_breakup : hint_range(0.0, 1.0) = 0.5; // 新增：邊緣破碎感強度
 uniform vec2 pixel_resolution = vec2(320.0, 176.0);
 
 // Star controls
@@ -38,10 +39,17 @@ void fragment() {
     // 1. Pixelation: Quantize UV coordinates
     vec2 uv = floor(UV * pixel_resolution) / pixel_resolution;
     
-    // 2. Dynamic Flame Noise
-    float n1 = smooth_noise(uv * 12.0 + vec2(TIME * speed * 0.3, TIME * speed));
-    float n2 = smooth_noise(uv * 18.0 - vec2(TIME * speed * 0.5, TIME * speed * 0.7));
-    float combined_noise = (n1 + n2) * 0.5;
+    // 2. Dynamic Flame Noise (改用更流動的火焰感邏輯)
+    // 使用不同頻率的雜訊疊加，並加入時間位移產生上升/流動感
+    float n1 = smooth_noise(uv * 8.0 + vec2(TIME * speed * 0.2, TIME * speed * 0.5));
+    float n2 = smooth_noise(uv * 15.0 - vec2(TIME * speed * 0.4, TIME * speed * 0.8));
+    float n3 = smooth_noise(uv * 25.0 + vec2(TIME * speed * 0.1, -TIME * speed * 0.3));
+    
+    // 混合雜訊，權重向低頻傾斜以獲得更大的區塊感
+    float combined_noise = n1 * 0.6 + n2 * 0.3 + n3 * 0.1;
+    
+    // 增加對比度，讓邊緣更像火焰的「舌頭」而非碎屑
+    combined_noise = pow(combined_noise, 1.5) * 1.2;
     
     // 3. Grid & UI Mask
     float is_in_grid_h = step(mask_left, uv.x) * (1.0 - step(mask_right, uv.x));

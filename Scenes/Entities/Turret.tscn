@@ -3,10 +3,21 @@
 [ext_resource type="Script" path="res://Scripts/Entities/TurretEntity.gd" id="1_script"]
 [ext_resource type="Texture2D" uid="uid://igs8giojsm55" path="res://Tilesheet/colored-transparent_packed.png" id="2_texture"]
 [ext_resource type="Resource" path="res://Footprints/Footprint_1x1.tres" id="3_footprint"]
+[ext_resource type="PhysicsMaterial" path="res://Resources/Physics/NoFrictionBounce.tres" id="30_nofriction"]
 
-[node name="Turret" type="CharacterBody2D"]
+[node name="Turret" type="RigidBody2D"]
 script = ExtResource("1_script")
 footprint_data = ExtResource("3_footprint")
+collision_layer = 1
+collision_mask = 3
+physics_material_override = ExtResource("30_nofriction")
+linear_damp_mode = 1
+linear_damp = 0.0
+angular_damp_mode = 1
+angular_damp = 0.0
+gravity_scale = 0.0
+can_sleep = false
+freeze = true
 
 [node name="Sprite2D" type="Sprite2D" parent="."]
 texture_filter = 1

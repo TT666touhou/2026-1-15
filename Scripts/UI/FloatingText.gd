@@ -68,8 +68,8 @@ func popup_text(text_content: String, color: Color = Color.WHITE) -> void:
 func popup_pursuit(amount: int) -> void:
 	_reset_state()
 	label.text = "PURSUIT: " + str(amount)
-	# 使用亮青色以區分普通傷害
-	label.modulate = Color(0, 1, 1) 
+	# 統一使用白色
+	label.modulate = Color.WHITE 
 	
 	var default_settings = load("res://Scenes/UI/FloatingTextSettings.tres")
 	if default_settings:
@@ -80,8 +80,8 @@ func popup_pursuit(amount: int) -> void:
 func popup_parry() -> void:
 	_reset_state()
 	label.text = "PARRIED"
-	# 使用紫色或深藍色表示格擋
-	label.modulate = Color(0.6, 0.4, 1.0)
+	# 統一使用白色
+	label.modulate = Color.WHITE
 	
 	var default_settings = load("res://Scenes/UI/FloatingTextSettings.tres")
 	if default_settings:
@@ -92,8 +92,8 @@ func popup_parry() -> void:
 func popup_barrier() -> void:
 	_reset_state()
 	label.text = "防護罩"
-	# 使用金黃色或亮橙色表示防護罩抵擋
-	label.modulate = Color(1, 0.8, 0.2)
+	# 統一使用白色
+	label.modulate = Color.WHITE
 	
 	var default_settings = load("res://Scenes/UI/FloatingTextSettings.tres")
 	if default_settings:

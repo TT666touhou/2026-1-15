@@ -5,15 +5,23 @@
 [ext_resource type="Resource" path="res://Footprints/Footprint_2x2.tres" id="2_footprint"]
 [ext_resource type="Script" path="res://Scripts/Entities/CardProvider.gd" id="3"]
 [ext_resource type="Script" path="res://Scripts/Entities/GridEntity.gd" id="6"]
+[ext_resource type="PhysicsMaterial" path="res://Resources/Physics/NoFrictionBounce.tres" id="30_nofriction"]
 
-[ext_resource type="PackedScene" uid="uid://df6i8j7y6k3m4" path="res://Scenes/UI/UnitMovementArrows.tscn" id="25_arrows"]
 
-[sub_resource type="RectangleShape2D" id="1"]
-size = Vector2(32, 32)
+[sub_resource type="CircleShape2D" id="1"]
+radius = 16.0
 
-[node name="EnemyBase001" type="CharacterBody2D"]
-collision_layer = 0
-collision_mask = 0
+[node name="EnemyBase001" type="RigidBody2D"]
+collision_layer = 1
+collision_mask = 3
+physics_material_override = ExtResource("30_nofriction")
+linear_damp_mode = 1
+linear_damp = 0.0
+angular_damp_mode = 1
+angular_damp = 0.0
+gravity_scale = 0.0
+can_sleep = false
+freeze = true
 script = ExtResource("6")
 footprint_data = ExtResource("2_footprint")
 
@@ -33,5 +41,3 @@ script = ExtResource("2")
 [node name="CardProvider" type="Node" parent="."]
 script = ExtResource("3")
 
-[node name="UnitMovementArrows" parent="." instance=ExtResource("25_arrows")]
-z_index = 5

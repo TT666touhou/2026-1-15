@@ -1,0 +1,106 @@
+[gd_scene load_steps=12 format=3]
+
+[ext_resource type="Resource" path="res://Footprints/Footprint_1x1.tres" id="2_footprint"]
+[ext_resource type="Texture2D" path="res://Tilesheet/1bit_assetpack/1bit_assetpack/characters/bat.png" id="1_bat"]
+[ext_resource type="Script" path="res://Scripts/Entities/CardProvider.gd" id="12"]
+[ext_resource type="Script" path="res://Scripts/Entities/UnitVisuals.gd" id="13"]
+[ext_resource type="Script" path="res://Scripts/Entities/GridMover.gd" id="20"]
+[ext_resource type="Script" path="res://Scripts/Entities/GridEntity.gd" id="21"]
+[ext_resource type="Script" path="res://Scripts/Managers/StatusManager.gd" id="22_status"]
+[ext_resource type="PackedScene" path="res://Scenes/Managers/StatusDisplayManager.tscn" id="23_display"]
+[ext_resource type="ParticleProcessMaterial" path="res://Resources/Shared/MovementParticlesMaterial.tres" id="26_material"]
+[ext_resource type="Texture2D" path="res://Resources/Shared/ParticlePixel.tres" id="27_texture"]
+[ext_resource type="PhysicsMaterial" path="res://Resources/Physics/NoFrictionBounce.tres" id="30_nofriction"]
+[ext_resource type="Script" path="res://Scripts/Entities/EnemyAttack_Bat.gd" id="31_bat_atk"]
+
+[sub_resource type="CircleShape2D" id="CircleShape2D_enemy"]
+radius = 6.4
+
+[sub_resource type="Animation" id="Animation_idle"]
+resource_name = "idle"
+length = 0.8
+loop_mode = 1
+step = 0.2
+tracks/0/type = "value"
+tracks/0/imported = false
+tracks/0/enabled = true
+tracks/0/path = NodePath("Sprite2D:frame")
+tracks/0/interp = 1
+tracks/0/loop_wrap = true
+tracks/0/keys = {
+"times": PackedFloat32Array(0, 0.2, 0.4, 0.6),
+"transitions": PackedFloat32Array(1, 1, 1, 1),
+"update": 1,
+"values": [0, 1, 2, 3]
+}
+
+[sub_resource type="AnimationLibrary" id="AnimationLibrary_enemy"]
+_data = {
+&"idle": SubResource("Animation_idle")
+}
+
+[node name="Enemy004" type="RigidBody2D"]
+collision_layer = 1
+collision_mask = 3
+physics_material_override = ExtResource("30_nofriction")
+linear_damp_mode = 1
+linear_damp = 1.0
+angular_damp_mode = 1
+angular_damp = 0.0
+gravity_scale = 0.0
+can_sleep = false
+freeze = true
+script = ExtResource("21")
+footprint_data = ExtResource("2_footprint")
+
+[node name="AttackComponent" type="Node" parent="."]
+script = ExtResource("31_bat_atk")
+
+[node name="Sprite2D" type="Sprite2D" parent="."]
+texture_filter = 1
+texture = ExtResource("1_bat")
+hframes = 4
+vframes = 2
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="."]
+shape = SubResource("CircleShape2D_enemy")
+
+[node name="GridMover" type="Node" parent="."]
+script = ExtResource("20")
+move_animation_duration = 0.3
+
+[node name="CardProvider" type="Node" parent="."]
+script = ExtResource("12")
+
+[node name="UnitVisuals" type="Node" parent="."]
+script = ExtResource("13")
+
+[node name="StatusManager" type="Node" parent="."]
+script = ExtResource("22_status")
+
+[node name="StatusDisplayManager" parent="." instance=ExtResource("23_display")]
+offset_top = -12.0
+offset_bottom = -12.0
+
+[node name="MoveParticles" type="GPUParticles2D" parent="."]
+texture_filter = 1
+emitting = false
+amount = 12
+texture = ExtResource("27_texture")
+lifetime = 0.4
+local_coords = false
+process_material = ExtResource("26_material")
+
+[node name="CollisionParticles_Left" type="GPUParticles2D" parent="."]
+
+[node name="CollisionParticles_Right" type="GPUParticles2D" parent="."]
+
+[node name="CollisionParticles_Top" type="GPUParticles2D" parent="."]
+
+[node name="CollisionParticles_Bottom" type="GPUParticles2D" parent="."]
+
+[node name="AnimationPlayer" type="AnimationPlayer" parent="."]
+libraries = {
+"": SubResource("AnimationLibrary_enemy")
+}
+autoplay = "idle"
