@@ -18,14 +18,14 @@ faction = ExtResource("5")
 icon = SubResource("AtlasTexture_icon")
 footprint_data = ExtResource("3")
 movement_range_data = ExtResource("4")
-max_health = 1000.0
+max_health = 150.0
 attack_damage = 30
 attack_depth = 3
 card_id = "enemy_005"
 card_name = "Lich"
 description = "A powerful elite lich."
 cost = {
-"soul": 0
+"coin": 0
 }
 display_name = "Lich"
 base_avoid = 0.0

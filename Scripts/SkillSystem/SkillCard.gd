@@ -1,7 +1,7 @@
 extends UnitSkillData
 class_name SkillCard
 
-@export var soul_cost: int = 1
+@export var coin_cost: int = 1
 @export var exclusive_unit_id: String = ""
 
 @export_group("Metadata")

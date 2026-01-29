@@ -1,0 +1,24 @@
+[remap]
+
+importer="wav"
+type="AudioStreamWAV"
+uid="uid://bjr7rosnqq3m7"
+path="res://.godot/imported/wood hit 12.wav-505b642ff76cfd855504938bd79f71fe.sample"
+
+[deps]
+
+source_file="res://Assets/Audio/wood hit 12.wav"
+dest_files=["res://.godot/imported/wood hit 12.wav-505b642ff76cfd855504938bd79f71fe.sample"]
+
+[params]
+
+force/8_bit=false
+force/mono=false
+force/max_rate=false
+force/max_rate_hz=44100
+edit/trim=false
+edit/normalize=false
+edit/loop_mode=0
+edit/loop_begin=0
+edit/loop_end=-1
+compress/mode=2

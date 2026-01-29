@@ -24,11 +24,14 @@ movement_range_data = ExtResource("4_movement")
 base_combo_count = 1.5
 base_penetration = 0.5
 character_trait = ExtResource("1_2stax")
+max_health = 200.0
+attack_damage = 10
+attack_depth = 2
 card_id = "unit_001"
 card_name = "Unit 001"
 description = "A basic unit."
 cost = {
-"soul": 10
+"coin": 10
 }
 display_name = "Archer"
 base_speed = 1.5

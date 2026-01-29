@@ -31,20 +31,20 @@ func execute_skill(source_entity: GridEntity, skill: Resource, origin_pos: Vecto
 	
 	# 特殊技能處理：十字箭矢 (Cross Arrow)
 	# 使用更健壯的匹配方式
-	if skill_name.contains("十字箭矢") or skill_name.to_lower().contains("cross arrow"):
-		_fire_cross_arrows(source_entity)
+	if skill_name.contains("X字箭矢") or skill_name.to_lower().contains("cross arrow") or skill_name.to_lower().contains("x arrow"):
+		_fire_cross_arrows(source_entity, skill)
 		skill_cast_completed.emit(skill)
 		return true
 	
 	# 特殊技能處理：迴旋飛斧 (Whirlwind Axe)
 	if skill_name.contains("迴旋飛斧") or skill_name.to_lower().contains("whirlwind axe"):
-		call_deferred("_fire_whirlwind_axes", source_entity)
+		call_deferred("_fire_whirlwind_axes", source_entity, skill)
 		skill_cast_completed.emit(skill)
 		return true
 		
 	# 特殊技能處理：連鎖閃電 (Lightning Chain)
 	if skill_name.contains("連鎖閃電") or skill_name.to_lower().contains("lightning chain"):
-		# 連鎖閃電通常由 GridEntity 碰撞觸發，這裡僅作為佔位
+		# 核心修正：連鎖閃電由 GridEntity 碰撞觸發，這裡移除冗餘邏輯
 		skill_cast_completed.emit(skill)
 		return true
 		
@@ -425,21 +425,56 @@ func _spawn_shard_explosion(pos: Vector2) -> void:
 				particles.queue_free()
 		)
 
-func _fire_cross_arrows(caster: GridEntity) -> void:
+func _fire_cross_arrows(caster: GridEntity, skill: Resource) -> void:
 	var map_loader = get_tree().get_first_node_in_group("map_loader")
 	if not map_loader: return
 	
-	var directions = [Vector2.UP, Vector2.DOWN, Vector2.LEFT, Vector2.RIGHT]
+	# 核心修正：計算包含倍率與 Combo 的最終傷害
+	var scaling_multiplier: float = 1.0
+	if skill and skill.get("scaling_multiplier") != null:
+		scaling_multiplier = skill.scaling_multiplier
+	
+	var base_atk: float = 10.0
+	if caster.character_data:
+		base_atk = caster.character_data.get_effective_attack()
+	
+	var combo_mult: float = 1.0
+	if AttackManager and caster.character_data:
+		combo_mult = AttackManager.get_combo_damage_multiplier(caster.character_data.combo_damage_scaling)
+	
+	var final_damage: int = int(round(base_atk * scaling_multiplier * combo_mult))
+	
+	var directions = [
+		Vector2(1, 1).normalized(),   # 右下
+		Vector2(1, -1).normalized(),  # 右上
+		Vector2(-1, 1).normalized(),  # 左下
+		Vector2(-1, -1).normalized()  # 左上
+	]
 	var arrow_scene = load("res://Scenes/Shared/ArrowProjectile.tscn")
 	
 	for dir in directions:
-		map_loader.spawn_projectile(arrow_scene, caster, dir, {"speed": 100.0})
+		map_loader.spawn_projectile(arrow_scene, caster, dir, {"speed": 100.0, "damage": final_damage})
 
-func _fire_whirlwind_axes(caster: GridEntity) -> void:
+func _fire_whirlwind_axes(caster: GridEntity, skill: Resource) -> void:
 	var map_loader = get_tree().get_first_node_in_group("map_loader")
 	if not map_loader: return
 	
 	var axe_scene = load("res://Scenes/Shared/AxeProjectile.tscn")
+	
+	# 核心修正：計算包含倍率與 Combo 的最終傷害
+	var scaling_multiplier: float = 1.0
+	if skill and skill.get("scaling_multiplier") != null:
+		scaling_multiplier = skill.scaling_multiplier
+	
+	var base_atk: float = 10.0
+	if caster.character_data:
+		base_atk = caster.character_data.get_effective_attack()
+	
+	var combo_mult: float = 1.0
+	if AttackManager and caster.character_data:
+		combo_mult = AttackManager.get_combo_damage_multiplier(caster.character_data.combo_damage_scaling)
+	
+	var final_damage: int = int(round(base_atk * scaling_multiplier * combo_mult))
 	
 	# 尋找場上所有敵人
 	var all_entities = get_tree().get_nodes_in_group("grid_entities")
@@ -459,9 +494,7 @@ func _fire_whirlwind_axes(caster: GridEntity) -> void:
 		var target_dir = (enemy.global_position - caster.global_position).normalized()
 		if target_dir == Vector2.ZERO: target_dir = Vector2.RIGHT
 		
-		# 傷害倍率 50%
-		var dmg = int((caster.character_data.get_effective_attack() if caster.character_data else 10) * 0.5)
-		map_loader.spawn_projectile(axe_scene, caster, target_dir, {"speed": 400.0, "damage": dmg})
+		map_loader.spawn_projectile(axe_scene, caster, target_dir, {"speed": 400.0, "damage": final_damage})
 
 func create_lightning_chain(caster: GridEntity, target: GridEntity, damage: int) -> void:
 	var lightning_scene = load("res://Scenes/Shared/LightningChain.tscn")

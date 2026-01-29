@@ -35,7 +35,7 @@ anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
 texture = ExtResource("2_vnffd")
-region_rect = Rect2(736, 226, 48, 48)
+region_rect = Rect2(860, 226, 48, 48)
 patch_margin_left = 16
 patch_margin_top = 16
 patch_margin_right = 16
@@ -139,10 +139,11 @@ alignment = 1
 	layout_mode = 2
 	theme_override_constants/separation = 10
 
-	[node name="Title" type="Label" parent="LeftPanel/VBox/SkillPanel/Margin/VBox"]
-	layout_mode = 2
-	text = "單位技能"
-	horizontal_alignment = 1
+[node name="Title" type="Label" parent="LeftPanel/VBox/SkillPanel/Margin/VBox"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.85098, 0.741176, 0.611765, 1)
+text = "單位技能"
+horizontal_alignment = 1
 
 	[node name="SkillContainer" type="VBoxContainer" parent="LeftPanel/VBox/SkillPanel/Margin/VBox"]
 	unique_name_in_owner = true

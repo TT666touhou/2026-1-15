@@ -36,12 +36,12 @@ base_crit_dmg = 0.0
 base_penetration = 0.0
 base_shield = 0
 base_barriers = 0
-max_health = 80.0
+max_health = 160.0
 card_id = "unit_003"
 card_name = "Unit 003"
 description = "A powerful wizard that moves in any cardinal direction without limit."
 cost = {
-"soul": 15
+"coin": 15
 }
 display_name = "Wizard"
 max_playable_count = 0

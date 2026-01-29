@@ -1,4 +1,4 @@
-[gd_scene load_steps=5 format=3]
+[gd_scene load_steps=7 format=3]
 
 [ext_resource type="Script" path="res://Scripts/Items/EquipmentEntity.gd" id="1_script"]
 [ext_resource type="Texture2D" path="res://Tilesheet/colored-transparent_packed.png" id="2_o3i4b"]
@@ -6,26 +6,24 @@
 [ext_resource type="Script" path="res://Scripts/Entities/UnitVisuals.gd" id="4_visuals"]
 [ext_resource type="PhysicsMaterial" path="res://Resources/Physics/NoFrictionBounce.tres" id="30_nofriction"]
 
-[sub_resource type="AtlasTexture" id="AtlasTexture_ring"]
-atlas = ExtResource("2_o3i4b")
-region = Rect2(480, 288, 16, 16)
+[sub_resource type="CircleShape2D" id="CircleShape2D_equip"]
+radius = 6.0
 
 [node name="EquipmentEntity" type="RigidBody2D"]
-script = ExtResource("1_script")
 collision_layer = 1
 collision_mask = 3
+input_pickable = true
 physics_material_override = ExtResource("30_nofriction")
-linear_damp_mode = 1
-linear_damp = 0.0
-angular_damp_mode = 1
-angular_damp = 0.0
 gravity_scale = 0.0
 can_sleep = false
 freeze = true
+script = ExtResource("1_script")
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="."]
+shape = SubResource("CircleShape2D_equip")
 
 [node name="Sprite2D" type="Sprite2D" parent="."]
 texture_filter = 1
-texture = SubResource("AtlasTexture_ring")
 
 [node name="UnitVisuals" type="Node" parent="."]
 script = ExtResource("4_visuals")
@@ -45,5 +43,5 @@ offset_right = 8.0
 offset_bottom = 8.0
 grow_horizontal = 2
 grow_vertical = 2
-mouse_filter = 2
+mouse_filter = 0
 script = ExtResource("3_proxy")

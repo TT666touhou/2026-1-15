@@ -5,9 +5,9 @@
 
 [resource]
 script = ExtResource("1_script")
-skill_name = "十字箭矢"
-manual_description = "【十字箭矢】\n移動累積 300 距離後觸發。向上下左右四個方向射出箭矢，造成 100% 攻擊力的物理傷害。"
-manual_description_en = "After moving a certain distance, fire arrows in four directions, dealing 100% ATK damage."
+skill_name = "X字箭矢"
+manual_description = "【X字箭矢】\n移動累積 300 距離後觸發。向對角線四個方向射出箭矢，造成 150% 攻擊力的物理傷害。"
+manual_description_en = "After moving a certain distance, fire arrows in four directions, dealing 150% ATK damage."
 description = ""
 icon = ExtResource("2_icon")
 execution_mode = 1
@@ -18,6 +18,6 @@ scaling_configs = [{
 "stat": "attack",
 "weight": 1.0
 }]
-scaling_multiplier = 1.0
+scaling_multiplier = 1.5
 is_move_skill = false
-trigger_distance = 300.0
+trigger_distance = 100.0

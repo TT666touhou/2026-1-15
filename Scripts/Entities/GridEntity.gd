@@ -25,7 +25,8 @@ var last_position: Vector2 = Vector2.ZERO
 var _last_trap_cell: Vector2i = Vector2i(-1, -1)
 var _init_frames: int = 5
 var _collision_cooldowns: Dictionary = {}
-
+var is_dying: bool = false # 標記單位是否正在執行死亡流程
+var last_trait_trigger_time: int = 0 # 上次觸發特質的時間 (ms)
 # --- Shader 與 視覺 ---
 var combined_shader = preload("res://Shaders/UnitCombined.gdshader")
 var _combined_material: ShaderMaterial
@@ -81,7 +82,20 @@ func apply_overrides(overrides) -> void:
 func initialize_runtime(data: CharacterData, faction_group: String, is_player_unit: bool) -> void:
 	"""運行時統一初始化介面"""
 	is_player = is_player_unit
-	faction = load("res://Resources/Factions/Faction_Player.tres" if faction_group == "player" else "res://Resources/Factions/Faction_Enemy.tres")
+	
+	# 核心修正：支援多種陣營初始化
+	if faction_group == "player":
+		faction = load("res://Resources/Factions/Faction_Player.tres")
+	elif faction_group == "neutral":
+		# 嘗試載入中立陣營，若無則預設為敵人
+		var neutral_path = "res://Resources/Factions/Faction_Neutral.tres"
+		if ResourceLoader.exists(neutral_path):
+			faction = load(neutral_path)
+		else:
+			faction = load("res://Resources/Factions/Faction_Enemy.tres")
+	else:
+		faction = load("res://Resources/Factions/Faction_Enemy.tres")
+		
 	if data: setup_character(data)
 	
 	input_pickable = true
@@ -117,6 +131,11 @@ func _ready() -> void:
 	max_contacts_reported = 4
 	if not body_entered.is_connected(_on_body_entered):
 		body_entered.connect(_on_body_entered)
+		
+	# 連接全域受傷信號，用於觸發特質
+	if AttackManager:
+		if not AttackManager.unit_damaged.is_connected(_on_global_unit_damaged):
+			AttackManager.unit_damaged.connect(_on_global_unit_damaged)
 
 func _setup_groups() -> void:
 	add_to_group("grid_entities")
@@ -192,7 +211,7 @@ func lock_physics() -> void:
 	if character_data: character_data.is_moving_physics = false
 
 func unlock_physics() -> void:
-	freeze = false
+	set_deferred("freeze", false)
 	freeze_mode = RigidBody2D.FREEZE_MODE_KINEMATIC
 	can_sleep = false
 	sleeping = false
@@ -249,6 +268,12 @@ func _on_body_entered(body: Node) -> void:
 	if enable_debug_log:
 		print("[GridEntity] _on_body_entered with: ", body.name, " (Groups: ", body.get_groups(), ")")
 	
+	# 播放單位碰撞音效 (如果碰撞對象是另一個 GridEntity)
+	if body is GridEntity:
+		var am = get_node_or_null("/root/AudioManager")
+		if am:
+			am.play_sfx_2d("unit_collision", global_position, 0.0)
+	
 	# 1. 環境碰撞
 	if body.is_in_group("wall") or (body is StaticBody2D and body.collision_layer & 2):
 		# 獲取碰撞法線
@@ -275,6 +300,19 @@ func _is_friendly_to(other: GridEntity) -> bool:
 	return is_in_group("player") == other.is_in_group("player")
 
 func _handle_hostile_collision(target: GridEntity) -> void:
+	# 核心修正：極其嚴格的轉場與狀態判定
+	# 1. 檢查 DungeonManager 是否正在轉場
+	var dm = get_tree().root.get_node_or_null("DungeonManager")
+	if dm and dm.get("_is_transitioning"):
+		if enable_debug_log: print("[GridEntity] Collision ignored: Room transitioning")
+		return
+
+	# 2. 檢查 TurnManager 狀態，如果是部署或等待中，不觸發傷害
+	if TurnManager:
+		if TurnManager.current_state == TurnManager.State.DEPLOYMENT or TurnManager.current_state == TurnManager.State.WAITING:
+			if enable_debug_log: print("[GridEntity] Collision ignored: Invalid turn state")
+			return
+
 	var tid = target.get_instance_id()
 	if _collision_cooldowns.get(tid, 0) > Time.get_ticks_msec() - 500: return
 	_collision_cooldowns[tid] = Time.get_ticks_msec()
@@ -316,8 +354,20 @@ func _handle_friendly_collision(target: GridEntity) -> void:
 	# 法師 (Unit003) 撞擊隊友時觸發連鎖閃電
 	if name.contains("Unit003") or (character_data and character_data.unit_def and character_data.unit_def.resource_path.contains("Unit_003")):
 		if SkillManager and SkillManager.has_method("create_lightning_chain"):
-			var dmg = int((character_data.get_effective_attack() if character_data else 10) * 0.8)
-			SkillManager.create_lightning_chain(self, target, dmg)
+			# 核心修正：計算包含 Combo 倍率的最終傷害 (100% 攻擊力)
+			var base_atk: float = 10.0
+			if character_data:
+				base_atk = character_data.get_effective_attack()
+				
+			var combo_mult: float = 1.0
+			if AttackManager:
+				var scaling: float = 0.1
+				if character_data:
+					scaling = character_data.combo_damage_scaling
+				combo_mult = AttackManager.get_combo_damage_multiplier(scaling)
+			
+			var final_dmg: int = int(round(base_atk * combo_mult))
+			SkillManager.create_lightning_chain(self, target, final_dmg)
 	
 	linear_velocity *= 1.03
 
@@ -382,6 +432,30 @@ func _unregister_cells() -> void:
 		grid.clear_cells_footprint(grid_position, footprint_data)
 
 func _handle_death() -> void:
+	if is_dying: return
+	is_dying = true
+	
+	# 1. 停止所有物理與碰撞
+	lock_physics()
+	collision_layer = 0
+	collision_mask = 0
+	
+	# 2. 播放死亡動畫
+	var visuals = get_node_or_null("UnitVisuals")
+	if visuals and visuals.has_method("play_death_animation"):
+		visuals.play_death_animation()
+		# 等待動畫完成 (約 0.4s)
+		await get_tree().create_timer(0.5).timeout
+	
+	# 3. 從系統移除
+	if BoardManager:
+		BoardManager.unregister_entity(self)
+	
+	# 4. 通知 DungeonManager 檢查關卡狀態
+	var dm = get_tree().root.get_node_or_null("DungeonManager")
+	if dm and dm.has_method("check_room_clear"):
+		dm.check_room_clear()
+	
 	call_deferred("queue_free")
 
 func prepare_for_entry() -> void:
@@ -416,3 +490,99 @@ func play_entry_animation(delay: float = 0.0) -> void:
 
 func _on_entry_animation_finished() -> void:
 	entry_animation_finished.emit()
+
+# ============================================================================
+# 特質監聽與執行 (Entity-Driven)
+# ============================================================================
+
+func _on_global_unit_damaged(target: Node, attacker: Node, _amount: int) -> void:
+	if is_dying or character_data == null or character_data.character_trait == null:
+		return
+		
+	var trait_data = character_data.character_trait
+	if enable_debug_log:
+		print("[GridEntity Trait] %s checking damage event on %s (Trait: %s)" % [name, target.name, trait_data.trait_name])
+
+	for effect in trait_data.effects:
+		if effect.trigger_type != TraitEffect.TriggerType.ON_DAMAGED:
+			continue
+			
+		# 1. 觸發源校驗
+		var is_valid = _is_trait_trigger_valid(effect, target, attacker)
+		if enable_debug_log:
+			print("[GridEntity Trait] Effect check: trigger_type=ON_DAMAGED, target_faction=%s, is_valid=%s" % [effect.target_faction, is_valid])
+		
+		if not is_valid:
+			continue
+			
+		# 2. 加入冷卻保護
+		var now = Time.get_ticks_msec()
+		if now - last_trait_trigger_time < 200:
+			if enable_debug_log: print("[GridEntity Trait] Cooldown active, skipping")
+			continue
+		last_trait_trigger_time = now
+		
+	# 3. 執行效果
+		if enable_debug_log: print("[GridEntity Trait] Executing effect: ", effect.effect_behavior)
+		_execute_trait_effect(effect, target)
+	
+	# 核心修正：全域跳錢被動 (不論單位身上是否有掛載特質，只要是玩家單位受傷就跳錢)
+	# 這是為了達成「套用到所有單位」且「彼此獨立辦事」的要求
+	_execute_global_gold_passive(target)
+
+func _execute_global_gold_passive(target: Node) -> void:
+	# 只有當「我自己」受傷時才觸發 (達成獨立辦事，不看其他人)
+	if target == self and is_in_group("player"):
+		gain_coin(1) # 每受擊一次跳 1 塊錢
+
+
+func _is_trait_trigger_valid(effect: TraitEffect, target: Node, _attacker: Node) -> bool:
+	match effect.target_faction:
+		TraitEffect.TargetFaction.SELF:
+			# 只有受傷目標是我自己時才觸發
+			return target == self
+		TraitEffect.TargetFaction.ALLY:
+			# 只要是玩家陣營受傷就觸發
+			return target.is_in_group("player")
+		TraitEffect.TargetFaction.ENEMY:
+			return target.is_in_group("enemy")
+		TraitEffect.TargetFaction.ALL:
+			return true
+	return false
+
+func _execute_trait_effect(effect: TraitEffect, _target: Node) -> void:
+	if enable_debug_log:
+		print("[GridEntity Trait] _execute_trait_effect: behavior=%s" % effect.effect_behavior)
+		
+	if effect.effect_behavior == TraitEffect.EffectBehavior.GRANT_RESOURCE:
+		if effect.resource_key == "coin":
+			gain_coin(int(effect.resource_amount))
+	
+	match effect.effect_behavior:
+		TraitEffect.EffectBehavior.MODIFY_STAT:
+			# 這裡可以擴展其他效果
+			pass
+
+func gain_coin(amount: int, show_floating_text: bool = false) -> void:
+	# 使用群組獲取 Ledger，這是最穩健的方法，不受場景結構影響
+	var ledger = get_tree().get_first_node_in_group("ledger")
+	
+	if ledger:
+		ledger.add_resource("coin", amount)
+		if show_floating_text:
+			_spawn_text("+%d Coin" % amount, Color.YELLOW)
+		print("[GridEntity] %s triggered trait: Gained %d Coin (Total: %d)" % [name, amount, ledger.get_amount("coin")])
+	else:
+		print("[GridEntity] CRITICAL ERROR: PlayerResourceLedger NOT FOUND in group 'ledger'!")
+		# 診斷：列印 root 下的所有節點
+		var root = Engine.get_main_loop().root
+		var children = []
+		for i in range(root.get_child_count()):
+			children.append(root.get_child(i).name)
+		print("[GridEntity] Current Root Children: ", children)
+		push_error("PlayerResourceLedger not found. Please check if it's in the 'ledger' group.")
+
+func _print_scene_tree(node: Node, indent: String = "") -> void:
+	print(indent + node.name + " (" + node.get_class() + ")")
+	for child in node.get_children():
+		_print_scene_tree(child, indent + "  ")

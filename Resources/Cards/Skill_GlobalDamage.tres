@@ -16,7 +16,7 @@ origin_is_self = true
 
 [resource]
 script = ExtResource("3_skill_card")
-soul_cost = 2
+coin_cost = 2
 card_id = "global_damage"
 skill_name = "末日審判"
 manual_description_en = "Deals {scaling} damage to all enemies across the entire map."

@@ -6,6 +6,6 @@
 [resource]
 script = ExtResource("1_script")
 trait_name = "Test OnDamaged"
-description = "On damaged: Self gain 1 Soul"
+description = "On damaged: Self gain 1 Coin"
 effects = Array[Resource("res://Resources/Traits/TraitEffect.gd")]([ExtResource("2_effect")])
 

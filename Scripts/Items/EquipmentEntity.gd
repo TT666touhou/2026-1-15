@@ -1,6 +1,9 @@
 extends GridEntity
 class_name EquipmentEntity
 
+## 裝備實體
+## 僅負責存儲數據與視覺更新，懸停偵測由 HoverInfoController 統一處理
+
 @export var equipment_data: Resource
 
 func _ready() -> void:
@@ -9,40 +12,45 @@ func _ready() -> void:
 		var fp_path = "res://Footprints/Footprint_1x1.tres"
 		if ResourceLoader.exists(fp_path):
 			footprint_data = load(fp_path)
-		else:
-			# 如果資源不存在，動態創建一個
-			var fp = FootprintData.new()
-			fp.occupied_cells = [Vector2i.ZERO] as Array[Vector2i]
-			footprint_data = fp
 			
 	# 呼叫父類的 _ready 進行網格註冊
 	super._ready()
 	
+	# 加入群組以便被控制器識別
 	add_to_group("equipment_entities")
 	
-	# 如果沒有數據，隨機生成一個 (用於測試)
-	if equipment_data == null:
-		var floor_lvl = 1
-		var dm = get_node_or_null("/root/DungeonManager")
-		if dm and "current_floor" in dm:
-			floor_lvl = dm.current_floor
-			
-		var gen = get_node_or_null("/root/EquipmentGenerator")
-		if gen:
-			equipment_data = gen.generate_random_item(floor_lvl)
-			
-		# 更新視覺圖示 (如果是生成的)
-		_update_sprite_from_data()
-	else:
-		_update_sprite_from_data()
+	# 確保滑鼠可偵測
+	input_pickable = true
+	
+	# 延遲連結懸停信號，確保環境已穩定
+	call_deferred("_setup_hover_signals")
+	
+	# 更新視覺
+	_update_sprite_from_data()
+
+func _setup_hover_signals() -> void:
+	# 這裡我們其實不需要手動連結，因為 HoverInfoController 使用物理查詢
+	# 但我們保留這個空函式以便未來擴充，並確保 input_pickable 為 true
+	input_pickable = true
 
 func _update_sprite_from_data() -> void:
-	if equipment_data and equipment_data.get("icon"):
-		var sprite = get_node_or_null("Sprite2D")
-		if sprite:
-			sprite.texture = equipment_data.icon
-			# 裝備通常是單格 16x16，不需要 region，除非是特定的片集
+	var sprite = get_node_or_null("Sprite2D")
+	if not sprite: return
+		
+	if equipment_data:
+		var tex = equipment_data.get("icon")
+		if tex:
+			sprite.texture = tex
 			sprite.region_enabled = false 
+		else:
+			# Fallback: 預設戒指
+			var default_atlas = load("res://Tilesheet/colored-transparent_packed.png")
+			sprite.texture = default_atlas
+			sprite.region_enabled = true
+			sprite.region_rect = Rect2(480, 288, 16, 16)
+		
+		sprite.visible = true
+		sprite.modulate.a = 1.0
 
 func get_equipment_data() -> Resource:
 	return equipment_data

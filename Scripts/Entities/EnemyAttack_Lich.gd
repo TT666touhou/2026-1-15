@@ -36,7 +36,7 @@ func perform_attack() -> void:
 			"texture": load("res://Tilesheet/1bit_assetpack/1bit_assetpack/items/offhand_magicorb.png")
 		})
 		
-		print("[EnemyAttack_Lich] Soul Bolt launched towards ", target.name)
+		print("[EnemyAttack_Lich] Coin Bolt launched towards ", target.name)
 		
 	# 給予一點點等待時間讓玩家看清
 	await get_tree().create_timer(0.4).timeout

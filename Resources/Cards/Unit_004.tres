@@ -25,7 +25,7 @@ card_id = "unit_004"
 card_name = "Unit 004"
 description = "A strong warrior with high attack damage."
 cost = {
-"soul": 15
+"coin": 15
 }
 display_name = "Warrior"
 base_speed = 3.0

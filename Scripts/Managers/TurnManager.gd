@@ -108,22 +108,19 @@ func start_turn() -> void:
 		advance_turn()
 		return
 	
-	TraitServiceScript.apply_trigger(TraitEffect.TriggerType.TURN_START, {"faction": current_faction})
+	# TraitServiceScript.apply_trigger(TraitEffect.TriggerType.TURN_START, {"faction": current_faction})
 	turn_started.emit(current_faction)
 	turn_changed.emit(current_faction)
 	turn_count_changed.emit(turn_count)
 
 func _execute_enemy_actions() -> void:
 	var enemies = get_tree().get_nodes_in_group("enemy")
-	print("[TurnManager] Enemy turn: executing actions for ", enemies.size(), " enemies")
 	
 	for enemy in enemies:
 		if not is_instance_valid(enemy): continue
 		
 		var attack_comp = enemy.get_node_or_null("AttackComponent")
 		if attack_comp:
-			print("[TurnManager] Sequential Action: ", enemy.name)
-			
 			# 1. 解鎖當前行動的敵人
 			if enemy.has_method("unlock_physics"):
 				enemy.unlock_physics()
@@ -133,18 +130,15 @@ func _execute_enemy_actions() -> void:
 				_units_launched = false
 				await attack_comp.perform_attack()
 				
-				# 3. 等待該敵人的物理結算
+				# 3. 等待該敵人的物理結算 (包含母體與可能產生的分身)
 				_set_state(State.RESOLVING)
 				await _wait_for_physics()
 				_set_state(State.ENEMY_TURN)
 			
-			# 4. 行動完畢後立即鎖定該敵人
-			if is_instance_valid(enemy) and enemy.has_method("lock_physics"):
-				enemy.lock_physics()
+			# 4. 行動完畢後立即鎖定該敵人及其可能產生的分身
+			lock_all_entities()
 			
 			await get_tree().create_timer(0.4).timeout
-		else:
-			print("[TurnManager] No AttackComponent found on enemy: ", enemy.name)
 
 func lock_all_entities() -> void:
 	"""鎖定場上所有實體（玩家、敵人、分身）"""
@@ -152,7 +146,6 @@ func lock_all_entities() -> void:
 	for e in entities:
 		if e.has_method("lock_physics"):
 			e.lock_physics()
-	print("[TurnManager] GLOBAL PHYSICS LOCKED")
 
 func unlock_all_players() -> void:
 	"""解鎖所有玩家單位"""
@@ -160,16 +153,17 @@ func unlock_all_players() -> void:
 	for p in players:
 		if p.has_method("unlock_physics"):
 			p.unlock_physics()
-	print("[TurnManager] PLAYER PHYSICS UNLOCKED")
 
 func _wait_for_physics() -> void:
 	"""嚴謹的物理結算協程"""
 	print("[TurnManager] Resolving physics...")
+	# 增加等待幀數，確保所有衝量 (Impulse) 已經轉換為速度
 	await get_tree().process_frame
+	await get_tree().physics_frame
 	await get_tree().physics_frame
 	
 	var still_frames = 0
-	var required_still_frames = 5
+	var required_still_frames = 10 # 增加判定幀數，防止中途停頓誤判
 	
 	while still_frames < required_still_frames:
 		var entities = get_tree().get_nodes_in_group("grid_entities")
@@ -189,6 +183,24 @@ func _wait_for_physics() -> void:
 		await get_tree().process_frame
 	
 	print("[TurnManager] Physics settled.")
+	
+	# 核心優化：物理結算完成後，自動回收場上所有金幣
+	_collect_all_physical_coins()
+
+func _collect_all_physical_coins() -> void:
+	var coins = get_tree().get_nodes_in_group("physical_coins")
+	if coins.is_empty(): return
+	
+	# 獲取 UI 金幣圖示位置
+	var target_pos = Vector2(40, 40) # 預設左上角
+	var hud = get_tree().get_first_node_in_group("resource_hud")
+	if hud and hud.has_node("CoinEntry/Icon"):
+		target_pos = hud.get_node("CoinEntry/Icon").global_position
+	
+	print("[TurnManager] Collecting %d coins to UI..." % coins.size())
+	for coin in coins:
+		if coin.has_method("collect"):
+			coin.collect(target_pos)
 
 func advance_turn() -> void:
 	if current_faction == null: return

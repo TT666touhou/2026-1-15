@@ -1,0 +1,74 @@
+[gd_scene load_steps=16 format=3 uid="uid://gcwuk54ig000"]
+
+[ext_resource type="Script" path="res://Scripts/Entities/TreasureChestEnemy.gd" id="1_script"]
+[ext_resource type="Resource" path="res://Footprints/Footprint_2x2.tres" id="2_footprint"]
+[ext_resource type="Texture2D" path="res://Tilesheet/1bit_assetpack/1bit_assetpack/interactables/chest.png" id="3_chest"]
+[ext_resource type="Script" path="res://Scripts/Entities/UnitVisuals.gd" id="4_visuals"]
+[ext_resource type="Script" path="res://Scripts/Entities/GridMover.gd" id="5_mover"]
+[ext_resource type="Script" path="res://Scripts/Managers/StatusManager.gd" id="6_status"]
+[ext_resource type="PackedScene" path="res://Scenes/Managers/StatusDisplayManager.tscn" id="7_display"]
+[ext_resource type="PhysicsMaterial" path="res://Resources/Physics/NoFrictionBounce.tres" id="8_nofriction"]
+
+[sub_resource type="RectangleShape2D" id="RectangleShape2D_chest"]
+size = Vector2(28, 28)
+
+[sub_resource type="Animation" id="Animation_idle"]
+resource_name = "idle"
+length = 0.8
+loop_mode = 1
+tracks/0/type = "value"
+tracks/0/imported = false
+tracks/0/enabled = true
+tracks/0/path = NodePath("Sprite2D:frame")
+tracks/0/interp = 1
+tracks/0/loop_wrap = true
+tracks/0/keys = {
+"times": PackedFloat32Array(0),
+"transitions": PackedFloat32Array(1),
+"update": 1,
+"values": [0]
+}
+
+[sub_resource type="AnimationLibrary" id="AnimationLibrary_chest"]
+_data = {
+"idle": SubResource("Animation_idle")
+}
+
+[node name="TreasureChestEnemy" type="RigidBody2D"]
+collision_layer = 1
+collision_mask = 3
+physics_material_override = ExtResource("8_nofriction")
+gravity_scale = 0.0
+can_sleep = false
+freeze = true
+script = ExtResource("1_script")
+footprint_data = ExtResource("2_footprint")
+
+[node name="Sprite2D" type="Sprite2D" parent="."]
+texture_filter = 1
+scale = Vector2(2, 2)
+texture = ExtResource("3_chest")
+region_enabled = true
+region_rect = Rect2(0, 0, 16, 16)
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="."]
+shape = SubResource("RectangleShape2D_chest")
+
+[node name="GridMover" type="Node" parent="."]
+script = ExtResource("5_mover")
+
+[node name="UnitVisuals" type="Node" parent="."]
+script = ExtResource("4_visuals")
+
+[node name="StatusManager" type="Node" parent="."]
+script = ExtResource("6_status")
+
+[node name="StatusDisplayManager" parent="." instance=ExtResource("7_display")]
+offset_top = -12.0
+offset_bottom = -12.0
+
+[node name="AnimationPlayer" type="AnimationPlayer" parent="."]
+libraries = {
+"": SubResource("AnimationLibrary_chest")
+}
+autoplay = "idle"

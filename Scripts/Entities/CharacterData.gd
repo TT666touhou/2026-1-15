@@ -192,6 +192,7 @@ func recalculate_stats() -> void:
 	
 	# 重新套用特質與裝備
 	if PartyManager:
+		# 恢復為僅獲取隊長的特質 (Leader Only)
 		for trait_data in PartyManager.get_active_traits():
 			for effect in trait_data.effects:
 				if effect.trigger_type == TraitEffect.TriggerType.PASSIVE:

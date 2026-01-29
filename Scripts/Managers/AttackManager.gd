@@ -5,6 +5,7 @@ extends Node
 
 # --- 信號 ---
 signal global_combo_changed(new_count: int)
+signal unit_damaged(target: Node, attacker: Node, amount: int)
 
 # --- 狀態變數 ---
 var global_combo_count: int = 0
@@ -58,7 +59,10 @@ func resolve_combat(attacker: Node, target: GridEntity, base_damage: int, is_ski
 		return report
 
 	# 獲取攻擊者數據 (支援 GridEntity 或 Projectile)
-	var attacker_unit = attacker if attacker is GridEntity else attacker.get("attacker_entity")
+	var attacker_unit = null
+	if is_instance_valid(attacker):
+		attacker_unit = attacker if attacker is GridEntity else attacker.get("attacker_entity")
+	
 	var a_data = attacker_unit.character_data if attacker_unit and "character_data" in attacker_unit else null
 	var t_data = target.character_data
 	
@@ -116,6 +120,10 @@ func resolve_combat(attacker: Node, target: GridEntity, base_damage: int, is_ski
 	# --- 6. 生命扣除：護盾 -> HP ---
 	var actual_hp_lost = t_data.take_damage_raw(final_dmg)
 	report["damage"] = final_dmg
+
+	# 發送全域受傷信號，供實體特質系統監聽
+	print("[AttackManager] Emitting unit_damaged: Target=%s, Amount=%d" % [target.name, final_dmg])
+	unit_damaged.emit(target, attacker_unit, final_dmg)
 
 	# --- 7. 後續觸發：反射、吸血、追擊、Combo ---
 	# 反射

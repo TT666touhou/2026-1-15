@@ -22,8 +22,51 @@ func _ready() -> void:
 	
 	mouse_filter = Control.MOUSE_FILTER_PASS
 
-func set_equipment(new_data: Resource) -> void:
-	data = new_data
+func _can_drop_data(_at_position: Vector2, drag_data: Variant) -> bool:
+	if typeof(drag_data) != TYPE_DICTIONARY or drag_data.get("type") != "equipment":
+		return false
+	
+	var item_resource = drag_data.get("data") as Resource
+	if not item_resource: return false
+	
+	# 檢查裝備位類型是否匹配
+	var item_slot = item_resource.get("slot")
+	if name.contains("Weapon") and item_slot != 0: return false
+	if name.contains("Armor") and item_slot != 1: return false
+	if name.contains("Accessory") and item_slot != 2: return false
+	
+	return true
+
+func _drop_data(_at_position: Vector2, drag_data: Variant) -> void:
+	var item_resource = drag_data.get("data") as Resource
+	var entity = drag_data.get("entity") as Node2D
+	
+	# 尋找所屬的 DeploymentMemberCard
+	var parent_card = _find_parent_card()
+	if parent_card and parent_card.has_method("equip_item"):
+		if parent_card.equip_item(item_resource):
+			if entity: 
+				print("[EquipmentSlotUI] Freeing entity: ", entity.name)
+				entity.queue_free()
+				# 核心修正：同樣通知 DungeonManager
+				var dm = Engine.get_main_loop().root.get_node_or_null("DungeonManager")
+				if dm:
+					dm.call_deferred("check_room_clear")
+			# 核心修正：裝備成功後，通知 DungeonManager 檢查房間狀態
+			var dm = get_tree().root.get_node_or_null("DungeonManager")
+			if dm and dm.has_method("check_room_clear"):
+				dm.check_room_clear()
+
+func _find_parent_card() -> DeploymentMemberCard:
+	var p = get_parent()
+	while p != null:
+		if p is DeploymentMemberCard:
+			return p
+		p = p.get_parent()
+	return null
+
+func set_equipment(new_resource: Resource) -> void:
+	data = new_resource
 	var item_name = "NULL" if data == null else data.get("item_name")
 	print("[EquipmentSlotUI:%d] Setting data to: %s" % [get_instance_id(), item_name])
 	

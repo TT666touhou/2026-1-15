@@ -1,0 +1,43 @@
+[gd_resource type="Resource" script_class="RoomTemplate" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://Scripts/Map/RoomTemplate.gd" id="1_4l580"]
+
+[resource]
+script = ExtResource("1_4l580")
+room_name = "t003"
+difficulty = 1
+width = 12
+height = 8
+next_room_name = "T004"
+entities = Array[Dictionary]([{
+"card_path": "res://Resources/Cards/Enemy_SlimeBoss.tres",
+"overrides": {
+"max_health": 2000
+},
+"pos": Vector2i(8, 4)
+}, {
+"card_path": "res://Resources/Cards/Enemy_003.tres",
+"overrides": {
+"max_health": 200
+},
+"pos": Vector2i(6, 2)
+}, {
+"card_path": "res://Resources/Cards/Enemy_003.tres",
+"overrides": {
+"max_health": 200
+},
+"pos": Vector2i(6, 6)
+}, {
+"card_path": "res://Resources/Cards/Enemy_003.tres",
+"overrides": {
+"max_health": 200
+},
+"pos": Vector2i(10, 2)
+}, {
+"card_path": "res://Resources/Cards/Enemy_003.tres",
+"overrides": {
+"max_health": 200
+},
+"pos": Vector2i(10, 6)
+}])
+player_spawn_points = Array[Vector2i]([Vector2i(1, 2), Vector2i(1, 4), Vector2i(1, 6)])

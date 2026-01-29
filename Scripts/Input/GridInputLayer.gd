@@ -9,6 +9,38 @@ func _ready() -> void:
 	# ... (尋找 Grid 等邏輯)
 	mouse_filter = Control.MOUSE_FILTER_IGNORE
 
+func _input(event: InputEvent) -> void:
+	if event is InputEventKey and event.pressed:
+		if event.keycode == KEY_F2:
+			_debug_kill_all_enemies()
+
+func _debug_kill_all_enemies() -> void:
+	print("[Debug] Killing all enemies (triggering death logic)...")
+	var enemies = get_tree().get_nodes_in_group("enemy")
+	print("[Debug] Found ", enemies.size(), " enemies in group 'enemy'")
+	
+	for enemy in enemies:
+		if is_instance_valid(enemy):
+			print("[Debug] Killing: ", enemy.name)
+			if enemy is GridEntity and enemy.character_data:
+				# 確保觸發完整的死亡流程
+				enemy.character_data.take_damage(999999)
+			else:
+				# 如果是建築或其他沒有數據的單位，直接移除
+				if "is_dying" in enemy:
+					enemy.is_dying = true
+				enemy.queue_free()
+	
+	print("[Debug] All enemies death logic triggered. Requesting clear check...")
+	
+	# 等待一小段時間讓單位進入死亡狀態並標記 is_dying
+	await get_tree().create_timer(0.2).timeout
+	
+	# 主動觸發 DungeonManager 的檢查
+	if DungeonManager:
+		print("[Debug] Calling DungeonManager.check_room_clear()")
+		DungeonManager.check_room_clear()
+
 func _can_drop_data(_at_position: Vector2, data: Variant) -> bool:
 	# 只處理單位部署，技能系統已移除
 	if data is CharacterData:

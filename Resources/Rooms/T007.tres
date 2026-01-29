@@ -1,0 +1,28 @@
+[gd_resource type="Resource" script_class="RoomTemplate" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://Scripts/Map/RoomTemplate.gd" id="1_4l580"]
+
+[resource]
+script = ExtResource("1_4l580")
+room_name = "t007"
+difficulty = 2
+width = 12
+height = 8
+next_room_name = ""
+entities = Array[Dictionary]([{
+"card_path": "res://Resources/Cards/Enemy_002.tres",
+"overrides": {
+"max_health": 2000,
+"attack_damage": 20
+},
+"pos": Vector2i(8, 4)
+}, {
+"card_path": "res://Resources/Cards/Enemy_005.tres",
+"overrides": { "max_health": 150, "attack_damage": 10 },
+"pos": Vector2i(10, 2)
+}, {
+"card_path": "res://Resources/Cards/Enemy_005.tres",
+"overrides": { "max_health": 150, "attack_damage": 10 },
+"pos": Vector2i(10, 6)
+}])
+player_spawn_points = Array[Vector2i]([Vector2i(1, 2), Vector2i(1, 4), Vector2i(1, 6)])

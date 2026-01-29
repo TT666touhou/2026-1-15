@@ -13,6 +13,6 @@ condition_value = 0.0
 comparison = 3
 stat_type = 0
 value = 1.0
-resource_key = "soul"
+resource_key = "coin"
 resource_amount = 2.0
 

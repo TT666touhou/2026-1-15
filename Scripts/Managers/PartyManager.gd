@@ -60,6 +60,24 @@ func get_members() -> Array[CharacterData]:
 func get_leaders() -> Array[CharacterData]:
 	return leaders
 
+## 獲取當前生效的特質及其持有者實體
+## 返回: Array[Dictionary] -> { "owner": GridEntity, "trait": TraitData }
+func get_active_trait_info() -> Array[Dictionary]:
+	var info: Array[Dictionary] = []
+	
+	# 核心修正：現在所有成員的特質都生效，且為獨立判定
+	var tree = Engine.get_main_loop()
+	if tree == null: return info
+	
+	var entities = tree.get_nodes_in_group("player")
+	for e in entities:
+		if e is GridEntity and e.character_data and e.character_data.character_trait:
+			info.append({
+				"owner": e,
+				"trait": e.character_data.character_trait
+			})
+	return info
+
 func get_active_traits() -> Array[TraitData]:
 	var traits: Array[TraitData] = []
 	for leader in leaders:
@@ -163,45 +181,26 @@ func spawn_party_member(data: CharacterData, cell: Vector2i) -> bool:
 	if not can_place_member(data, cell):
 		return false
 		
-	var grid = get_tree().get_first_node_in_group("grid")
-	var scene_root = get_tree().current_scene
+	var _grid = get_tree().get_first_node_in_group("grid")
+	var map_loader = get_tree().get_first_node_in_group("map_loader")
 	
-	# Instantiate
-	var instance = data.unit_def.unit_scene.instantiate()
-	var grid_entity = instance as GridEntity
-	if grid_entity == null: return false
+	if not map_loader:
+		print("[PartyManager] ERROR: MapLoader not found!")
+		return false
 	
-	# Setup GridEntity
-	grid_entity.footprint_data = data.unit_def.footprint_data
-	grid_entity.grid_position = cell
+	# 使用 MapLoader.spawn_entity 統一生成玩家單位
+	var instance = map_loader.spawn_entity(data.unit_def.unit_scene, data.unit_def, cell, "player", {}, true)
 	
-	# Add to Scene
-	var units_layer = scene_root.get_node_or_null("Entities/UnitsLayer")
-	if units_layer == null:
-		units_layer = scene_root.get_node_or_null("UnitsLayer")
+	if instance:
+		var grid_entity = instance as GridEntity
+		# Inject Runtime Data (HP, Combo, etc)
+		grid_entity.setup_character(data)
+		print("[PartyManager] Deployed ", data.unit_def.display_name, " at ", cell)
 		
-	if units_layer:
-		units_layer.add_child(instance)
-	else:
-		scene_root.add_child(instance)
+		# Update UI to show deployed status
+		if _deployment_ui_instance and is_instance_valid(_deployment_ui_instance):
+			# TODO: update specific card status
+			pass
+		return true
 		
-	# Set Position
-	instance.global_position = grid.grid_to_world_center_footprint(cell, grid_entity.footprint_data)
-	
-	# Apply Data (Static then Runtime)
-	var card_provider = instance.get_node_or_null("CardProvider")
-	if card_provider:
-		# CardProvider.set_card_and_apply supports Resource (UnitCard)
-		card_provider.set_card_and_apply(data.unit_def)
-	
-	# Inject Runtime Data (HP, Combo, etc)
-	grid_entity.setup_character(data)
-	
-	print("[PartyManager] Deployed ", data.unit_def.display_name, " at ", cell)
-	
-	# Update UI to show deployed status
-	if _deployment_ui_instance and is_instance_valid(_deployment_ui_instance):
-		# TODO: update specific card status
-		pass
-		
-	return true
+	return false

@@ -6,6 +6,6 @@
 [resource]
 script = ExtResource("1_script")
 trait_name = "Test TurnStart"
-description = "Turn start: Grant 2 Soul to allies"
+description = "Turn start: Grant 2 Coin to allies"
 effects = Array[Resource("res://Resources/Traits/TraitEffect.gd")]([ExtResource("2_effect")])
 

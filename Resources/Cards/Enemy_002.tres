@@ -25,7 +25,7 @@ card_id = "enemy_002"
 card_name = "Beholder"
 description = "A giant eye monster (2x2)."
 cost = {
-"soul": 0
+"coin": 0
 }
 display_name = "Beholder"
 base_avoid = 0.0

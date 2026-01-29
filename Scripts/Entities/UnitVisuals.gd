@@ -128,8 +128,32 @@ func play_damage_animation() -> void:
 	_tween.chain().tween_property(sprite, "position:x", _original_pos.x - (shake_strength * 0.2), step_time)
 	
 	# Step 5: 歸位 (確保不漂移)
-	_tween.chain().tween_property(sprite, "position:x", _original_pos.x, step_time)\
+	_tween.chain().tween_property(sprite, "position", _original_pos, step_time)\
 		.set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_IN_OUT)
+
+func play_death_animation() -> void:
+	"""播放死亡時的縮小與淡出動畫"""
+	if sprite == null: return
+	
+	if _tween and _tween.is_valid():
+		_tween.kill()
+		
+	_tween = create_tween()
+	_tween.set_parallel(true)
+	
+	# 1. 縮小並旋轉
+	_tween.tween_property(sprite, "scale", Vector2.ZERO, 0.4)\
+		.set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_IN)
+	_tween.tween_property(sprite, "rotation_degrees", 180.0, 0.4)\
+		.set_trans(Tween.TRANS_CUBIC).set_ease(Tween.EASE_IN)
+	
+	# 2. 淡出
+	_tween.tween_property(sprite, "modulate:a", 0.0, 0.3)
+	
+	# 3. 觸發受擊粒子作為死亡碎裂感
+	if _hit_particles:
+		_hit_particles.amount = 32 # 增加粒子數量
+		_hit_particles.restart()
 
 func play_attack_animation(target_dir: Vector2) -> void:
 	if sprite == null: return
@@ -387,7 +411,7 @@ func _setup_visual_particles() -> void:
 		p_node.process_material = mat
 
 func play_wall_collision_fx(normal: Vector2) -> void:
-	"""根據碰撞法線播放對應的牆體粒子"""
+	"""根據碰撞法線播放對應的牆體粒子與音效"""
 	var p_name = ""
 	if abs(normal.x) > abs(normal.y):
 		# 橫向碰撞
@@ -405,6 +429,12 @@ func play_wall_collision_fx(normal: Vector2) -> void:
 			p_node.restart()
 			p_node.emitting = true
 			print("[UnitVisuals] Triggering wall particles: %s for %s at %s" % [p_name, parent.name, p_node.global_position])
+	
+	# 透過全域 AudioManager 播放音效，對接 Setting 系統
+	var am = get_node_or_null("/root/AudioManager")
+	if am:
+		# 將音量從 -5.0 提升至 0.0 (標準音量)
+		am.play_sfx_2d("wall_collision", parent.global_position if parent else Vector2.ZERO, 0.0)
 
 func _setup_base_particle_config(p: GPUParticles2D) -> void:
 	p.texture = load("res://Resources/Shared/ParticlePixel.tres")

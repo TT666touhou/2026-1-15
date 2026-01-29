@@ -4,8 +4,7 @@ extends HBoxContainer
 @export var font_theme: Font = null
 
 # 資源圖示設定 - 使用 AtlasTexture 讓用戶可以在 Inspector 直接選取區域
-@export var texture_soul: AtlasTexture
-@export var texture_gold: AtlasTexture
+@export var texture_coin: AtlasTexture
 
 var _ledger: Node = null
 var _entries: Dictionary = {} # resource_name -> HBoxContainer
@@ -13,6 +12,7 @@ var _blink_tweens: Dictionary = {} # resource_name -> Tween (for blinking)
 var _jump_tweens: Dictionary = {} # resource_name -> Tween (for jump/pop)
 
 func _ready() -> void:
+	add_to_group("resource_hud")
 	# Layout settings
 	size_flags_horizontal = SIZE_SHRINK_BEGIN
 	size_flags_vertical = SIZE_SHRINK_CENTER
@@ -28,33 +28,29 @@ func _ready() -> void:
 func _setup_defaults() -> void:
 	var default_atlas = load("res://Tilesheet/colored-transparent_packed.png")
 	
-	if texture_soul == null:
-		texture_soul = AtlasTexture.new()
-		texture_soul.atlas = default_atlas
-		texture_soul.region = Rect2(432, 0, 16, 16) # Ghost
-		
-	if texture_gold == null:
-		texture_gold = AtlasTexture.new()
-		texture_gold.atlas = default_atlas
-		texture_gold.region = Rect2(688, 112, 16, 16) # Coins
+	if texture_coin == null:
+		texture_coin = AtlasTexture.new()
+		texture_coin.atlas = default_atlas
+		texture_coin.region = Rect2(688, 112, 16, 16) # Coins
 
 func _connect_ledger() -> void:
-	# 直接使用 Autoload 路徑，簡單可靠
-	_ledger = get_node_or_null("/root/PlayerResourceLedger")
+	# 如果第一時間沒找到，等待一幀再試（防止初始化順序問題）
+	if not get_tree().has_group("ledger"):
+		await get_tree().process_frame
+		
+	_ledger = get_tree().get_first_node_in_group("ledger")
 		
 	if _ledger == null:
-		push_warning("ResourceHUD: PlayerResourceLedger not found; HUD disabled.")
-		set_process(false)
+		push_error("ResourceHUD: PlayerResourceLedger NOT FOUND in group 'ledger' after retry!")
 		return
 		
-	# 斷開舊連接以防重複
-	if _ledger.ledger_reset.is_connected(_on_ledger_reset):
-		_ledger.ledger_reset.disconnect(_on_ledger_reset)
+	print("[ResourceHUD] Successfully connected to Ledger via group: ", _ledger.name)
+	
 	if _ledger.resource_changed.is_connected(_on_resource_changed):
 		_ledger.resource_changed.disconnect(_on_resource_changed)
-		
-	_ledger.ledger_reset.connect(_on_ledger_reset)
+	
 	_ledger.resource_changed.connect(_on_resource_changed)
+	_update_all()
 
 func _update_all() -> void:
 	if _ledger == null:
@@ -76,17 +72,13 @@ func _update_entry(resource: String, value: int) -> void:
 	if caps is Dictionary:
 		limit = int(caps.get(resource, 999999))
 	
-	var is_capped := (value >= limit)
+	var _is_capped := (value >= limit)
 	
 	# Tooltip logic
 	if limit < 99999: # 假設大於此數為無上限
 		entry.tooltip_text = "%s: %d / %d" % [resource.capitalize(), value, limit]
 	else:
 		entry.tooltip_text = "%s: %d" % [resource.capitalize(), value]
-	
-	# Handle Capped Effect (Soul only, or generic if desired)
-	if resource == "soul":
-		_set_blinking_state(resource, entry.get_node("ValueContainer/Border"), is_capped)
 
 func _get_or_create_entry(resource: String) -> HBoxContainer:
 	if _entries.has(resource):
@@ -108,10 +100,8 @@ func _get_or_create_entry(resource: String) -> HBoxContainer:
 	icon_rect.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
 	
 	var tex: Texture2D = null
-	if resource == "soul":
-		tex = texture_soul
-	elif resource == "gold":
-		tex = texture_gold
+	if resource == "coin":
+		tex = texture_coin
 	
 	icon_rect.texture = tex
 	entry.add_child(icon_rect)
@@ -124,7 +114,7 @@ func _get_or_create_entry(resource: String) -> HBoxContainer:
 	# 使用 ReferenceRect 做外框比較輕量，或者用 PanelContainer 
 	var border = ReferenceRect.new()
 	border.name = "Border"
-	border.border_color = Color.WHITE
+	border.border_color = Color(0.85098, 0.741176, 0.611765, 1) # Sand Gold
 	border.border_width = 2.0
 	border.editor_only = false
 	border.visible = false # Default hidden
@@ -224,3 +214,6 @@ func _on_resource_changed(resource: String, new_value: int, delta: int) -> void:
 	_update_entry(resource, new_value)
 	if delta > 0:
 		_animate_resource_gain(resource)
+	
+	# 核心修正：主動更新左上角 UI 顯示 (如果有的話)
+	# 這裡透過信號機制已經能達成，但我們確保動畫被觸發

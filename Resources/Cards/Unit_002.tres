@@ -38,12 +38,12 @@ base_crit_dmg = 0.0
 base_penetration = 0.0
 base_shield = 0
 base_barriers = 0
-max_health = 150.0
+max_health = 300.0
 card_id = "unit_002"
 card_name = "Unit 002"
 description = "A heavy unit with limited rear movement."
 cost = {
-"soul": 20
+"coin": 20
 }
 display_name = "Knight"
 max_playable_count = 0

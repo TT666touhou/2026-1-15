@@ -1,0 +1,19 @@
+[gd_resource type="Resource" script_class="RoomTemplate" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://Scripts/Map/RoomTemplate.gd" id="1_4l580"]
+
+[resource]
+script = ExtResource("1_4l580")
+room_name = "t004"
+difficulty = 0
+width = 12
+height = 8
+next_room_name = "T005"
+entities = Array[Dictionary]([{
+"card_path": "res://Resources/Cards/Enemy_Chest.tres",
+"overrides": {
+"max_health": 500
+},
+"pos": Vector2i(6, 4)
+}])
+player_spawn_points = Array[Vector2i]([Vector2i(1, 2), Vector2i(1, 4), Vector2i(1, 6)])

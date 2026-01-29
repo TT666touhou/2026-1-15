@@ -33,8 +33,12 @@ func perform_attack() -> void:
 		var slime_scene = load("res://Scenes/Entities/Enemy/Enemy003.tscn")
 		var card = load("res://Resources/Cards/Enemy_003.tres")
 		
-		# 5. 使用 MapLoader 統一生成 API (自動處理物理、群組、UI 偵測)
-		# 設置 is_dynamic = true 確保外觀立即顯示
+		# 5. 計算發射方向
+		var target_pos = target.global_position
+		var dir = (target_pos - parent_entity.global_position).normalized()
+		if dir == Vector2.ZERO: dir = Vector2.RIGHT
+		
+		# 6. 使用 MapLoader 統一生成 API
 		var map_loader = get_tree().get_first_node_in_group("map_loader")
 		if not map_loader:
 			print("[EnemyAttack_Slime] ERROR: MapLoader not found!")
@@ -43,28 +47,38 @@ func perform_attack() -> void:
 		var clone = map_loader.spawn_entity(slime_scene, card, parent_entity.grid_position, "enemy", {}, true)
 		
 		if clone:
+			# 核心修正：將分身的實際位置稍微推離母體，避免物理重疊擠壓導致瞄準失效
+			clone.global_position = parent_entity.global_position + (dir * 12.0)
+			
+			# 核心修正：分裂時解鎖母體與分身的物理狀態
+			if parent_entity.has_method("unlock_physics"):
+				parent_entity.unlock_physics()
+			if clone.has_method("unlock_physics"):
+				clone.unlock_physics()
+
 			# 設置生命值為本體扣除的量
 			if clone.character_data:
 				clone.character_data.max_health = int(damage_taken)
 				clone.character_data.current_health = int(damage_taken)
 			
-			# 分身保留分裂能力，實現無限分裂（直到血量不足）
+			# 分身保留分裂能力
 			var attack_comp = clone.get_node_or_null("AttackComponent")
 			if attack_comp:
 				attack_comp.set_script(load("res://Scripts/Entities/EnemyAttack_Slime.gd"))
-				print("[EnemyAttack_Slime] Clone inherited Splitting ability")
 			
-			# 6. 發射分身
-			var target_pos = target.global_position
-			var dir = (target_pos - parent_entity.global_position).normalized()
+			# 7. 發射分身
 			var launch_force = dir * 600.0
 			
-			clone.apply_central_impulse(launch_force)
-			
-			if TurnManager and TurnManager.has_method("on_unit_launched"):
-				TurnManager.on_unit_launched(clone, launch_force)
-			
-			print("[EnemyAttack_Slime] Clone launched towards ", target.name)
+			# 核心修正：延遲一幀執行衝量，並在發射前清除因重疊產生的隨機初速度
+			await get_tree().physics_frame
+			if is_instance_valid(clone):
+				clone.linear_velocity = Vector2.ZERO 
+				clone.apply_central_impulse(launch_force)
+				
+				if TurnManager and TurnManager.has_method("on_unit_launched"):
+					TurnManager.on_unit_launched(clone, launch_force)
+				
+				print("[EnemyAttack_Slime] Clone launched towards ", target.name, " with direction ", dir)
 
 	await get_tree().create_timer(0.3).timeout
 
@@ -72,35 +86,7 @@ func _play_split_visuals() -> void:
 	# 擠壓變形
 	var visuals = parent_entity.get_node_or_null("UnitVisuals")
 	if visuals and visuals.sprite:
+		var original_scale = visuals.sprite.scale
 		var tween = create_tween()
-		tween.tween_property(visuals.sprite, "scale", Vector2(1.5, 0.5), 0.1).set_trans(Tween.TRANS_SINE)
-		tween.tween_property(visuals.sprite, "scale", Vector2(1.0, 1.0), 0.2).set_trans(Tween.TRANS_BACK)
-	
-	# 噴濺粒子
-	var particles = GPUParticles2D.new()
-	get_tree().current_scene.add_child(particles)
-	particles.global_position = parent_entity.global_position
-	
-	var mat = ParticleProcessMaterial.new()
-	mat.particle_flag_disable_z = true
-	mat.direction = Vector3(0, -1, 0)
-	mat.spread = 180.0
-	mat.gravity = Vector3(0, 400, 0)
-	mat.initial_velocity_min = 80.0
-	mat.initial_velocity_max = 150.0
-	mat.scale_min = 2.0
-	mat.scale_max = 5.0
-	mat.color = Color(0.3, 0.9, 0.3, 0.8)
-	
-	particles.process_material = mat
-	particles.amount = 24
-	particles.one_shot = true
-	particles.explosiveness = 1.0
-	particles.lifetime = 0.5
-	# 嘗試加載現有粒子貼圖
-	var tex = load("res://Resources/Shared/ParticlePixel.tres")
-	if tex:
-		particles.texture = tex
-	
-	particles.emitting = true
-	get_tree().create_timer(0.6).timeout.connect(particles.queue_free)
+		tween.tween_property(visuals.sprite, "scale", original_scale * Vector2(1.5, 0.5), 0.1).set_trans(Tween.TRANS_SINE)
+		tween.tween_property(visuals.sprite, "scale", original_scale, 0.2).set_trans(Tween.TRANS_BACK)

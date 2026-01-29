@@ -3,11 +3,24 @@
 [ext_resource type="Script" uid="uid://bn2wtkskcxven" path="res://Scripts/UI/EquipmentInfoPanel.gd" id="1_script"]
 [ext_resource type="Texture2D" uid="uid://0modheirbetv" path="res://Tilesheet/kenney_fantasy-ui-borders/Vector/fantasy-ui-borders.svg" id="2_ui"]
 
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_panel"]
+bg_color = Color(0.05, 0.05, 0.05, 1)
+border_width_left = 2
+border_width_top = 2
+border_width_right = 2
+border_width_bottom = 2
+border_color = Color(0.85098, 0.741176, 0.611765, 1)
+corner_radius_top_left = 4
+corner_radius_top_right = 4
+corner_radius_bottom_right = 4
+corner_radius_bottom_left = 4
+
 [node name="EquipmentInfoPanel" type="PanelContainer"]
 custom_minimum_size = Vector2(240, 0)
 offset_right = 240.0
 offset_bottom = 40.0
 mouse_filter = 2
+theme_override_styles/panel = SubResource("StyleBoxFlat_panel")
 script = ExtResource("1_script")
 
 [node name="Background" type="NinePatchRect" parent="."]
@@ -50,6 +63,7 @@ alignment = 1
 
 [node name="NameLabel" type="Label" parent="VBox/Margin/Header/Info"]
 layout_mode = 2
+theme_override_colors/font_color = Color(0.85098, 0.741176, 0.611765, 1)
 theme_override_font_sizes/font_size = 16
 text = "Item Name"
 

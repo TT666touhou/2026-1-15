@@ -106,6 +106,14 @@ func clear_cell(cell: Vector2i) -> void:
 	_occupied_cells.erase(cell)
 	cell_occupied_changed.emit(cell, false)
 
+func clear_all_occupancy() -> void:
+	"""清空所有格子的佔用狀態 (用於地圖切換)"""
+	var old_cells = _occupied_cells.keys()
+	_occupied_cells.clear()
+	for cell in old_cells:
+		cell_occupied_changed.emit(cell, false)
+	print("[Grid] All occupancy cleared.")
+
 func get_occupant(cell: Vector2i) -> Node:
 	"""獲取佔用格子的實體"""
 	var occupant = _occupied_cells.get(cell, null)

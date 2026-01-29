@@ -25,7 +25,7 @@ card_id = "enemy_004"
 card_name = "Bat"
 description = "A fast-moving bat with high avoidance."
 cost = {
-"soul": 0
+"coin": 0
 }
 display_name = "Bat"
 base_avoid = 0.25

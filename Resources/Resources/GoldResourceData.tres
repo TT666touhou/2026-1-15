@@ -4,7 +4,7 @@
 
 [resource]
 script = ExtResource("1")
-resource_type = "gold"
+resource_type = "coin"
 min_amount = 400
 max_amount = 800
 gather_time = 6.0

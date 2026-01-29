@@ -1,0 +1,22 @@
+[gd_scene load_steps=2 format=3 uid="uid://beholderlaser"]
+
+[ext_resource type="Script" path="res://Scripts/Entities/BeholderLaser.gd" id="1_script"]
+
+[node name="BeholderLaser" type="Node2D"]
+script = ExtResource("1_script")
+
+[node name="LineGlow" type="Line2D" parent="."]
+texture_filter = 1
+points = PackedVector2Array(0, 0, 0, 0)
+width = 4.0
+default_color = Color(0.419608, 0.415686, 0.501961, 1)
+begin_cap_mode = 2
+end_cap_mode = 2
+
+[node name="LineCore" type="Line2D" parent="."]
+texture_filter = 1
+points = PackedVector2Array(0, 0, 0, 0)
+width = 1.0
+default_color = Color(0.85098, 0.741176, 0.611765, 1)
+begin_cap_mode = 2
+end_cap_mode = 2

@@ -55,7 +55,7 @@ enum StatType {
 @export var value: float = 1.0 # 效果數值
 
 # GRANT_RESOURCE 專用
-@export var resource_key: String = "soul"
+@export var resource_key: String = "coin"
 @export var resource_amount: float = 0.0
 
 # APPLY_STATUS 專用 (需搭配 StatusManager.apply_status)

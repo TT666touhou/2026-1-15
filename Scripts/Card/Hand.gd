@@ -31,7 +31,7 @@ var cards: Array = []
 var selected_cards: Array = []
 
 const LEDGER_NODE_NAME := "PlayerResourceLedger"
-const DEFAULT_COST_RESOURCE := StringName("soul")
+const DEFAULT_COST_RESOURCE := StringName("coin")
 
 # Drag-reorder state
 var dragging_card: Node = null

@@ -48,10 +48,16 @@ func _on_body_entered(body: Node) -> void:
 		return
 		
 	if body is GridEntity:
+		var target = body as GridEntity
+		
+		# 陣營檢查：僅攻擊不同陣營的單位
+		if is_instance_valid(caster) and caster.faction and target.faction:
+			if caster.faction == target.faction:
+				return # 相同陣營，不造成傷害
+		
 		# 核心修正：投射物傷害現在統一透過 AttackManager 結算
-		# 如果發動者已死亡，則傳入 null
 		var attacker = caster if is_instance_valid(caster) else null
-		body.apply_damage(damage, false, false, attacker)
+		target.apply_damage(damage, false, false, attacker)
 		# 飛斧穿透，不銷毀
 
 func _on_area_entered(_area: Area2D) -> void:

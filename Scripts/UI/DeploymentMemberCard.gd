@@ -358,7 +358,18 @@ func _drop_data(_at_position: Vector2, data: Variant) -> void:
 		
 		# 從地圖上移除實體
 		if entity:
+			print("[DeploymentMemberCard] Freeing entity: ", entity.name)
 			entity.queue_free()
+			# 核心修正：手動發送一個信號或延遲呼叫，確保 DungeonManager 能收到更新
+			var dm = Engine.get_main_loop().root.get_node_or_null("DungeonManager")
+			if dm:
+				print("[DeploymentMemberCard] Notifying DungeonManager to check room clear...")
+				dm.call_deferred("check_room_clear")
+			
+		# 核心修正：裝備成功後，通知 DungeonManager 檢查房間狀態
+		var dm = get_tree().root.get_node_or_null("DungeonManager")
+		if dm and dm.has_method("check_room_clear"):
+			dm.check_room_clear()
 
 func _get_drag_data(_at_position: Vector2) -> Variant:
 	# Disable drag-and-drop deployment

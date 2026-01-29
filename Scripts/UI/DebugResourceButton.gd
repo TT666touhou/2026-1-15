@@ -8,9 +8,8 @@ func _ready() -> void:
 func _on_pressed() -> void:
 	var ledger = get_node_or_null("/root/PlayerResourceLedger")
 	if ledger:
-		ledger.add_resource("gold", 1000)
-		ledger.add_resource("soul", 1000)
-		print("[Debug] Added 1000 Gold and Soul")
+		ledger.add_resource("coin", 1000)
+		print("[Debug] Added 1000 Coin")
 	else:
 		push_error("PlayerResourceLedger not found!")
 

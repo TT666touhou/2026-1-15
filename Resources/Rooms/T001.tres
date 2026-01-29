@@ -8,25 +8,10 @@ room_name = "t001"
 difficulty = 0
 width = 12
 height = 8
+next_room_name = "T002"
 entities = Array[Dictionary]([{
-"card_path": "res://Resources/Cards/Enemy_001.tres",
-"overrides": {},
-"pos": Vector2i(10, 1)
-}, {
-"card_path": "res://Resources/Cards/Enemy_002.tres",
-"overrides": {},
-"pos": Vector2i(8, 2)
-}, {
 "card_path": "res://Resources/Cards/Enemy_003.tres",
 "overrides": {},
-"pos": Vector2i(10, 3)
-}, {
-"card_path": "res://Resources/Cards/Enemy_004.tres",
-"overrides": {},
-"pos": Vector2i(8, 5)
-}, {
-"card_path": "res://Resources/Cards/Enemy_005.tres",
-"overrides": {},
-"pos": Vector2i(10, 6)
+"pos": Vector2i(8, 4)
 }])
-player_spawn_points = Array[Vector2i]([])
+player_spawn_points = Array[Vector2i]([Vector2i(1, 2), Vector2i(1, 4), Vector2i(1, 6)])

@@ -4,15 +4,14 @@
 
 [resource]
 script = ExtResource("1_script")
-trigger_type = 4 # ON_DAMAGED
-effect_behavior = 1 # GRANT_RESOURCE
-target_faction = 0 # SELF
+trigger_type = 4
+effect_behavior = 1
+target_faction = 0
 target_unit_id = ""
 condition_type = 0
 condition_value = 0.0
 comparison = 3
 stat_type = 0
 value = 1.0
-resource_key = "soul"
+resource_key = "coin"
 resource_amount = 1.0
-

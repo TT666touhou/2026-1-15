@@ -1,11 +1,9 @@
 extends Node
 
 @export var default_resources := {
-	"soul": 0,
-	"gold": 0,
+	"coin": 0,
 }
 @export var capacity_limits := {
-	"soul": 10,
 }
 @export var debug_mode: bool = false
 
@@ -16,6 +14,7 @@ var _resources: Dictionary = {}
 var _is_initialized: bool = false
 
 func _ready() -> void:
+	add_to_group("ledger")
 	_initialize_resources()
 
 func _initialize_resources() -> void:

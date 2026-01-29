@@ -12,6 +12,6 @@ max_health = 250.0
 building_scene = ExtResource("2")
 footprint_data = ExtResource("3")
 cost = {
-"soul": 1
+"coin": 1
 }
 

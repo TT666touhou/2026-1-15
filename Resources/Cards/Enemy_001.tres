@@ -18,14 +18,14 @@ faction = ExtResource("5")
 icon = SubResource("AtlasTexture_icon")
 footprint_data = ExtResource("3")
 movement_range_data = ExtResource("4")
-max_health = 500.0
+max_health = 250.0
 attack_damage = 10
 attack_depth = 2
 card_id = "enemy_001"
 card_name = "Skeleton"
 description = "A basic skeletal warrior."
 cost = {
-"soul": 0
+"coin": 0
 }
 display_name = "Skeleton"
 base_avoid = 0.0

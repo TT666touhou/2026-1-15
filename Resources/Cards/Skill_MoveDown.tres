@@ -5,7 +5,7 @@
 
 [resource]
 script = ExtResource("1_skill_card")
-soul_cost = 0
+coin_cost = 0
 exclusive_unit_id = ""
 card_id = "move_down"
 manual_description_en = "Move downward by {scaling} distance."

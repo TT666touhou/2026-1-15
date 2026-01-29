@@ -81,12 +81,12 @@ func get_cost_dict() -> Dictionary:
 	elif _base_data.get("cost") is Dictionary:
 		cost = _base_data.get("cost").duplicate()
 	elif _base_data.get("cost") is int:
-		cost = {"soul": _base_data.get("cost")}
+		cost = {"coin": _base_data.get("cost")}
 	
-	if _base_data.get("soul_cost") != null:
-		var sc = int(_base_data.get("soul_cost"))
+	if _base_data.get("coin_cost") != null:
+		var sc = int(_base_data.get("coin_cost"))
 		if sc > 0:
-			cost["soul"] = sc
+			cost["coin"] = sc
 
 	if custom_modifiers.has("cost_mod_all"):
 		var add = custom_modifiers["cost_mod_all"]
@@ -116,8 +116,8 @@ func _get(property: StringName):
 			return get_display_name()
 		"cost":
 			return get_cost_dict()
-		"soul_cost":
-			return get_cost_dict().get("soul", 0)
+		"coin_cost":
+			return get_cost_dict().get("coin", 0)
 		"base_data":
 			return _base_data
 		"targeting":

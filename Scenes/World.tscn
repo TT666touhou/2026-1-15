@@ -25,7 +25,6 @@
 [ext_resource type="Resource" path="res://Resources/Status/Status_Poison.tres" id="102"]
 [ext_resource type="Resource" path="res://Resources/Status/Status_Regen.tres" id="103"]
 [ext_resource type="Resource" path="res://Resources/Status/Status_Vulnerable.tres" id="104"]
-[ext_resource type="Script" uid="uid://ckuhers5dw1k" path="res://Scripts/UI/DebugKillTransitionButton.gd" id="105"]
 [ext_resource type="PackedScene" path="res://Scenes/UI/ComboIndicatorUI.tscn" id="106"]
 [ext_resource type="Shader" uid="uid://ct5sptojmcqci" path="res://Shaders/EdgeFog.gdshader" id="107"]
 [ext_resource type="Shader" uid="uid://bn0mpa0f04ly0" path="res://Shaders/BackgroundDarkener.gdshader" id="107_bg"]
@@ -65,7 +64,7 @@ border_width_left = 2
 border_width_top = 2
 border_width_right = 2
 border_width_bottom = 2
-border_color = Color(1, 1, 1, 1)
+border_color = Color(0.85098, 0.741176, 0.611765, 1)
 corner_radius_top_left = 4
 corner_radius_top_right = 4
 corner_radius_bottom_right = 4
@@ -252,6 +251,7 @@ layout_mode = 2
 [node name="EndTurnButton" type="Button" parent="UI/TopRightToolbar"]
 layout_mode = 2
 focus_mode = 0
+theme_override_colors/font_color = Color(0.85098, 0.741176, 0.611765, 1)
 theme_override_styles/normal = SubResource("StyleBoxFlat_button")
 theme_override_styles/pressed = SubResource("StyleBoxFlat_button")
 theme_override_styles/hover = SubResource("StyleBoxFlat_button")
@@ -348,13 +348,5 @@ status_resource = ExtResource("104")
 layout_mode = 2
 text = "+ DefUp"
 status_resource = ExtResource("101")
-
-[node name="DebugKillTransitionButton" type="Button" parent="UI/DebugLayer/DebugMenuPanel/Margin/VBox/Scroll/Content"]
-layout_mode = 2
-theme_override_styles/normal = SubResource("StyleBoxFlat_button")
-theme_override_styles/pressed = SubResource("StyleBoxFlat_button")
-theme_override_styles/hover = SubResource("StyleBoxFlat_button")
-text = "Kill & Transition"
-script = ExtResource("105")
 
 [editable path="UI/MainTopBar"]

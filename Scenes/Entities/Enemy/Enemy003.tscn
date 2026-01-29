@@ -63,6 +63,7 @@ hframes = 4
 vframes = 2
 
 [node name="CollisionShape2D" type="CollisionShape2D" parent="."]
+position = Vector2(0, 2)
 shape = SubResource("CircleShape2D_enemy")
 
 [node name="GridMover" type="Node" parent="."]

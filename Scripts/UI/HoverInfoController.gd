@@ -83,7 +83,8 @@ func _process(_delta: float) -> void:
 
 	# 1. 拖拽中強制隱藏
 	if get_viewport().gui_is_dragging():
-		_hide_all()
+		if _equip_panel_instance.visible or _card_instance.visible or _skill_tooltip_instance.visible:
+			_hide_all()
 		return
 
 	# 2. 獲取滑鼠下的實體
@@ -92,7 +93,9 @@ func _process(_delta: float) -> void:
 	# 3. 更新顯示
 	if entity:
 		_update_display_logic(entity)
-		_update_position()
+		# 核心修正：如果顯示了面板，就更新位置
+		if _equip_panel_instance.visible or _card_instance.visible or _trap_card_instance.visible:
+			_update_position()
 	else:
 		_hide_all()
 
@@ -106,11 +109,25 @@ func _get_entity_under_mouse() -> GridEntity:
 	var space_state = get_viewport().get_world_2d().direct_space_state
 	var query = PhysicsPointQueryParameters2D.new()
 	query.position = mouse_pos
-	query.collision_mask = 1 | 4 # 偵測 Unit Layer (1) 與 Prop/Trap Layer (4)
+	# 核心修正：增加偵測半徑 (使用 intersect_point 的預設行為，但確保我們能抓到微小的金幣/裝備)
+	query.collision_mask = 1 | 4 | 128 # 偵測 Unit (1), Prop (4), Coin (128)
 	query.collide_with_areas = true
 	query.collide_with_bodies = true
 	
 	var results = space_state.intersect_point(query)
+	
+	if results.is_empty():
+		# 備援方案：如果點查詢失敗，嘗試在滑鼠周圍做一個微小的圓形查詢
+		var circle_query = PhysicsShapeQueryParameters2D.new()
+		var circle = CircleShape2D.new()
+		circle.radius = 8.0 # 擴大偵測範圍到 16 像素直徑
+		circle_query.shape = circle
+		circle_query.transform = Transform2D(0, mouse_pos)
+		circle_query.collision_mask = 1 | 4 | 128
+		circle_query.collide_with_areas = true
+		circle_query.collide_with_bodies = true
+		results = space_state.intersect_shape(circle_query)
+
 	if results.is_empty():
 		return null
 		
@@ -130,17 +147,23 @@ func _update_display_logic(entity: GridEntity) -> void:
 	var current_id = entity.get_instance_id()
 	var is_new_entity = (current_id != _last_hovered_entity_id)
 	
-	if is_new_entity:
-		pass
-	
-	# 1. 檢查是否為裝備實體
-	if entity is EquipmentEntity:
-		var data = entity.get_equipment_data()
-		if is_new_entity or not _equip_panel_instance.visible:
-			print("[HoverInfoController] Showing Equipment Card")
-			_last_hovered_entity_id = current_id
-			show_data_info(data, false) # 地圖實體不鎖定，讓 _process 持續偵測
-		return
+	# 1. 檢查是否為裝備實體 (增加更多判定方式)
+	var is_equip = entity.is_in_group("equipment_entities") or entity is EquipmentEntity
+	if is_equip:
+		var data = null
+		if entity.has_method("get_equipment_data"):
+			data = entity.get_equipment_data()
+		elif "equipment_data" in entity:
+			data = entity.equipment_data
+			
+		if data:
+			if is_new_entity or not _equip_panel_instance.visible:
+				print("[HoverInfoController] DETECTED Equipment: ", data.item_name)
+				_last_hovered_entity_id = current_id
+				show_data_info(data, false)
+			return
+		else:
+			print("[HoverInfoController] DETECTED Equipment but DATA IS NULL")
 		
 	# 2. 檢查是否為敵對單位或陷阱
 	if entity is TrapEntity or entity.is_in_group("traps"):
@@ -188,26 +211,37 @@ func _update_position() -> void:
 		
 	if active_panel:
 		# 決定錨點位置 (Anchor Position)
-		# 如果有正在懸停的實體，錨點為實體位置；否則為滑鼠位置
-		var anchor_pos = get_viewport().get_mouse_position()
+		var mouse_pos = get_viewport().get_mouse_position()
+		var anchor_pos = mouse_pos
 		
+		# 如果是地圖實體，錨點使用實體的螢幕座標，避免面板擋住實體
 		if not _is_ui_hovering and is_instance_valid(_current_entity):
-			# 獲取實體在螢幕上的位置
 			anchor_pos = _current_entity.get_global_transform_with_canvas().origin
+			# print("[HoverInfoController] Using Entity Anchor: ", anchor_pos)
 		
+		# 計算目標位置
 		var target_pos = anchor_pos + offset_from_mouse
 		
+		# 邊界檢查
 		var viewport_rect = get_viewport_rect()
-		# Use combined minimum size to ensure we handle adaptive containers correctly
 		var panel_size = active_panel.get_combined_minimum_size()
-			
+		
+		# 防止超出右邊界
 		if target_pos.x + panel_size.x > viewport_rect.size.x:
 			target_pos.x = anchor_pos.x - panel_size.x - offset_from_mouse.x
 			
+		# 防止超出下邊界
 		if target_pos.y + panel_size.y > viewport_rect.size.y:
 			target_pos.y = anchor_pos.y - panel_size.y - offset_from_mouse.y
 			
+		# 確保不會超出左上邊界
+		target_pos.x = max(0, target_pos.x)
+		target_pos.y = max(0, target_pos.y)
+			
 		active_panel.global_position = target_pos
+		# 強制顯示 (備援)
+		active_panel.show()
+		# print("[HoverInfoController] Panel Position Updated to: ", target_pos, " | Visible: ", active_panel.visible)
 
 func _hide_all() -> void:
 	_is_ui_hovering = false
@@ -224,8 +258,6 @@ func show_data_info(data: Resource, from_ui: bool = false) -> void:
 		_hide_all()
 		return
 		
-	print("[HoverInfoController] Showing data info for: %s (From UI: %s)" % [data.get("item_name"), "YES" if from_ui else "NO"])
-	
 	# 只有來自 UI 的請求才需要鎖定，地圖實體由 _process 自動隱藏
 	if from_ui:
 		_is_ui_hovering = true
@@ -233,13 +265,18 @@ func show_data_info(data: Resource, from_ui: bool = false) -> void:
 		_is_ui_hovering = false
 	
 	# 目前只支援 EquipmentData
-	if data.get("modifiers") != null: # 鴨子類型判斷是否為裝備
+	var has_mods = data.get("modifiers") != null
+	
+	if has_mods: # 鴨子類型判斷是否為裝備
 		if _equip_panel_instance and _equip_panel_instance.has_method("display_equipment"):
 			_equip_panel_instance.display_equipment(data)
 			_equip_panel_instance.visible = true
-			# 確保面板在最上層 (在新的父節點中)
+			# 核心修正：確保面板在顯示時其父容器（CanvasLayer）也是可見的
+			var parent_layer = _equip_panel_instance.get_parent()
+			if parent_layer is CanvasLayer:
+				parent_layer.visible = true
+				
 			_equip_panel_instance.get_parent().move_child(_equip_panel_instance, -1)
-			# 更新位置為目前滑鼠位置
 			_update_position()
 
 func show_skill_info(skill: Resource, from_ui: bool = false) -> void:
