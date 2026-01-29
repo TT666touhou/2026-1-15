@@ -7,7 +7,7 @@ class_name SlingshotController
 signal unit_selected(unit: GridEntity)
 
 @export var force_multiplier: float = 4.0
-@export var max_drag_distance: float = 150.0
+@export var max_drag_distance: float = 75.0
 
 var selected_unit: GridEntity = null
 var is_dragging: bool = false
@@ -88,7 +88,13 @@ func _update_drag_visual() -> void:
 	
 	var camera = get_viewport().get_camera_2d()
 	var current_mouse = camera.get_global_mouse_position()
-	_current_raw_diff = drag_start_pos - current_mouse
+	
+	# 核心修正：將滑鼠位置轉換為相對於設計解析度的座標空間
+	# 這樣無論視窗如何縮放，150 像素的拖曳距離在視覺上佔比都一樣
+	var viewport_transform = get_viewport().get_final_transform()
+	var drag_start_local = viewport_transform * drag_start_pos
+	var current_mouse_local = viewport_transform * current_mouse
+	_current_raw_diff = (drag_start_local - current_mouse_local) / viewport_transform.get_scale().x
 	
 	if _current_raw_diff.length() > max_drag_distance:
 		_current_raw_diff = _current_raw_diff.normalized() * max_drag_distance
@@ -139,7 +145,13 @@ func _launch_unit() -> void:
 	if not selected_unit: return
 	
 	var camera = get_viewport().get_camera_2d()
-	var raw_diff = drag_start_pos - camera.get_global_mouse_position()
+	var current_mouse = camera.get_global_mouse_position()
+	
+	# 核心修正：使用與視覺一致的縮放座標計算發射力道
+	var viewport_transform = get_viewport().get_final_transform()
+	var drag_start_local = viewport_transform * drag_start_pos
+	var current_mouse_local = viewport_transform * current_mouse
+	var raw_diff = (drag_start_local - current_mouse_local) / viewport_transform.get_scale().x
 	
 	if raw_diff.length() > 15:
 		var final_diff = raw_diff

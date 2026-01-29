@@ -42,6 +42,18 @@ func lock_input() -> void:
 func unlock_input() -> void:
 	_is_input_locked = false
 
+func reset_state() -> void:
+	"""重置回合管理器狀態"""
+	current_state = State.WAITING
+	factions_order.clear()
+	current_faction_index = 0
+	current_faction = null
+	turn_count = 1
+	is_free_roam_mode = false
+	_is_input_locked = false
+	_units_launched = false
+	print("[TurnManager] State reset.")
+
 ## 綜合忙碌狀態判定
 func is_busy() -> bool:
 	if _is_input_locked: return true

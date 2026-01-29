@@ -54,9 +54,9 @@ func generate_random_item(ilvl: int) -> EquipmentData:
 		item.slot = slots.pick_random()
 		
 		match item.slot:
-			EquipmentData.SlotType.WEAPON: item.item_name = "戰士之劍"
-			EquipmentData.SlotType.ARMOR: item.item_name = "堅固甲冑"
-			EquipmentData.SlotType.ACCESSORY: item.item_name = "神祕護符"
+			EquipmentData.SlotType.WEAPON: item.item_name = "劍"
+			EquipmentData.SlotType.ARMOR: item.item_name = "甲冑"
+			EquipmentData.SlotType.ACCESSORY: item.item_name = "護符"
 		
 		# 分配預設圖示
 		var atlas = AtlasTexture.new()

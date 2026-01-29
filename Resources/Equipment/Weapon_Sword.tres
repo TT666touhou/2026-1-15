@@ -35,7 +35,7 @@ region = Rect2(512, 128, 16, 16)
 
 [resource]
 script = ExtResource("3_script")
-item_names = Array[String](["戰士之劍"])
+item_names = Array[String](["劍"])
 slot = 0
 visual_icons = Array[Texture2D]([SubResource("AtlasTexture_sword")])
 affix_pool = Array[ExtResource("2_affix_script")]([SubResource("SubResource_str"), SubResource("SubResource_dex"), SubResource("SubResource_pen"), SubResource("SubResource_cdm")])

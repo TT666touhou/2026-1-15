@@ -29,7 +29,7 @@ region = Rect2(528, 16, 16, 16)
 
 [resource]
 script = ExtResource("3_script")
-item_names = Array[String](["堅固甲冑"])
+item_names = Array[String](["甲冑"])
 slot = 1
 visual_icons = Array[Texture2D]([SubResource("AtlasTexture_plate")])
 affix_pool = Array[ExtResource("2_affix_script")]([SubResource("SubResource_hp"), SubResource("SubResource_dr"), SubResource("SubResource_pie")])

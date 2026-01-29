@@ -136,6 +136,12 @@ func _show_game_clear_ui() -> void:
 		ui_layer.add_child(ui)
 	else:
 		get_tree().root.add_child(ui)
+	
+	# 隱藏 DeploymentUI (紅圈部分)
+	var deployment_ui = get_tree().get_first_node_in_group("deployment_ui")
+	if deployment_ui:
+		deployment_ui.visible = false
+		print("[DungeonManager] Hidden DeploymentUI for GameClear")
 
 func load_room_by_name(room_name: String) -> void:
 	var paths_to_try = [

@@ -121,6 +121,6 @@ theme_override_styles/normal = SubResource("StyleBoxFlat_btn")
 theme_override_styles/hover = SubResource("StyleBoxFlat_btn")
 theme_override_styles/pressed = SubResource("StyleBoxFlat_btn")
 theme_override_styles/focus = SubResource("StyleBoxFlat_btn")
-text = "重新開始 (回到 T001)"
+text = "重新開始"
 
 [connection signal="pressed" from="CenterContainer/PanelContainer/Margin/VBox/RestartButton" to="." method="_on_restart_button_pressed"]

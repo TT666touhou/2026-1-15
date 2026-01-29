@@ -41,6 +41,17 @@ func recruit_member(unit_card: UnitCard) -> bool:
 	print("[PartyManager] Recruited: ", unit_card.display_name)
 	return true
 
+func reset_party() -> void:
+	"""重置隊伍狀態，用於重新開始遊戲"""
+	party_members.clear()
+	leaders.clear()
+	if _deployment_ui_instance:
+		_deployment_ui_instance.queue_free()
+		_deployment_ui_instance = null
+	_recruit_starters()
+	party_updated.emit()
+	print("[PartyManager] Party reset.")
+
 func _update_leaders() -> void:
 	leaders.clear()
 	if not party_members.is_empty():

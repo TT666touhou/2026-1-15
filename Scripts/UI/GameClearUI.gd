@@ -18,15 +18,24 @@ func _ready() -> void:
 
 func _on_restart_button_pressed() -> void:
 	print("[GameClearUI] Restarting game...")
-	# 重新載入 T001
-	var dm = get_node_or_null("/root/DungeonManager")
-	if dm:
-		dm.load_room_by_name("T001")
 	
-	# 清理 UI
-	var tw = create_tween()
-	tw.tween_property(self, "modulate:a", 0.0, 0.5)
-	tw.finished.connect(queue_free)
+	# 1. 重置所有全域管理器狀態
+	if PartyManager:
+		PartyManager.reset_party()
+	
+	if TurnManager:
+		TurnManager.reset_state()
+	
+	var ledger = get_tree().get_first_node_in_group("ledger")
+	if ledger and ledger.has_method("reset"):
+		ledger.reset()
+	
+	# 2. 重新載入當前場景 (World.tscn)
+	get_tree().paused = false # 確保取消暫停
+	get_tree().reload_current_scene()
+	
+	# 3. 銷毀自己
+	queue_free()
 
 func _on_quit_button_pressed() -> void:
 	get_tree().quit()

@@ -28,7 +28,7 @@ region = Rect2(736, 112, 16, 16)
 
 [resource]
 script = ExtResource("3_script")
-item_names = Array[String](["神祕護符"])
+item_names = Array[String](["護符"])
 slot = 2
 visual_icons = Array[Texture2D]([SubResource("AtlasTexture_amulet")])
 affix_pool = Array[ExtResource("2_affix_script")]([SubResource("SubResource_int"), SubResource("SubResource_pie"), SubResource("SubResource_hp")])
