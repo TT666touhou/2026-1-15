@@ -43,8 +43,8 @@ func _do_spawn_single_coin(coin_scene: PackedScene) -> void:
 func _handle_death() -> void:
 	if is_dying: return
 	
-	# 在執行父類清理邏輯前，先生成裝備
-	_drop_equipment()
+	# 使用 call_deferred 確保在物理查詢結束後才生成裝備，避開 flushing_queries 錯誤
+	call_deferred("_drop_equipment")
 	
 	# 呼叫父類執行現有的死亡動畫、粒子與清理邏輯
 	super._handle_death()
@@ -72,6 +72,7 @@ func _drop_equipment() -> void:
 		# 3. 生成裝備實體
 		var equip_scene = load("res://Scenes/Entities/EquipmentEntity.tscn")
 		var equip_instance = equip_scene.instantiate()
+		equip_instance.name = "DroppedEquipment_" + random_data.item_name
 		
 		# 使用 set() 賦值，確保在加入場景樹前數據已到位
 		# 這裡我們使用 Object.set 避開潛在的型別檢查衝突
@@ -84,24 +85,23 @@ func _drop_equipment() -> void:
 		else:
 			get_parent().add_child(equip_instance)
 			
-		# 初始化實體狀態
-		if equip_instance.has_method("initialize_runtime"):
-			equip_instance.initialize_runtime(null, "neutral", false)
+		# 初始化實體狀態 (核心修正：移除會覆寫物理層級的 initialize_runtime 呼叫)
 		
 		# 設定座標
-		equip_instance.set_grid_position(grid_position)
-		if BoardManager:
-			BoardManager.register_entity(equip_instance)
+		equip_instance.global_position = global_position
+		
+		# 給予初始衝量噴出
+		var random_dir = Vector2.UP.rotated(randf_range(-1.0, 1.0))
+		var force = randf_range(200.0, 400.0)
+		equip_instance.apply_central_impulse(random_dir * force)
 			
-		# 強制更新視覺與物理
+		# 強制更新視覺
 		if equip_instance.has_method("_update_sprite_from_data"):
 			equip_instance.call("_update_sprite_from_data")
-		if equip_instance.has_method("unlock_physics"):
-			equip_instance.call("unlock_physics")
 			
 		equip_instance.visible = true
 		equip_instance.modulate.a = 1.0
 		
-		print("[TreasureChest] RECONSTRUCTED SUCCESS: Dropped %s at %s" % [random_data.item_name, grid_position])
+		print("[TreasureChest] Dropped %s via physics" % random_data.item_name)
 	else:
 		print("[TreasureChest] ERROR: Generator or MapLoader missing!")

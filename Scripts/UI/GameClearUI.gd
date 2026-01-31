@@ -26,6 +26,9 @@ func _on_restart_button_pressed() -> void:
 	if TurnManager:
 		TurnManager.reset_state()
 	
+	if DungeonManager:
+		DungeonManager.reset_state()
+	
 	var ledger = get_tree().get_first_node_in_group("ledger")
 	if ledger and ledger.has_method("reset"):
 		ledger.reset()

@@ -1,14 +1,14 @@
 [gd_scene load_steps=4 format=3 uid="uid://physicalcoin"]
 
 [ext_resource type="Script" path="res://Scripts/Entities/PhysicalCoin.gd" id="1_script"]
-[ext_resource type="Texture2D" path="res://Tilesheet/1bit_assetpack/1bit_assetpack/interactables/coin.png" id="2_texture"]
+[ext_resource type="Texture2D" path="res://Tilesheet/1bit_assetpack/selfmade/coin.png" id="2_texture"]
 
 [sub_resource type="CircleShape2D" id="CircleShape2D_coin"]
 radius = 4.0
 
 [node name="PhysicalCoin" type="RigidBody2D"]
 collision_layer = 128
-collision_mask = 131
+collision_mask = 2
 gravity_scale = 0.0
 lock_rotation = true
 linear_damp = 2.0

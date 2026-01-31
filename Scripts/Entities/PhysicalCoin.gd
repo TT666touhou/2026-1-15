@@ -7,14 +7,14 @@ class_name PhysicalCoin
 const COLOR_COIN = Color("#f2b233") # 假設的金幣色
 
 var _is_collecting: bool = false
+var _target_node: Node2D = null
+var _collection_speed: float = 0.0
+const MAX_COLLECTION_SPEED = 600.0
+const ACCELERATION = 1200.0
 
 func _ready() -> void:
+	add_to_group("loot")
 	add_to_group("physical_coins")
-	# 初始隨機旋轉 (移除，保持像素對齊)
-	# rotation = randf_range(0, TAU)
-	# 物理設定：Layer 8 (128), Mask 131 (1+2+128)
-	collision_layer = 128
-	collision_mask = 131
 	
 	# 給予隨機初始衝量
 	var random_dir = Vector2.RIGHT.rotated(randf_range(0, TAU))
@@ -24,12 +24,38 @@ func _ready() -> void:
 	# 隨機旋轉力 (移除，保持外觀不旋轉)
 	# apply_torque_impulse(randf_range(-50.0, 50.0))
 
+func _physics_process(delta: float) -> void:
+	if _is_collecting and is_instance_valid(_target_node):
+		# 加速移動向目標
+		_collection_speed = move_toward(_collection_speed, MAX_COLLECTION_SPEED, ACCELERATION * delta)
+		global_position = global_position.move_toward(_target_node.global_position, _collection_speed * delta)
+		
+		# 距離夠近就回收
+		if global_position.distance_to(_target_node.global_position) < 10.0:
+			_on_reached_target()
+
+func collect_to_node(target: Node2D) -> void:
+	if _is_collecting: return
+	_is_collecting = true
+	_target_node = target
+	_collection_speed = linear_velocity.length() # 從當前速度開始銜接
+	
+	# 停止物理模擬
+	set_deferred("freeze", true)
+	# 關閉碰撞，避免干擾玩家
+	set_deferred("collision_layer", 0)
+	set_deferred("collision_mask", 0)
+
+func enable_collection() -> void:
+	# [相容性介面]
+	pass
+
 func collect(target_global_pos: Vector2) -> void:
 	if _is_collecting: return
 	_is_collecting = true
 	
-	# 停止物理模擬
-	freeze = true
+	# 停止物理模擬 (使用 set_deferred 避開 flushing_queries 錯誤)
+	set_deferred("freeze", true)
 	
 	var tw = create_tween()
 	# 先稍微往上跳一下再飛過去
@@ -43,10 +69,13 @@ func collect(target_global_pos: Vector2) -> void:
 	
 	tw.finished.connect(_on_reached_ui)
 
-func _on_reached_ui() -> void:
+func _on_reached_target() -> void:
 	# 增加實際資源
 	var ledger = get_tree().get_first_node_in_group("ledger")
 	if ledger:
 		ledger.add_resource("coin", 1)
 	
 	queue_free()
+
+func _on_reached_ui() -> void:
+	_on_reached_target()

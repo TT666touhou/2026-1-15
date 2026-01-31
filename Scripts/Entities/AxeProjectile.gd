@@ -33,7 +33,7 @@ func setup(pos: Vector2, dir: Vector2, dmg: int, spd: float, source: GridEntity)
 	# 確保 Area2D 的物理同步
 	if sprite:
 		sprite.rotation = direction.angle()
-	print("[AxeProjectile] Setup complete: Pos: ", global_position, " | Dir: ", direction, " | Damage: ", damage)
+	# print("[AxeProjectile] Setup complete: Pos: ", global_position, " | Dir: ", direction, " | Damage: ", damage)
 
 func _physics_process(delta: float) -> void:
 	# 移動

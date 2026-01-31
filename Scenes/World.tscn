@@ -237,9 +237,16 @@ scale = Vector2(0.5, 0.5)
 		theme_override_constants/separation = 10
 		alignment = 2
 
-		[node name="TurnDebugInfo" type="HBoxContainer" parent="UI/TopRightToolbar"]
-		visible = false
-		layout_mode = 2
+		[node name="TurnDebugInfo" type="HBoxContainer" parent="UI"]
+		anchors_preset = 5
+		anchor_left = 0.5
+		anchor_right = 0.5
+		offset_left = -100.0
+		offset_top = 60.0
+		offset_right = 100.0
+		offset_bottom = 100.0
+		grow_horizontal = 2
+		alignment = 1
 		script = ExtResource("45")
 
 		[node name="DebugResourceButton" parent="UI/TopRightToolbar" instance=ExtResource("39")]

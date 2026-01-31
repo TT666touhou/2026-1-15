@@ -27,7 +27,7 @@ func execute_skill(source_entity: GridEntity, skill: Resource, origin_pos: Vecto
 	var skill_name = skill.get("skill_name")
 	if skill_name == null: skill_name = "Unknown"
 	
-	print("[SkillManager] execute_skill: ", skill_name, " | Source: ", source_entity.name)
+	# print("[SkillManager] execute_skill: ", skill_name, " | Source: ", source_entity.name)
 	
 	# 特殊技能處理：十字箭矢 (Cross Arrow)
 	# 使用更健壯的匹配方式
@@ -73,7 +73,7 @@ func execute_skill(source_entity: GridEntity, skill: Resource, origin_pos: Vecto
 	var actual_origin = origin_pos
 	if targeting_type == UnitSkillData.TargetingType.ABSOLUTE:
 		actual_origin = _get_grid_center()
-		print("[SkillManager] Absolute skill detected, origin centered to: ", actual_origin)
+		# print("[SkillManager] Absolute skill detected, origin centered to: ", actual_origin)
 	
 	# 1. 獲取並驗證目標
 	var valid_targets = get_valid_targets(targeting, actual_origin, source_entity)
@@ -488,7 +488,7 @@ func _fire_whirlwind_axes(caster: GridEntity, skill: Resource) -> void:
 				if not target_enemies.has(entity):
 					target_enemies.append(entity)
 	
-	print("[SkillManager] Firing whirlwind axes for ", caster.name, " | Targets found: ", target_enemies.size())
+	# print("[SkillManager] Firing whirlwind axes for ", caster.name, " | Targets found: ", target_enemies.size())
 	
 	for enemy in target_enemies:
 		var target_dir = (enemy.global_position - caster.global_position).normalized()

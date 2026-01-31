@@ -150,7 +150,7 @@ func _update_barriers(count: int) -> void:
 		var triangle = Control.new()
 		triangle.custom_minimum_size = Vector2(8, 8)
 		triangle.script = GDScript.new()
-		triangle.set_script(load("res://Scripts/UI/BarrierIcon.gd") if FileAccess.file_exists("res://Scripts/UI/BarrierIcon.gd") else null)
+		triangle.set_script(load("res://Scripts/UI/BarrierIcon.gd") if ResourceLoader.exists("res://Scripts/UI/BarrierIcon.gd") else null)
 		
 		# 如果沒腳本，就用一個簡單的 ColorRect
 		if triangle.get_script() == null:

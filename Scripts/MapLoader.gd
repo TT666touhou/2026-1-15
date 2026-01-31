@@ -42,10 +42,14 @@ func _ready() -> void:
 		print("[MapLoader] ResourcesLayer found but is not a TileMapLayer, skipping _initialize_resources")
 		
 	# 初始啟動時載入 T001.tres
-	var t001 = load("res://Resources/Rooms/T001.tres")
-	if t001:
-		# 使用 call_deferred 確保在所有節點 ready 後才執行
-		call_deferred("_initial_room_load", t001)
+	var room_path = "res://Resources/Rooms/T001.tres"
+	if ResourceLoader.exists(room_path):
+		var t001 = load(room_path)
+		if t001:
+			# 使用 call_deferred 確保在所有節點 ready 後才執行
+			call_deferred("_initial_room_load", t001)
+	else:
+		push_error("[MapLoader] CRITICAL: T001.tres not found at " + room_path)
 	
 	# 初始化回合系統
 	if TurnManager:
@@ -164,11 +168,11 @@ func instantiate_room(template: RoomTemplate) -> Array[GridEntity]:
 		var overrides = entity_data.get("overrides", {})
 		
 		var card = null
-		if card_path != "" and FileAccess.file_exists(card_path):
+		if card_path != "" and ResourceLoader.exists(card_path):
 			card = load(card_path)
 			
 		var scene_to_spawn = null
-		if scene_path != "" and FileAccess.file_exists(scene_path):
+		if scene_path != "" and ResourceLoader.exists(scene_path):
 			scene_to_spawn = load(scene_path)
 		elif card:
 			if "unit_scene" in card: scene_to_spawn = card.get("unit_scene")
@@ -338,7 +342,7 @@ func _resolve_visual_tiles(layer: TileMapLayer) -> void:
 	else:
 		if ts.get_source_count() > 0:
 			_base_source_id = ts.get_source_id(0)
-		print("[MapLoader] No base visual set, using default source %d and coords (4,6)" % _base_source_id)
+		# print("[MapLoader] No base visual set, using default source %d and coords (4,6)" % _base_source_id)
 
 	_resolved_variations.clear()
 	for v in variations:

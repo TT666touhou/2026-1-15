@@ -1,71 +1,51 @@
 extends PanelContainer
 class_name DeploymentMemberCard
 
-@onready var icon_rect: TextureRect = $HBox/Icon
-@onready var info_box: VBoxContainer = $HBox/InfoBox
-@onready var name_label: Label = $HBox/InfoBox/NameLabel
-@onready var hp_label: RichTextLabel = $HBox/InfoBox/StatsBox/HPBarContainer/HPLabel
-@onready var hp_bar: ProgressBar = $HBox/InfoBox/StatsBox/HPBarContainer/HPBar
-@onready var barrier_container: HBoxContainer = $HBox/InfoBox/StatsBox/BarrierContainer
-@onready var atk_label: Label = $HBox/InfoBox/StatsGrid/AtkLabel
-@onready var spd_label: Label = $HBox/InfoBox/StatsGrid/SpdLabel
-@onready var avd_label: Label = $HBox/InfoBox/StatsGrid/AvdLabel
-@onready var acc_label: Label = $HBox/InfoBox/StatsGrid/AccLabel
-@onready var dr_label: Label = $HBox/InfoBox/StatsGrid/DRLabel
-@onready var res_label: Label = $HBox/InfoBox/StatsGrid/ResLabel
-@onready var ref_label: Label = $HBox/InfoBox/StatsGrid/RefLabel
-@onready var pur_label: Label = $HBox/InfoBox/StatsGrid/PurLabel
-@onready var parry_label: Label = $HBox/InfoBox/StatsGrid/ParryLabel
-@onready var drain_label: Label = $HBox/InfoBox/StatsGrid/DrainLabel
-@onready var crit_dmg_label: Label = $HBox/InfoBox/StatsGrid/CritDmgLabel
-@onready var pen_label: Label = $HBox/InfoBox/StatsGrid/PenLabel
-@onready var combo_label: Label = $HBox/InfoBox/ComboLabel
-@onready var skill_slot: SkillChargeSlot = $HBox/InfoBox/SkillSlot
-
-# Leader Skill UI
-@onready var leader_skill_box: VBoxContainer = $HBox/LeaderSkillBox
-@onready var skill_name_label: Label = $HBox/LeaderSkillBox/SkillNameLabel
-@onready var skill_desc_label: Label = $HBox/LeaderSkillBox/SkillDescLabel
+@onready var icon_rect: TextureRect = $MainVBox/TopHBox/Icon
+@onready var info_box: VBoxContainer = $MainVBox/TopHBox/InfoBox
+@onready var name_label: Label = $MainVBox/TopHBox/InfoBox/NameLabel
+@onready var hp_label: RichTextLabel = $MainVBox/TopHBox/InfoBox/StatsBox/HPBarContainer/HPLabel
+@onready var hp_bar: ProgressBar = $MainVBox/TopHBox/InfoBox/StatsBox/HPBarContainer/HPBar
+@onready var barrier_container: HBoxContainer = $MainVBox/TopHBox/InfoBox/StatsBox/BarrierContainer
+@onready var atk_label: Label = $MainVBox/TopHBox/InfoBox/StatsGrid/AtkLabel
+@onready var spd_label: Label = $MainVBox/TopHBox/InfoBox/StatsGrid/SpdLabel
+@onready var avd_label: Label = $MainVBox/TopHBox/InfoBox/StatsGrid/AvdLabel
+@onready var acc_label: Label = $MainVBox/TopHBox/InfoBox/StatsGrid/AccLabel
+@onready var dr_label: Label = $MainVBox/TopHBox/InfoBox/StatsGrid/DRLabel
+@onready var res_label: Label = $MainVBox/TopHBox/InfoBox/StatsGrid/ResLabel
+@onready var ref_label: Label = $MainVBox/TopHBox/InfoBox/StatsGrid/RefLabel
+@onready var pur_label: Label = $MainVBox/TopHBox/InfoBox/StatsGrid/PurLabel
+@onready var parry_label: Label = $MainVBox/TopHBox/InfoBox/StatsGrid/ParryLabel
+@onready var drain_label: Label = $MainVBox/TopHBox/InfoBox/StatsGrid/DrainLabel
+@onready var crit_dmg_label: Label = $MainVBox/TopHBox/InfoBox/StatsGrid/CritDmgLabel
+@onready var pen_label: Label = $MainVBox/TopHBox/InfoBox/StatsGrid/PenLabel
+@onready var combo_label: Label = $MainVBox/TopHBox/InfoBox/ComboLabel
+@onready var skill_slot: SkillChargeSlot = $MainVBox/TopHBox/InfoBox/SkillSlot
 
 # Equipment UI
-@onready var equipment_box: VBoxContainer = $HBox/EquipmentBox
-@onready var weapon_slot: EquipmentSlotUI = $HBox/EquipmentBox/Slots/WeaponSlot
-@onready var armor_slot: EquipmentSlotUI = $HBox/EquipmentBox/Slots/ArmorSlot
-@onready var accessory_slot: EquipmentSlotUI = $HBox/EquipmentBox/Slots/AccessorySlot
+@onready var equipment_box: VBoxContainer = $MainVBox/EquipmentBox
+@onready var weapon_slot: EquipmentSlotUI = $MainVBox/EquipmentBox/Slots/WeaponSlot
+@onready var armor_slot: EquipmentSlotUI = $MainVBox/EquipmentBox/Slots/ArmorSlot
+@onready var accessory_slot: EquipmentSlotUI = $MainVBox/EquipmentBox/Slots/AccessorySlot
 
 # Border for Leader
 @onready var border: NinePatchRect = $Border
 
-enum DisplayState { STATS, TRAITS, EQUIPMENT }
-
 var character_data: CharacterData
-var _current_state: DisplayState = DisplayState.STATS
-var _pre_drag_state: DisplayState = DisplayState.STATS
-var _is_right_pressed: bool = false
-var _is_dragging_right: bool = false
-const DRAG_THRESHOLD = 10.0
 
 func _ready() -> void:
 	add_to_group("deployment_member_cards")
-	# Debug logs for height issue
-	call_deferred("_log_heights")
+	
+	# 連接技能槽位懸停信號
+	if skill_slot:
+		if not skill_slot.mouse_entered.is_connected(_on_skill_mouse_entered):
+			skill_slot.mouse_entered.connect(_on_skill_mouse_entered)
+		if not skill_slot.mouse_exited.is_connected(_on_skill_mouse_exited):
+			skill_slot.mouse_exited.connect(_on_skill_mouse_exited)
 	
 	# F6 Debug Logic
 	if get_parent() == get_tree().root:
 		_run_debug_mode()
-
-func _log_heights() -> void:
-	pass
-#	print("[DeploymentMemberCard] DEBUG HEIGHT REPORT")
-#	print("  Self min_size: ", custom_minimum_size, " | Size: ", size)
-#	if info_box: print("  InfoBox min_size: ", info_box.custom_minimum_size, " | Size: ", info_box.size)
-#	if leader_skill_box: print("  LeaderSkillBox min_size: ", leader_skill_box.custom_minimum_size, " | Size: ", leader_skill_box.size)
-#	if equipment_box: print("  EquipmentBox min_size: ", equipment_box.custom_minimum_size, " | Size: ", equipment_box.size)
-#	if GlobalSettings.has_method("get_use_simplified_stats_ui"):
-#		print("  Simplified Mode: ", GlobalSettings.get_use_simplified_stats_ui())
-#	else:
-#		print("  Simplified Mode: API MISSING")
-
 
 func _run_debug_mode() -> void:
 	# 建立虛擬數據
@@ -124,14 +104,6 @@ func setup(data: CharacterData) -> void:
 					print("[DeploymentMemberCard] Auto-atlased raw icon for: ", def.display_name)
 				else:
 					icon_rect.texture = def.icon
-			
-		# Setup Leader Skill info
-		if def.character_trait:
-			skill_name_label.text = def.character_trait.trait_name
-			skill_desc_label.text = def.character_trait.description
-		else:
-			skill_name_label.text = "No Leader Skill"
-			skill_desc_label.text = "-"
 	
 	_update_stats()
 	_update_info_display()
@@ -140,7 +112,6 @@ func setup(data: CharacterData) -> void:
 	# Connect signals for dynamic updates
 	if not character_data.health_changed.is_connected(_on_health_changed):
 		character_data.health_changed.connect(_on_health_changed)
-	# CharacterData 無 combo_count_changed 信號；combo 顯示由 stats_changed 觸發 _update_stats 更新
 	
 	# Listen for stat recalculation updates
 	if not character_data.stats_changed.is_connected(_on_stats_changed):
@@ -252,7 +223,7 @@ func _update_barriers(count: int) -> void:
 		var triangle = Control.new()
 		triangle.custom_minimum_size = Vector2(8, 8)
 		triangle.script = GDScript.new()
-		triangle.set_script(load("res://Scripts/UI/BarrierIcon.gd") if FileAccess.file_exists("res://Scripts/UI/BarrierIcon.gd") else null)
+		triangle.set_script(load("res://Scripts/UI/BarrierIcon.gd") if ResourceLoader.exists("res://Scripts/UI/BarrierIcon.gd") else null)
 		
 		# 如果沒腳本，就用一個簡單的 ColorRect
 		if triangle.get_script() == null:
@@ -264,36 +235,26 @@ func _update_barriers(count: int) -> void:
 		barrier_container.add_child(triangle)
 
 func _update_info_display() -> void:
-	info_box.visible = (_current_state == DisplayState.STATS)
-	leader_skill_box.visible = (_current_state == DisplayState.TRAITS)
-	equipment_box.visible = (_current_state == DisplayState.EQUIPMENT)
+	info_box.visible = true
+	equipment_box.visible = true
 	
-	# 技能槽位在 STATS 狀態下始終顯示
+	# 技能槽位始終顯示
 	_update_skill_ui()
-	
-	if _current_state == DisplayState.EQUIPMENT:
-		_update_equipment_icons()
+	_update_equipment_icons()
 
 func _update_skill_ui() -> void:
 	if not skill_slot: return
 	
 	if character_data and character_data.runtime_skill:
-		skill_slot.visible = (_current_state == DisplayState.STATS) # 僅在 STATS 狀態顯示，或依需求決定
+		skill_slot.visible = true
 		skill_slot.setup(character_data.runtime_skill, character_data)
 	else:
 		skill_slot.visible = false
 
 func _update_equipment_icons() -> void:
 	if character_data == null: 
-		print("[DeploymentMemberCard] Cannot update icons: character_data is NULL")
 		return
 	
-	print("[DeploymentMemberCard] Updating icons for: %s. W:%s, A:%s, Acc:%s" % [
-		character_data.unit_def.display_name if character_data.unit_def else "Unknown",
-		"YES" if character_data.weapon else "NO",
-		"YES" if character_data.armor else "NO",
-		"YES" if character_data.accessory else "NO"
-	])
 	weapon_slot.set_equipment(character_data.weapon)
 	armor_slot.set_equipment(character_data.armor)
 	accessory_slot.set_equipment(character_data.accessory)
@@ -303,8 +264,18 @@ func _on_health_changed(_current: int, _max: int) -> void:
 
 func _on_stats_changed() -> void:
 	_update_stats()
-	if _current_state == DisplayState.EQUIPMENT:
-		_update_equipment_icons()
+	_update_equipment_icons()
+
+func _on_skill_mouse_entered() -> void:
+	if character_data and character_data.runtime_skill:
+		var hc = get_tree().get_first_node_in_group("hover_info_controller")
+		if hc and hc.has_method("show_skill_info"):
+			hc.show_skill_info(character_data.runtime_skill, true)
+
+func _on_skill_mouse_exited() -> void:
+	var hc = get_tree().get_first_node_in_group("hover_info_controller")
+	if hc and hc.has_method("_hide_all"):
+		hc._hide_all()
 
 ## 新增：由 GridSelector 呼叫的裝備介面
 func equip_item(item_data: Resource) -> bool:
@@ -312,37 +283,13 @@ func equip_item(item_data: Resource) -> bool:
 	
 	print("[DeploymentMemberCard] Equipping from GridSelector: ", item_data.get("item_name"))
 	character_data.equip(item_data)
-	# CharacterData.equip 會觸發 recalculate_stats 並發送 stats_changed
-	# 這裡手動呼叫一次 _update_stats 確保 UI 即時更新 (雖然信號也會做，但這樣更保險)
 	_update_stats()
-	if _current_state == DisplayState.EQUIPMENT:
-		_update_equipment_icons()
+	_update_equipment_icons()
 	return true
 
-func force_display_state(new_state: int) -> void:
-	_pre_drag_state = _current_state
-	_current_state = new_state as DisplayState
-	_update_info_display()
-
-func restore_pre_drag_state() -> void:
-	_current_state = _pre_drag_state
-	_update_info_display()
-
-func _gui_input(event: InputEvent) -> void:
-	# Right-Click Logic
-	if event is InputEventMouseButton:
-		if event.button_index == MOUSE_BUTTON_RIGHT:
-			# Disable right-drag reordering
-			_is_right_pressed = false
-			_is_dragging_right = false
-				
-		# Left-Click Logic (Toggle Info)
-		elif event.button_index == MOUSE_BUTTON_LEFT and not event.pressed:
-			_current_state = ((_current_state + 1) % 3) as DisplayState
-			_update_info_display()
-			
-	if event is InputEventMouseMotion:
-		pass
+func _gui_input(_event: InputEvent) -> void:
+	# 移除點擊切換邏輯
+	pass
 
 func _can_drop_data(_at_position: Vector2, data: Variant) -> bool:
 	return typeof(data) == TYPE_DICTIONARY and data.get("type") == "equipment"
@@ -360,16 +307,13 @@ func _drop_data(_at_position: Vector2, data: Variant) -> void:
 		if entity:
 			print("[DeploymentMemberCard] Freeing entity: ", entity.name)
 			entity.queue_free()
-			# 核心修正：手動發送一個信號或延遲呼叫，確保 DungeonManager 能收到更新
-			var dm = Engine.get_main_loop().root.get_node_or_null("DungeonManager")
-			if dm:
-				print("[DeploymentMemberCard] Notifying DungeonManager to check room clear...")
-				dm.call_deferred("check_room_clear")
+			var dungeon_manager = Engine.get_main_loop().root.get_node_or_null("DungeonManager")
+			if dungeon_manager and dungeon_manager.has_method("check_battle_status"):
+				dungeon_manager.call_deferred("check_battle_status")
 			
-		# 核心修正：裝備成功後，通知 DungeonManager 檢查房間狀態
 		var dm = get_tree().root.get_node_or_null("DungeonManager")
-		if dm and dm.has_method("check_room_clear"):
-			dm.check_room_clear()
+		if dm and dm.has_method("check_battle_status"):
+			dm.check_battle_status()
 
 func _get_drag_data(_at_position: Vector2) -> Variant:
 	# Disable drag-and-drop deployment

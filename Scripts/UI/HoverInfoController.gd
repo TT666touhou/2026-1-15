@@ -8,7 +8,7 @@ var _equip_panel_instance: Control = null
 var _skill_tooltip_instance: Control = null
 var _grid: Node = null
 var _last_hovered_entity_id: int = -1 # Track instance ID to force updates
-var _current_entity: GridEntity = null # 目前懸停的實體
+var _current_entity: Node = null # 目前懸停的實體
 var _is_ui_hovering: bool = false # 標記目前是否由 UI 元素觸發懸停顯示
 
 const EnemyInfoCardScene = preload("res://Scenes/UI/EnemyInfoCard.tscn")
@@ -99,7 +99,7 @@ func _process(_delta: float) -> void:
 	else:
 		_hide_all()
 
-func _get_entity_under_mouse() -> GridEntity:
+func _get_entity_under_mouse() -> Node:
 	# 關鍵修正：改用物理查詢而非網格佔用，以支援移動中的實體偵測
 	var mouse_pos = get_global_mouse_position()
 	var camera = get_viewport().get_camera_2d()
@@ -133,12 +133,16 @@ func _get_entity_under_mouse() -> GridEntity:
 		
 	for res in results:
 		var collider = res.collider
-		if collider is GridEntity:
+		# 額外檢查：確保實體仍然有效且未被標記為刪除
+		if not is_instance_valid(collider) or collider.is_queued_for_deletion():
+			continue
+			
+		if collider is GridEntity or collider is EquipmentEntity:
 			return collider
 			
 	return null
 
-func _update_display_logic(entity: GridEntity) -> void:
+func _update_display_logic(entity: Node) -> void:
 	if not _card_instance or not _trap_card_instance or not _equip_panel_instance: 
 		print("[HoverInfoController] ERROR: Card instances missing!")
 		return
@@ -175,6 +179,10 @@ func _update_display_logic(entity: GridEntity) -> void:
 			_trap_card_instance.visible = true
 			_card_instance.visible = false
 			_equip_panel_instance.visible = false
+		return
+
+	if not entity is GridEntity:
+		_hide_all()
 		return
 
 	var show_enemy_info = false

@@ -30,7 +30,7 @@ func setup(pos: Vector2, dir: Vector2, dmg: int, atk_speed: float, attacker: Gri
 	attacker_entity = attacker
 	
 	rotation = direction.angle()
-	print("[ArrowProjectile] Setup complete (CharacterBody2D): Pos: ", global_position, " | Dir: ", direction, " | Speed: ", speed)
+	# print("[ArrowProjectile] Setup complete (CharacterBody2D): Pos: ", global_position, " | Dir: ", direction, " | Speed: ", speed)
 
 func _physics_process(delta: float) -> void:
 	if not _is_active: return
@@ -67,7 +67,7 @@ func _physics_process(delta: float) -> void:
 		rotation = direction.angle()
 		
 		_bounce_count += 1
-		print("[ArrowProjectile] Bounced! Normal: ", normal, " | New Dir: ", direction, " | Count: ", _bounce_count)
+		# print("[ArrowProjectile] Bounced! Normal: ", normal, " | New Dir: ", direction, " | Count: ", _bounce_count)
 		
 		if _bounce_count > MAX_BOUNCES:
 			_destroy()
