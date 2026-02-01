@@ -575,9 +575,10 @@ func set_moving_fx(enabled: bool) -> void:
 			_move_dust_particles.position = Vector2(0, size_y)
 		
 		if _move_dust_particles.emitting != enabled:
-			var parent_name = get_parent().name
-			var g_pos = _move_dust_particles.global_position
-			var z = _move_dust_particles.z_index
+			# var parent_name = get_parent().name
+			# var g_pos = _move_dust_particles.global_position
+			# var z = _move_dust_particles.z_index
 			# print("[UnitVisuals] Dust for %s | Emitting: %s | GPos: %s | Z: %d" % [parent_name, enabled, g_pos, z])
+			pass
 		
 		_move_dust_particles.emitting = enabled

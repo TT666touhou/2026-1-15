@@ -15,6 +15,12 @@ func register_current_room(template: RoomTemplate) -> void:
 	current_room_template = template
 	print("[DungeonManager] Registered: ", template.room_name)
 
+func start_new_run() -> void:
+	print("[DungeonManager] >>> STARTING NEW RUN")
+	reset_state()
+	# 初始啟動時載入 T001
+	load_room_by_name("T001")
+
 func reset_state() -> void:
 	current_room_template = null
 	_is_transitioning = false
@@ -123,14 +129,29 @@ func _load_room_template(template: RoomTemplate) -> void:
 	var map_loader = get_tree().get_first_node_in_group("map_loader")
 	if not map_loader: return
 	
+	# 核心優化：在載入新房間前，檢查是否已經有玩家單位在場上
+	var player_faction = load("res://Resources/Factions/Faction_Player.tres")
+	var existing_players = []
+	if BoardManager:
+		existing_players = BoardManager.get_entities_by_faction(player_faction)
+	
 	# 玩家回血
-	for p in get_tree().get_nodes_in_group("player"):
+	for p in existing_players:
 		if p.character_data:
 			var missing = p.character_data.get_effective_max_health() - p.character_data.current_health
 			if missing > 0: p.character_data.heal(int(missing * 0.5))
 	
 	await get_tree().create_timer(0.5).timeout
 	var spawned = map_loader.instantiate_room(template)
+	
+	# 核心修正：僅當場上沒有玩家單位時才進行自動部署 (避免 F2 偵錯或切換房間時重複生成)
+	if existing_players.is_empty():
+		if map_loader.has_method("_auto_deploy_party"):
+			print("[DungeonManager] No existing players found. Triggering auto-deployment for room: ", template.room_name)
+			map_loader._auto_deploy_party(template)
+	else:
+		print("[DungeonManager] %d existing players found. Skipping auto-deployment." % existing_players.size())
+		# 如果是已存在的玩家，確保他們被移動到新房間的對應位置 (可選，目前先保持原位或由 instantiate_room 處理)
 	
 	# 重新註冊玩家位置
 	for p in get_tree().get_nodes_in_group("player"):

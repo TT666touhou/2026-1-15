@@ -33,6 +33,7 @@ var is_free_roam_mode: bool = false
 var _is_input_locked: bool = false
 var _units_launched: bool = false
 var _is_currently_resolving: bool = false # 結算鎖，防止多重協程衝突
+var _active_resolution_faction: FactionDefinition = null # 記錄當前觸發結算的陣營
 
 func _ready() -> void:
 	Engine.time_scale = 1.0
@@ -56,6 +57,7 @@ func reset_state() -> void:
 	_is_input_locked = false
 	_units_launched = false
 	_is_currently_resolving = false
+	_active_resolution_faction = null
 	# print("[TurnManager] State reset.")
 
 ## 綜合忙碌狀態判定
@@ -76,6 +78,9 @@ func start_combat(factions: Array[FactionDefinition]) -> void:
 		push_error("[TurnManager] Cannot start combat with empty factions list")
 		return
 		
+	# 確保狀態重置
+	reset_state()
+	
 	factions_order = factions
 	current_faction_index = 0
 	turn_count = 1
@@ -110,8 +115,6 @@ func start_turn() -> void:
 	if current_faction.is_controllable:
 		_set_state(State.PLAYER_TURN)
 		_units_launched = false
-		if AttackManager:
-			AttackManager.reset_global_combo()
 		# 玩家回合開始：解鎖所有玩家單位
 		unlock_all_players()
 		# 解鎖戰利品拾取權限
@@ -204,6 +207,10 @@ func _wait_for_physics() -> void:
 	
 	# print("[TurnManager] Physics settled.")
 	
+	# 核心修正：物理靜止後，重置全域連擊數
+	if AttackManager:
+		AttackManager.reset_global_combo()
+	
 	# 物理結算完成後，根據設定決定是否自動回收金幣
 	var should_auto = true
 	if GlobalSettings and GlobalSettings.has_method("get_auto_collect_coins"):
@@ -266,6 +273,7 @@ func on_unit_launched(_unit: Node, _force: Vector2) -> void:
 func _resolve_enemy_action() -> void:
 	if _is_currently_resolving: return
 	_is_currently_resolving = true
+	_active_resolution_faction = current_faction
 	
 	# print("[TurnManager] _resolve_enemy_action() started.")
 	_set_state(State.RESOLVING)
@@ -274,10 +282,12 @@ func _resolve_enemy_action() -> void:
 	# print("[TurnManager] Enemy action physics settled. Returning to ENEMY_TURN.")
 	_set_state(State.ENEMY_TURN)
 	_is_currently_resolving = false
+	_active_resolution_faction = null
 
 func _resolve_action() -> void:
 	if _is_currently_resolving: return
 	_is_currently_resolving = true
+	_active_resolution_faction = current_faction
 	
 	var prev_state = current_state
 	# print("[TurnManager] _resolve_action() started. Previous State: ", State.keys()[prev_state])
@@ -289,6 +299,7 @@ func _resolve_action() -> void:
 	
 	# 核心修正：結算結束後，先釋放鎖，再執行進關或換人邏輯，避免遞歸死鎖
 	_is_currently_resolving = false
+	_active_resolution_faction = null
 	
 	# 根據結算前的狀態決定下一步
 	if prev_state == State.LOOT_PHASE:
@@ -320,8 +331,8 @@ func trigger_loot_phase() -> void:
 	_set_state(State.LOOT_PHASE)
 	unlock_all_players()
 	loot_unlocked.emit() # 進入搜刮階段也要解鎖
-	if AttackManager:
-		AttackManager.reset_global_combo()
+	# 移除重複的 Combo 重置，統一由物理靜止觸發
+	turn_started.emit(current_faction) # 確保 UI 更新
 
 func _set_state(new_state: State) -> void:
 	if current_state == new_state: return
@@ -355,7 +366,12 @@ func is_enemy_turn() -> bool:
 	return current_state == State.ENEMY_TURN
 
 func is_player_turn() -> bool:
-	return is_free_roam_mode or current_state == State.PLAYER_TURN or current_state == State.LOOT_PHASE
+	if is_free_roam_mode: return true
+	if current_state == State.PLAYER_TURN or current_state == State.LOOT_PHASE:
+		return true
+	if current_state == State.RESOLVING and _active_resolution_faction:
+		return _active_resolution_faction.is_controllable
+	return false
 
 func get_phase_name() -> String:
 	if is_free_roam_mode: return "Free Roam"

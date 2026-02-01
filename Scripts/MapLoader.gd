@@ -31,7 +31,6 @@ func _ready() -> void:
 	var ground_layer = get_node_or_null(ground_layer_path)
 	if ground_layer is TileMapLayer:
 		_resolve_visual_tiles(ground_layer) # 解析視覺化地塊數據
-		_initialize_ground(ground_layer)
 	elif ground_layer:
 		push_error("[MapLoader] Ground layer found but is not a TileMapLayer!")
 	
@@ -41,19 +40,12 @@ func _ready() -> void:
 	elif resources_layer:
 		print("[MapLoader] ResourcesLayer found but is not a TileMapLayer, skipping _initialize_resources")
 		
-	# 初始啟動時載入 T001.tres
-	var room_path = "res://Resources/Rooms/T001.tres"
-	if ResourceLoader.exists(room_path):
-		var t001 = load(room_path)
-		if t001:
-			# 使用 call_deferred 確保在所有節點 ready 後才執行
-			call_deferred("_initial_room_load", t001)
+	# 核心優化：由 DungeonManager 統一驅動啟動流程
+	if DungeonManager:
+		# 使用 call_deferred 確保所有 Autoload 和節點都 ready
+		DungeonManager.call_deferred("start_new_run")
 	else:
-		push_error("[MapLoader] CRITICAL: T001.tres not found at " + room_path)
-	
-	# 初始化回合系統
-	if TurnManager:
-		TurnManager.start_combat([FACTION_PLAYER, FACTION_ENEMY])
+		push_error("[MapLoader] DungeonManager not found! Cannot start game flow.")
 
 func _initial_room_load(template: RoomTemplate) -> void:
 	var spawned = instantiate_room(template)
@@ -66,19 +58,27 @@ func _initial_room_load(template: RoomTemplate) -> void:
 	_auto_deploy_party(template)
 
 func _auto_deploy_party(template: RoomTemplate) -> void:
-	if not PartyManager: return
+	if not PartyManager: 
+		print("[MapLoader] PartyManager not found, skipping deployment")
+		return
 	
 	var members = PartyManager.get_members()
 	var spawn_points = template.player_spawn_points
+	
+	print("[MapLoader] Auto-deploying %d members to %d spawn points" % [members.size(), spawn_points.size()])
 	
 	for i in range(min(members.size(), spawn_points.size())):
 		var member_data = members[i]
 		var spawn_pos = spawn_points[i]
 		
+		print("[MapLoader] Deploying member %d (%s) to %s" % [i, member_data.unit_def.display_name if member_data.unit_def else "Unknown", spawn_pos])
 		var _success = PartyManager.spawn_party_member(member_data, spawn_pos)
+		if not _success:
+			print("[MapLoader] FAILED to deploy member at ", spawn_pos)
 	
 	# 部署完成後，主動結束部署階段進入戰鬥
 	if TurnManager and TurnManager.current_state == TurnManager.State.DEPLOYMENT:
+		print("[MapLoader] Deployment finished, ending deployment phase")
 		TurnManager.end_deployment()
 
 func _initialize_ground(_layer: TileMapLayer) -> void:

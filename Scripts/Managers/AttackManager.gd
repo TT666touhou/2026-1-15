@@ -9,7 +9,6 @@ signal unit_damaged(target: Node, attacker: Node, amount: int)
 
 # --- 狀態變數 ---
 var global_combo_count: int = 0
-var has_hit_this_action: bool = false
 
 # ============================================================================
 # Combo 系統管理
@@ -17,21 +16,14 @@ var has_hit_this_action: bool = false
 
 func increase_global_combo(amount: int = 1) -> void:
 	global_combo_count += amount
-	has_hit_this_action = true
 	global_combo_changed.emit(global_combo_count)
 	# print("[AttackManager] Global Combo increased to: ", global_combo_count)
-
-func mark_hit() -> void:
-	has_hit_this_action = true
 
 func reset_global_combo() -> void:
 	if global_combo_count != 0:
 		global_combo_count = 0
 		global_combo_changed.emit(global_combo_count)
 		# print("[AttackManager] Global Combo RESET")
-
-func reset_action_hit_flag() -> void:
-	has_hit_this_action = false
 
 func get_combo_damage_multiplier(scaling: float = 0.1) -> float:
 	# 核心規則：只有在玩家回合且非自由漫遊時套用 Combo 倍率
@@ -61,7 +53,14 @@ func resolve_combat(attacker: Node, target: GridEntity, base_damage: int, is_ski
 	# 獲取攻擊者數據 (支援 GridEntity 或 Projectile)
 	var attacker_unit = null
 	if is_instance_valid(attacker):
-		attacker_unit = attacker if attacker is GridEntity else attacker.get("attacker_entity")
+		if attacker is GridEntity:
+			attacker_unit = attacker
+		else:
+			# 嘗試從投射物獲取發動者 (相容不同投射物的屬性名)
+			if attacker.get("attacker_entity") != null:
+				attacker_unit = attacker.get("attacker_entity")
+			elif attacker.get("caster") != null:
+				attacker_unit = attacker.get("caster")
 	
 	var a_data = attacker_unit.character_data if attacker_unit and "character_data" in attacker_unit else null
 	var t_data = target.character_data

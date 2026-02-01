@@ -56,8 +56,9 @@ func _on_body_entered(body: Node) -> void:
 				return # 相同陣營，不造成傷害
 		
 		# 核心修正：投射物傷害現在統一透過 AttackManager 結算
-		var attacker = caster if is_instance_valid(caster) else null
-		target.apply_damage(damage, false, false, attacker)
+		# 傳入 self 作為發動者，以便 AttackManager 識別並提取 Unit
+		if target.has_method("apply_damage"):
+			target.apply_damage(damage, false, false, self, false, true)
 		# 飛斧穿透，不銷毀
 
 func _on_area_entered(_area: Area2D) -> void:

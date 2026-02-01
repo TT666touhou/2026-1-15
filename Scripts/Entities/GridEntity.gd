@@ -212,9 +212,9 @@ func _connect_data_signals() -> void:
 # 戰鬥結算與傷害
 # ============================================================================
 
-func apply_damage(amount: int, _ignore_barrier: bool = false, _ignore_shield: bool = false, attacker: GridEntity = null, is_pursuit: bool = false) -> int:
+func apply_damage(amount: int, _ignore_barrier: bool = false, _ignore_shield: bool = false, attacker = null, is_pursuit: bool = false, is_skill: bool = false) -> int:
 	if not AttackManager: return 0
-	var report = AttackManager.resolve_combat(attacker, self, amount, false)
+	var report = AttackManager.resolve_combat(attacker, self, amount, is_skill)
 	
 	match report["result"]:
 		"avoid": show_avoid_text()

@@ -67,7 +67,7 @@ func _find_parent_card() -> DeploymentMemberCard:
 
 func set_equipment(new_resource: Resource) -> void:
 	data = new_resource
-	var item_name = "NULL" if data == null else data.get("item_name")
+	# var item_name = "NULL" if data == null else data.get("item_name")
 	# print("[EquipmentSlotUI:%d] Setting data to: %s" % [get_instance_id(), item_name])
 	
 	if data and data.get("icon"):
@@ -78,7 +78,7 @@ func set_equipment(new_resource: Resource) -> void:
 		icon_rect.visible = false
 
 func _on_mouse_entered() -> void:
-	var item_name = "NULL" if data == null else data.get("item_name")
+	# var item_name = "NULL" if data == null else data.get("item_name")
 	# print("[EquipmentSlotUI:%d] Mouse ENTERED. Current data: %s" % [get_instance_id(), item_name])
 	if data and hover_controller and hover_controller.has_method("show_data_info"):
 		hover_controller.show_data_info(data, true) # 標記為來自 UI 的懸停

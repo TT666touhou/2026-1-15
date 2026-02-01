@@ -6,7 +6,7 @@
 [resource]
 script = ExtResource("1_script")
 skill_name = "連鎖閃電"
-manual_description = "【連鎖閃電】\n撞擊我方單位時觸發。在自身與目標間生成雷電鏈，持續 2 秒。每 0.1 秒對觸碰電鏈的敵人造成 10% 攻擊力的物理傷害。"
+	manual_description = "【連鎖閃電】\n撞擊我方單位時觸發。在自身與目標間生成雷電鏈。當雙方移動時，對觸碰電鏈的敵人造成 10% 攻擊力的物理傷害。"
 manual_description_en = ""
 description = ""
 icon = ExtResource("2_icon")
