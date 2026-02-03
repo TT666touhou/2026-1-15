@@ -1,6 +1,8 @@
-遊戲下載連結 這是一個zip檔，解壓縮後開啟資料夾的exe就好了
-https://drive.google.com/drive/folders/1Amcngkh4AeZreR9lXdicp4jksRf_CV_J?usp=sharing
+[遊戲PRD](https://whimsical.com/godot-game-prd-C2hUXfPYFzdhvbyueLYXcG)
+簡易自製PRD
 
+[遊戲下載連結](https://drive.google.com/drive/folders/1Amcngkh4AeZreR9lXdicp4jksRf_CV_J?usp=sharing)
+這是一個zip檔，解壓縮後開啟資料夾的exe就好了
 
 這是一款 Roguelite 回合遊戲
 
@@ -12,9 +14,11 @@ UI 互動：
 右上角 Setting：調整遊戲音量（包含主音量與 SFX 音效）與畫面設定。
 左側面板：查看隊伍成員狀態、技能冷卻以及當前持有的資源。
 裝備操作：將場上的裝備拖入左側的ui中就可以完成裝備。
-(按下F2可以跳關 目前的demo只有設計線性的7層關卡 主要是用來測試功能完不完善 可能略顯枯燥 不過大概5到10min內可以通關)
+右上的按鈕是為之後的裝備詞條系統準備debug用的，可以添加隨機的裝備。
+
 
 屬性設計與裝備系統上參考了Buriedbornes
 遊戲中會掉落的裝備上會有隨機生成的詞條。
 
 技能：每個單位擁有獨特的觸發技能。請在遊戲中查看。
+
