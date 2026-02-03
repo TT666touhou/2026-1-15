@@ -428,7 +428,7 @@ func play_wall_collision_fx(normal: Vector2) -> void:
 			p_node.global_position = parent.global_position + p_node.position
 			p_node.restart()
 			p_node.emitting = true
-			print("[UnitVisuals] Triggering wall particles: %s for %s at %s" % [p_name, parent.name, p_node.global_position])
+			# print("[UnitVisuals] Triggering wall particles: %s for %s at %s" % [p_name, parent.name, p_node.global_position])
 	
 	# 透過全域 AudioManager 播放音效，對接 Setting 系統
 	var am = get_node_or_null("/root/AudioManager")
@@ -575,9 +575,10 @@ func set_moving_fx(enabled: bool) -> void:
 			_move_dust_particles.position = Vector2(0, size_y)
 		
 		if _move_dust_particles.emitting != enabled:
-			var parent_name = get_parent().name
-			var g_pos = _move_dust_particles.global_position
-			var z = _move_dust_particles.z_index
-			print("[UnitVisuals] Dust for %s | Emitting: %s | GPos: %s | Z: %d" % [parent_name, enabled, g_pos, z])
+			# var parent_name = get_parent().name
+			# var g_pos = _move_dust_particles.global_position
+			# var z = _move_dust_particles.z_index
+			# print("[UnitVisuals] Dust for %s | Emitting: %s | GPos: %s | Z: %d" % [parent_name, enabled, g_pos, z])
+			pass
 		
 		_move_dust_particles.emitting = enabled

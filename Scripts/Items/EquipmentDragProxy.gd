@@ -26,6 +26,10 @@ func _get_drag_data(_at_position: Vector2) -> Variant:
 	if not parent_entity or not "equipment_data" in parent_entity:
 		return null
 		
+	# 檢查是否已解鎖拾取權限
+	if "is_collectible" in parent_entity and not parent_entity.get("is_collectible"):
+		return null
+		
 	var equipment_data = parent_entity.get("equipment_data")
 	if not equipment_data:
 		return null

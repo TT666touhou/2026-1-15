@@ -2,7 +2,6 @@ extends HBoxContainer
 
 var turn_label: Label
 var phase_label: Label
-# End Turn Button moved to independent scene
 
 func _ready() -> void:
 	# Layout Settings
@@ -34,41 +33,45 @@ func _ready() -> void:
 		if TurnManager.has_signal("free_roam_mode_changed"):
 			TurnManager.free_roam_mode_changed.connect(_on_free_roam_mode_changed)
 		
-		# 初始化顯示
-		if TurnManager.get("is_free_roam_mode"):
-			_on_free_roam_mode_changed(true)
-		else:
-			_update_ui(TurnManager.current_faction, TurnManager.turn_count)
+		_update_display()
 
-func _on_turn_changed(faction: FactionDefinition) -> void:
-	_update_ui(faction, TurnManager.turn_count)
+func _on_turn_changed(_faction: FactionDefinition) -> void:
+	_update_display()
 
-func _on_turn_count_changed(count: int) -> void:
-	# 如果在漫遊模式，不更新回合數顯示
-	if TurnManager and TurnManager.get("is_free_roam_mode"):
+func _on_turn_count_changed(_count: int) -> void:
+	_update_display()
+
+func _on_free_roam_mode_changed(_enabled: bool) -> void:
+	_update_display()
+
+func _process(_delta: float) -> void:
+	# 持續更新以反應 RESOLVING 等瞬時狀態
+	_update_display()
+
+func _update_display() -> void:
+	if not TurnManager: return
+	
+	# 1. 優先權：搜刮模式 (State.LOOT_PHASE = 6)
+	if TurnManager.current_state == TurnManager.State.LOOT_PHASE:
+		phase_label.text = "LOOT PHASE"
+		phase_label.modulate = Color.CYAN
+		turn_label.text = "Turn: --"
 		return
-	turn_label.text = "Turn: %d" % count
 
-func _on_free_roam_mode_changed(enabled: bool) -> void:
-	if enabled:
+	# 2. 優先權：漫遊模式
+	if TurnManager.is_free_roam_mode:
 		phase_label.text = "ROAMING MODE"
 		phase_label.modulate = Color(0.2, 1.0, 0.4) # Light Green
 		turn_label.text = "Turn: --"
-	else:
-		_update_ui(TurnManager.current_faction, TurnManager.turn_count)
-
-func _update_ui(faction: FactionDefinition, count: int) -> void:
-	# 再次檢查是否處於漫遊模式 (防止競態條件)
-	if TurnManager and TurnManager.get("is_free_roam_mode"):
-		phase_label.text = "ROAMING MODE"
-		phase_label.modulate = Color(0.2, 1.0, 0.4)
-		turn_label.text = "Turn: --"
 		return
 
-	turn_label.text = "Turn: %d" % count
+	# 3. 一般回合顯示
+	turn_label.text = "Turn: %d" % TurnManager.turn_count
 	
+	var faction = TurnManager.current_faction
 	if faction:
-		phase_label.text = "Phase: %s" % faction.faction_name
+		var state_name = TurnManager.State.keys()[TurnManager.current_state]
+		phase_label.text = "Phase: %s (%s)" % [faction.faction_name, state_name]
 		phase_label.modulate = faction.color
 	else:
 		phase_label.text = "Phase: None"

@@ -87,6 +87,7 @@ signal parry_triggered
 @warning_ignore("unused_signal")
 signal barrier_triggered
 signal died
+signal equipment_swapped(old_item: Resource, slot: int)
 
 # ============================================================================
 # 初始化
@@ -255,8 +256,21 @@ func decrement_cooldowns() -> void:
 func equip(item: Resource) -> void:
 	if item == null: return
 	var i_slot = item.get("slot")
+	var old_item = null
+	
 	match i_slot:
-		0: weapon = item
-		1: armor = item
-		2: accessory = item
+		0: 
+			old_item = weapon
+			weapon = item
+		1: 
+			old_item = armor
+			armor = item
+		2: 
+			old_item = accessory
+			accessory = item
+			
 	recalculate_stats()
+	
+	# 如果原本有裝備，發出信號以便在世界中噴出
+	if old_item:
+		equipment_swapped.emit(old_item, i_slot)

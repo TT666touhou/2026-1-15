@@ -9,7 +9,6 @@ signal unit_damaged(target: Node, attacker: Node, amount: int)
 
 # --- 狀態變數 ---
 var global_combo_count: int = 0
-var has_hit_this_action: bool = false
 
 # ============================================================================
 # Combo 系統管理
@@ -17,21 +16,14 @@ var has_hit_this_action: bool = false
 
 func increase_global_combo(amount: int = 1) -> void:
 	global_combo_count += amount
-	has_hit_this_action = true
 	global_combo_changed.emit(global_combo_count)
-	print("[AttackManager] Global Combo increased to: ", global_combo_count)
-
-func mark_hit() -> void:
-	has_hit_this_action = true
+	# print("[AttackManager] Global Combo increased to: ", global_combo_count)
 
 func reset_global_combo() -> void:
 	if global_combo_count != 0:
 		global_combo_count = 0
 		global_combo_changed.emit(global_combo_count)
-		print("[AttackManager] Global Combo RESET")
-
-func reset_action_hit_flag() -> void:
-	has_hit_this_action = false
+		# print("[AttackManager] Global Combo RESET")
 
 func get_combo_damage_multiplier(scaling: float = 0.1) -> float:
 	# 核心規則：只有在玩家回合且非自由漫遊時套用 Combo 倍率
@@ -61,7 +53,14 @@ func resolve_combat(attacker: Node, target: GridEntity, base_damage: int, is_ski
 	# 獲取攻擊者數據 (支援 GridEntity 或 Projectile)
 	var attacker_unit = null
 	if is_instance_valid(attacker):
-		attacker_unit = attacker if attacker is GridEntity else attacker.get("attacker_entity")
+		if attacker is GridEntity:
+			attacker_unit = attacker
+		else:
+			# 嘗試從投射物獲取發動者 (相容不同投射物的屬性名)
+			if attacker.get("attacker_entity") != null:
+				attacker_unit = attacker.get("attacker_entity")
+			elif attacker.get("caster") != null:
+				attacker_unit = attacker.get("caster")
 	
 	var a_data = attacker_unit.character_data if attacker_unit and "character_data" in attacker_unit else null
 	var t_data = target.character_data
@@ -111,18 +110,18 @@ func resolve_combat(attacker: Node, target: GridEntity, base_damage: int, is_ski
 	var final_dmg = int(round(current_dmg * (1.0 - dr)))
 	if final_dmg <= 0: final_dmg = 1 # 保底 1 點
 	
-	if TurnManager and TurnManager.is_player_turn() and attacker_unit and attacker_unit.is_in_group("player"):
-		print("[AttackManager] resolve_combat: %s -> %s | Base: %d | Final: %d | Combo: %d" % [
-			attacker_unit.name if attacker_unit else "None", 
-			target.name, base_damage, final_dmg, global_combo_count
-		])
+	# if TurnManager and TurnManager.is_player_turn() and attacker_unit and attacker_unit.is_in_group("player"):
+	# 	print("[AttackManager] resolve_combat: %s -> %s | Base: %d | Final: %d | Combo: %d" % [
+	# 		attacker_unit.name if attacker_unit else "None", 
+	# 		target.name, base_damage, final_dmg, global_combo_count
+	# 	])
 	
 	# --- 6. 生命扣除：護盾 -> HP ---
 	var actual_hp_lost = t_data.take_damage_raw(final_dmg)
 	report["damage"] = final_dmg
 
 	# 發送全域受傷信號，供實體特質系統監聽
-	print("[AttackManager] Emitting unit_damaged: Target=%s, Amount=%d" % [target.name, final_dmg])
+	# print("[AttackManager] Emitting unit_damaged: Target=%s, Amount=%d" % [target.name, final_dmg])
 	unit_damaged.emit(target, attacker_unit, final_dmg)
 
 	# --- 7. 後續觸發：反射、吸血、追擊、Combo ---
@@ -155,8 +154,9 @@ func resolve_combat(attacker: Node, target: GridEntity, base_damage: int, is_ski
 
 func check_hit(attacker: Node, target: GridEntity) -> bool:
 	var a_data = null
-	if attacker is GridEntity: a_data = attacker.character_data
-	elif attacker.get("attacker_entity") is GridEntity: a_data = attacker.attacker_entity.character_data
+	if is_instance_valid(attacker):
+		if attacker is GridEntity: a_data = attacker.character_data
+		elif attacker.get("attacker_entity") is GridEntity: a_data = attacker.attacker_entity.character_data
 	
 	if a_data == null or target.character_data == null:
 		return true

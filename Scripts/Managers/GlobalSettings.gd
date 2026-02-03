@@ -27,7 +27,8 @@ var _config_data = {
 	},
 	"gameplay": {
 		"use_keyboard_movement": true,
-		"use_simplified_stats_ui": true
+		"use_simplified_stats_ui": true,
+		"auto_collect_coins": false
 	}
 }
 
@@ -106,6 +107,14 @@ func set_use_simplified_stats_ui(value: bool) -> void:
 
 func get_use_simplified_stats_ui() -> bool:
 	return _config_data["gameplay"].get("use_simplified_stats_ui", false)
+
+func set_auto_collect_coins(value: bool) -> void:
+	_config_data["gameplay"]["auto_collect_coins"] = value
+	save_settings()
+	settings_changed.emit()
+
+func get_auto_collect_coins() -> bool:
+	return _config_data["gameplay"].get("auto_collect_coins", true)
 
 # --- 應用設定邏輯 ---
 

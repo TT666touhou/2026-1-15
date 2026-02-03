@@ -27,7 +27,7 @@ func execute_skill(source_entity: GridEntity, skill: Resource, origin_pos: Vecto
 	var skill_name = skill.get("skill_name")
 	if skill_name == null: skill_name = "Unknown"
 	
-	print("[SkillManager] execute_skill: ", skill_name, " | Source: ", source_entity.name)
+	# print("[SkillManager] execute_skill: ", skill_name, " | Source: ", source_entity.name)
 	
 	# 特殊技能處理：十字箭矢 (Cross Arrow)
 	# 使用更健壯的匹配方式
@@ -73,7 +73,7 @@ func execute_skill(source_entity: GridEntity, skill: Resource, origin_pos: Vecto
 	var actual_origin = origin_pos
 	if targeting_type == UnitSkillData.TargetingType.ABSOLUTE:
 		actual_origin = _get_grid_center()
-		print("[SkillManager] Absolute skill detected, origin centered to: ", actual_origin)
+		# print("[SkillManager] Absolute skill detected, origin centered to: ", actual_origin)
 	
 	# 1. 獲取並驗證目標
 	var valid_targets = get_valid_targets(targeting, actual_origin, source_entity)
@@ -93,6 +93,8 @@ func execute_skill(source_entity: GridEntity, skill: Resource, origin_pos: Vecto
 		total_stat_value = _get_weighted_stat_sum(source_entity, scaling_configs)
 			
 	# 核心修正：在技能開始時快照連擊倍率，確保整個技能執行期間數值一致
+	# 注意：對於「非投射物」的直接效果，我們依然在這裡計算 Combo
+	# 但對於「投射物」，我們應該只傳遞基礎值。這裡我們保留 final_multiplier 用於非投射物效果。
 	var combo_mult = 1.0
 	if AttackManager:
 		var scaling = 0.1
@@ -438,11 +440,7 @@ func _fire_cross_arrows(caster: GridEntity, skill: Resource) -> void:
 	if caster.character_data:
 		base_atk = caster.character_data.get_effective_attack()
 	
-	var combo_mult: float = 1.0
-	if AttackManager and caster.character_data:
-		combo_mult = AttackManager.get_combo_damage_multiplier(caster.character_data.combo_damage_scaling)
-	
-	var final_damage: int = int(round(base_atk * scaling_multiplier * combo_mult))
+	var final_damage: int = int(round(base_atk * scaling_multiplier))
 	
 	var directions = [
 		Vector2(1, 1).normalized(),   # 右下
@@ -453,7 +451,8 @@ func _fire_cross_arrows(caster: GridEntity, skill: Resource) -> void:
 	var arrow_scene = load("res://Scenes/Shared/ArrowProjectile.tscn")
 	
 	for dir in directions:
-		map_loader.spawn_projectile(arrow_scene, caster, dir, {"speed": 100.0, "damage": final_damage})
+		# 核心修正：提高箭矢速度到 1.3 倍 (100.0 * 1.3 = 130.0)
+		map_loader.spawn_projectile(arrow_scene, caster, dir, {"speed": 130.0, "damage": final_damage})
 
 func _fire_whirlwind_axes(caster: GridEntity, skill: Resource) -> void:
 	var map_loader = get_tree().get_first_node_in_group("map_loader")
@@ -470,11 +469,7 @@ func _fire_whirlwind_axes(caster: GridEntity, skill: Resource) -> void:
 	if caster.character_data:
 		base_atk = caster.character_data.get_effective_attack()
 	
-	var combo_mult: float = 1.0
-	if AttackManager and caster.character_data:
-		combo_mult = AttackManager.get_combo_damage_multiplier(caster.character_data.combo_damage_scaling)
-	
-	var final_damage: int = int(round(base_atk * scaling_multiplier * combo_mult))
+	var final_damage: int = int(round(base_atk * scaling_multiplier))
 	
 	# 尋找場上所有敵人
 	var all_entities = get_tree().get_nodes_in_group("grid_entities")
@@ -488,7 +483,7 @@ func _fire_whirlwind_axes(caster: GridEntity, skill: Resource) -> void:
 				if not target_enemies.has(entity):
 					target_enemies.append(entity)
 	
-	print("[SkillManager] Firing whirlwind axes for ", caster.name, " | Targets found: ", target_enemies.size())
+	# print("[SkillManager] Firing whirlwind axes for ", caster.name, " | Targets found: ", target_enemies.size())
 	
 	for enemy in target_enemies:
 		var target_dir = (enemy.global_position - caster.global_position).normalized()

@@ -30,13 +30,13 @@ func setup(pos: Vector2, dir: Vector2, dmg: int, atk_speed: float, attacker: Gri
 	attacker_entity = attacker
 	
 	rotation = direction.angle()
-	print("[ArrowProjectile] Setup complete (CharacterBody2D): Pos: ", global_position, " | Dir: ", direction, " | Speed: ", speed)
+	# print("[ArrowProjectile] Setup complete (CharacterBody2D): Pos: ", global_position, " | Dir: ", direction, " | Speed: ", speed)
 
 func _physics_process(delta: float) -> void:
 	if not _is_active: return
 	
 	_lifetime += delta
-	if _lifetime > 10.0: # 壽命延長一點點因為速度慢
+	if _lifetime > 8.0: # 壽命改為 8 秒
 		_destroy()
 		return
 
@@ -67,7 +67,7 @@ func _physics_process(delta: float) -> void:
 		rotation = direction.angle()
 		
 		_bounce_count += 1
-		print("[ArrowProjectile] Bounced! Normal: ", normal, " | New Dir: ", direction, " | Count: ", _bounce_count)
+		# print("[ArrowProjectile] Bounced! Normal: ", normal, " | New Dir: ", direction, " | Count: ", _bounce_count)
 		
 		if _bounce_count > MAX_BOUNCES:
 			_destroy()
@@ -75,10 +75,8 @@ func _physics_process(delta: float) -> void:
 func _apply_hit(target: GridEntity) -> void:
 	if target.has_method("apply_damage"):
 		# 核心修正：投射物傷害現在統一透過 AttackManager 結算
-		# 注意：這裡傳入的是 attacker_entity (GridEntity)，符合 apply_damage 的參數類型要求
-		# 如果發動者已死亡 (previously freed)，則傳入 null
-		var attacker = attacker_entity if is_instance_valid(attacker_entity) else null
-		target.apply_damage(damage, false, false, attacker, false)
+		# 傳入 self 作為發動者，以便 AttackManager 從中提取 Unit 並識別為投射物
+		target.apply_damage(damage, false, false, self, false, true)
 	
 	_destroy()
 

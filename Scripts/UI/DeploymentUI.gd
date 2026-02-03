@@ -1,19 +1,20 @@
 extends Control
 class_name DeploymentUI
 
-@onready var left_panel: Panel = $LeftPanel
-@onready var member_list: VBoxContainer = $LeftPanel/VBox/ScrollContainer/MemberList
-@onready var skill_container: VBoxContainer = %SkillContainer
+@onready var left_panel: PanelContainer = $LeftPanel
+@onready var member_list: VBoxContainer = $LeftPanel/Margin/VBox/ScrollContainer/MemberList
 @onready var drop_indicator: ColorRect = $DropIndicator
+@onready var settings_button: Button = %SettingsButton
+
+# Leader Trait UI
+@onready var leader_trait_panel: PanelContainer = %LeaderTraitPanel
+@onready var trait_desc_label: Label = %TraitDescLabel
 
 const MemberCardScene = preload("res://Scenes/UI/DeploymentMemberCard.tscn")
-const SkillSlotScene = preload("res://Scenes/UI/Skills/SkillChargeSlot.tscn")
 
 # Drag Ghost
 var _drag_ghost: Control = null
-var _drag_source_card: DeploymentMemberCard = null
 var _current_drop_index: int = -1
-var _current_selected_unit: GridEntity = null
 
 func _ready() -> void:
 	add_to_group("deployment_ui")
@@ -23,48 +24,29 @@ func _ready() -> void:
 		if not PartyManager.party_updated.is_connected(_on_party_updated):
 			PartyManager.party_updated.connect(_on_party_updated)
 	
-	# 連接單選信號 (由 SlingshotController 發出)
-	call_deferred("_connect_slingshot_signals")
-	
 	# F6 獨立運行測試
 	if get_parent() == get_tree().root:
 		_run_test_mode()
+	
+	if settings_button:
+		settings_button.pressed.connect(_on_settings_pressed)
 
-func _connect_slingshot_signals() -> void:
-	var slingshot = get_tree().get_first_node_in_group("slingshot")
-	if not slingshot:
-		# 嘗試按路徑查找 (針對 World2 場景)
-		slingshot = get_node_or_null("/root/World2/SlingshotController")
-	
-	if slingshot:
-		if not slingshot.unit_selected.is_connected(update_skill_ui):
-			slingshot.unit_selected.connect(update_skill_ui)
-			print("[DeploymentUI] Connected to SlingshotController.unit_selected")
-
-func update_skill_ui(unit: GridEntity) -> void:
-	if not unit: return
-	_current_selected_unit = unit
-	
-	# 清除舊的技能槽位
-	for child in skill_container.get_children():
-		child.queue_free()
-		
-	if not unit.character_data: return
-	
-	# 顯示該單位的運行時技能
-	if unit.character_data.runtime_skill:
-		var slot = SkillSlotScene.instantiate()
-		skill_container.add_child(slot)
-		if slot.has_method("setup"):
-			slot.setup(unit.character_data.runtime_skill, unit.character_data)
-			
-	print("[DeploymentUI] Updated skill UI for ", unit.name)
+func _on_settings_pressed() -> void:
+	var gs = get_node_or_null("/root/GlobalSettings")
+	if gs and gs.has_method("toggle_pause"):
+		gs.toggle_pause()
+	else:
+		# 如果 GlobalSettings 沒有 toggle_pause，嘗試直接實例化 PauseMenu (備用方案)
+		var pause_scene = load("res://Scenes/UI/PauseMenu.tscn")
+		if pause_scene:
+			var pause_instance = pause_scene.instantiate()
+			get_tree().root.add_child(pause_instance)
 
 func _ensure_ui_refs() -> bool:
 	if left_panel == null:
 		left_panel = get_node_or_null("LeftPanel")
 	if member_list == null:
-		member_list = get_node_or_null("LeftPanel/VBox/ScrollContainer/MemberList")
+		member_list = get_node_or_null("LeftPanel/Margin/VBox/ScrollContainer/MemberList")
 	if drop_indicator == null:
 		drop_indicator = get_node_or_null("DropIndicator")
 	if member_list == null:
@@ -77,20 +59,6 @@ func _process(_delta: float) -> void:
 		var mouse_pos = get_global_mouse_position()
 		_drag_ghost.global_position = mouse_pos + Vector2(10, 10) # Offset
 		_update_drop_indicator(mouse_pos)
-
-func _unhandled_input(event: InputEvent) -> void:
-	if event is InputEventKey and event.pressed and event.keycode == KEY_L:
-		_print_leader_skills()
-
-func _print_leader_skills() -> void:
-	if PartyManager:
-		var active_traits = PartyManager.get_active_traits()
-		if active_traits.is_empty():
-			pass
-		else:
-			for i in range(active_traits.size()):
-				var t = active_traits[i]
-				print("Leader %d: %s - %s" % [i+1, t.trait_name, t.description])
 
 func _on_party_updated() -> void:
 	if PartyManager:
@@ -105,6 +73,7 @@ func initialize_party(members: Array[CharacterData]) -> void:
 	
 	# 隊伍為空則不處理
 	if members.is_empty():
+		_update_leader_trait_display(null)
 		return
 
 	# 隊長 (第一位) - 開啟高亮，放入列表
@@ -113,6 +82,21 @@ func initialize_party(members: Array[CharacterData]) -> void:
 	# 隊員 (其餘) - 放入列表
 	for i in range(1, members.size()):
 		add_member_card(members[i], member_list, false)
+		
+	# 更新隊長特性顯示
+	_update_leader_trait_display(members[0])
+
+func _update_leader_trait_display(leader_data: CharacterData) -> void:
+	if not leader_trait_panel: return
+	
+	if leader_data and leader_data.unit_def and leader_data.unit_def.character_trait:
+		var character_trait = leader_data.unit_def.character_trait
+		# 移除名稱顯示，僅顯示描述
+		trait_desc_label.text = character_trait.description
+		leader_trait_panel.show()
+	else:
+		trait_desc_label.text = "-"
+		leader_trait_panel.show()
 
 func add_member_card(data: CharacterData, parent_node: Control, is_leader: bool = false) -> void:
 	var card = MemberCardScene.instantiate() as DeploymentMemberCard
@@ -120,52 +104,6 @@ func add_member_card(data: CharacterData, parent_node: Control, is_leader: bool 
 	card.setup(data)
 	if is_leader:
 		card.set_highlight(true)
-		
-	# Connect drag signals
-	# Drag to reorder/ghost is disabled for now
-
-# --- Right Drag Implementation ---
-
-func _on_card_right_drag_started(card: DeploymentMemberCard) -> void:
-	_drag_source_card = card
-	
-	# Create ghost
-	if _drag_ghost:
-		_drag_ghost.queue_free()
-		
-	_drag_ghost = Panel.new()
-	_drag_ghost.size = Vector2(200, 50)
-	_drag_ghost.modulate = Color(1, 1, 1, 0.5) # Transparent
-	_drag_ghost.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	
-	var label = Label.new()
-	label.text = card.name_label.text
-	label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
-	label.anchors_preset = Control.PRESET_FULL_RECT
-	_drag_ghost.add_child(label)
-	
-	add_child(_drag_ghost)
-	_drag_ghost.global_position = get_global_mouse_position()
-	_drag_ghost.visible = true
-
-func _on_card_right_drag_ended(card: DeploymentMemberCard, _end_pos: Vector2) -> void:
-	if _drag_ghost:
-		_drag_ghost.queue_free()
-		_drag_ghost = null
-		
-	drop_indicator.visible = false
-		
-	if card != _drag_source_card:
-		return # Should not happen
-		
-	# Perform Move if valid index
-	if _current_drop_index != -1:
-		if PartyManager:
-			PartyManager.move_member(card.character_data, _current_drop_index)
-			
-	_drag_source_card = null
-	_current_drop_index = -1
 
 func _update_drop_indicator(mouse_pos: Vector2) -> void:
 	var found_target = false
@@ -201,14 +139,4 @@ func _run_test_mode() -> void:
 	var u1_res = load("res://Resources/Cards/Unit_001.tres") # Soldier
 	if u1_res:
 		var data = CharacterData.create(u1_res)
-		# 模擬 PartyManager 在 F6 模式下不可用的情況，我們手動 populate UI
 		initialize_party([data])
-
-	# --- 2. 實例化 Unit001.tscn 以便在 F6 畫面中看到模型 ---
-	var unit_scene = load("res://Scenes/Entities/Player/Unit001.tscn")
-	if unit_scene:
-		var unit_instance = unit_scene.instantiate()
-		# 放在右側空白處
-		unit_instance.global_position = Vector2(800, 400) 
-		unit_instance.scale = Vector2(4, 4) # 放大以便觀察
-		add_child(unit_instance)

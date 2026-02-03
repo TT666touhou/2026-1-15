@@ -49,13 +49,13 @@ func _drop_data(_at_position: Vector2, drag_data: Variant) -> void:
 				print("[EquipmentSlotUI] Freeing entity: ", entity.name)
 				entity.queue_free()
 				# 核心修正：同樣通知 DungeonManager
-				var dm = Engine.get_main_loop().root.get_node_or_null("DungeonManager")
-				if dm:
-					dm.call_deferred("check_room_clear")
+				var dungeon_mgr = Engine.get_main_loop().root.get_node_or_null("DungeonManager")
+				if dungeon_mgr and dungeon_mgr.has_method("check_battle_status"):
+					dungeon_mgr.call_deferred("check_battle_status")
 			# 核心修正：裝備成功後，通知 DungeonManager 檢查房間狀態
 			var dm = get_tree().root.get_node_or_null("DungeonManager")
-			if dm and dm.has_method("check_room_clear"):
-				dm.check_room_clear()
+			if dm and dm.has_method("check_battle_status"):
+				dm.check_battle_status()
 
 func _find_parent_card() -> DeploymentMemberCard:
 	var p = get_parent()
@@ -67,8 +67,8 @@ func _find_parent_card() -> DeploymentMemberCard:
 
 func set_equipment(new_resource: Resource) -> void:
 	data = new_resource
-	var item_name = "NULL" if data == null else data.get("item_name")
-	print("[EquipmentSlotUI:%d] Setting data to: %s" % [get_instance_id(), item_name])
+	# var item_name = "NULL" if data == null else data.get("item_name")
+	# print("[EquipmentSlotUI:%d] Setting data to: %s" % [get_instance_id(), item_name])
 	
 	if data and data.get("icon"):
 		icon_rect.texture = data.icon
@@ -78,12 +78,12 @@ func set_equipment(new_resource: Resource) -> void:
 		icon_rect.visible = false
 
 func _on_mouse_entered() -> void:
-	var item_name = "NULL" if data == null else data.get("item_name")
-	print("[EquipmentSlotUI:%d] Mouse ENTERED. Current data: %s" % [get_instance_id(), item_name])
+	# var item_name = "NULL" if data == null else data.get("item_name")
+	# print("[EquipmentSlotUI:%d] Mouse ENTERED. Current data: %s" % [get_instance_id(), item_name])
 	if data and hover_controller and hover_controller.has_method("show_data_info"):
 		hover_controller.show_data_info(data, true) # 標記為來自 UI 的懸停
 
 func _on_mouse_exited() -> void:
-	print("[EquipmentSlotUI:%d] Mouse EXITED" % get_instance_id())
+	# print("[EquipmentSlotUI:%d] Mouse EXITED" % get_instance_id())
 	if hover_controller and hover_controller.has_method("_hide_all"):
 		hover_controller._hide_all()

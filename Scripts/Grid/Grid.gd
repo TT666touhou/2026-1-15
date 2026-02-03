@@ -163,7 +163,7 @@ func grid_to_world_center_footprint(cell: Vector2i, footprint_data) -> Vector2:
 	"""計算不規則形狀的中心世界座標"""
 	if footprint_data == null:
 		var result_null = grid_to_world_center(cell)
-		print("[Grid] grid_to_world_center_footprint (null footprint) | cell: ", cell, " -> world: ", result_null)
+		# print("[Grid] grid_to_world_center_footprint (null footprint) | cell: ", cell, " -> world: ", result_null)
 		return result_null
 	
 	var bounds = footprint_data.get_bounds()
@@ -171,7 +171,7 @@ func grid_to_world_center_footprint(cell: Vector2i, footprint_data) -> Vector2:
 	var top_left = grid_to_world(cell + Vector2i(bounds.position.x, bounds.position.y))
 	var bottom_right = grid_to_world(cell + Vector2i(bounds.position.x + bounds.size.x, bounds.position.y + bounds.size.y))
 	var result = (top_left + bottom_right) * 0.5
-	print("[Grid] grid_to_world_center_footprint | cell: ", cell, " | bounds: ", bounds, " | top_left: ", top_left, " | bottom_right: ", bottom_right, " | center: ", result, " | cell_size: ", cell_size)
+	# print("[Grid] grid_to_world_center_footprint | cell: ", cell, " | bounds: ", bounds, " | top_left: ", top_left, " | bottom_right: ", bottom_right, " | center: ", result, " | cell_size: ", cell_size)
 	return result
 
 func clear_cells_footprint(cell: Vector2i, footprint_data) -> void:

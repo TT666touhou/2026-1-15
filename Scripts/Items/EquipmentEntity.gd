@@ -1,37 +1,53 @@
-extends GridEntity
+extends RigidBody2D
 class_name EquipmentEntity
 
-## 裝備實體
-## 僅負責存儲數據與視覺更新，懸停偵測由 HoverInfoController 統一處理
+## 裝備實體 (物理掉落物)
+## 負責存儲數據、視覺更新，並在被玩家撞擊時觸發拾取
 
 @export var equipment_data: Resource
+var is_collectible: bool = false # 標記是否可以被拾取 (下一回合才開啟)
 
 func _ready() -> void:
-	# 確保有預設的 Footprint (1x1)
-	if footprint_data == null:
-		var fp_path = "res://Footprints/Footprint_1x1.tres"
-		if ResourceLoader.exists(fp_path):
-			footprint_data = load(fp_path)
-			
-	# 呼叫父類的 _ready 進行網格註冊
-	super._ready()
-	
-	# 加入群組以便被控制器識別
+	# 加入群組以便被識別
+	add_to_group("loot")
 	add_to_group("equipment_entities")
 	
-	# 確保滑鼠可偵測
-	input_pickable = true
+	# 初始狀態：物理活躍但不可拾取
+	freeze = false
+	lock_rotation = true
+	gravity_scale = 0.0
+	linear_damp = 5.0
+	angular_damp = 5.0
+	is_collectible = false # 預設關閉拾取
 	
-	# 延遲連結懸停信號，確保環境已穩定
-	call_deferred("_setup_hover_signals")
+	# 確保滑鼠可偵測 (用於顯示資訊)
+	input_pickable = true
 	
 	# 更新視覺
 	_update_sprite_from_data()
+	
+	# 監聽解鎖信號
+	if TurnManager:
+		TurnManager.loot_unlocked.connect(enable_collection)
+		# 如果生成時已經是可以行動的階段，直接解鎖
+		if TurnManager.is_player_turn():
+			enable_collection()
 
-func _setup_hover_signals() -> void:
-	# 這裡我們其實不需要手動連結，因為 HoverInfoController 使用物理查詢
-	# 但我們保留這個空函式以便未來擴充，並確保 input_pickable 為 true
-	input_pickable = true
+func enable_collection() -> void:
+	if is_collectible: return
+	is_collectible = true
+	# print("[EquipmentEntity:%d] UNLOCKED: is_collectible set to TRUE" % get_instance_id())
+	
+	# 斷開信號
+	if TurnManager and TurnManager.loot_unlocked.is_connected(enable_collection):
+		TurnManager.loot_unlocked.disconnect(enable_collection)
+
+func _on_turn_started(_faction: FactionDefinition) -> void:
+	pass # 舊邏輯移除，統一由信號處理
+
+func collect_to_node(_target: Node2D) -> void:
+	# [相容性介面] 裝備目前不使用磁鐵吸附，由 LootCollectorComponent 精確碰撞處理
+	pass
 
 func _update_sprite_from_data() -> void:
 	var sprite = get_node_or_null("Sprite2D")

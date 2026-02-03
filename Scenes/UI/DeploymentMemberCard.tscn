@@ -18,9 +18,9 @@ corner_radius_bottom_right = 4
 corner_radius_bottom_left = 4
 
 [node name="DeploymentMemberCard" type="PanelContainer"]
-custom_minimum_size = Vector2(288, 80)
+custom_minimum_size = Vector2(288, 140)
 offset_right = 288.0
-offset_bottom = 80.0
+offset_bottom = 140.0
 mouse_filter = 1
 theme_override_styles/panel = SubResource("StyleBoxFlat_opaque")
 script = ExtResource("1_script")
@@ -38,11 +38,15 @@ patch_margin_top = 16
 patch_margin_right = 16
 patch_margin_bottom = 16
 
-[node name="HBox" type="HBoxContainer" parent="."]
+[node name="MainVBox" type="VBoxContainer" parent="."]
+layout_mode = 2
+theme_override_constants/separation = 4
+
+[node name="TopHBox" type="HBoxContainer" parent="MainVBox"]
 layout_mode = 2
 theme_override_constants/separation = 10
 
-[node name="Icon" type="TextureRect" parent="HBox"]
+[node name="Icon" type="TextureRect" parent="MainVBox/TopHBox"]
 texture_filter = 1
 custom_minimum_size = Vector2(64, 64)
 layout_mode = 2
@@ -50,36 +54,36 @@ size_flags_vertical = 4
 expand_mode = 1
 stretch_mode = 5
 
-[node name="InfoBox" type="VBoxContainer" parent="HBox"]
+[node name="InfoBox" type="VBoxContainer" parent="MainVBox/TopHBox"]
 custom_minimum_size = Vector2(0, 80)
 layout_mode = 2
 size_flags_horizontal = 3
 size_flags_vertical = 4
 theme_override_constants/separation = 0
 
-[node name="NameLabel" type="Label" parent="HBox/InfoBox"]
+[node name="NameLabel" type="Label" parent="MainVBox/TopHBox/InfoBox"]
 layout_mode = 2
 theme_override_colors/font_color = Color(0.85098, 0.741176, 0.611765, 1)
 theme_override_font_sizes/font_size = 18
 text = "Unit Name"
 
-[node name="StatsBox" type="VBoxContainer" parent="HBox/InfoBox"]
+[node name="StatsBox" type="VBoxContainer" parent="MainVBox/TopHBox/InfoBox"]
 layout_mode = 2
 theme_override_constants/separation = -4
 
-[node name="BarrierContainer" type="HBoxContainer" parent="HBox/InfoBox/StatsBox"]
+[node name="BarrierContainer" type="HBoxContainer" parent="MainVBox/TopHBox/InfoBox/StatsBox"]
 custom_minimum_size = Vector2(0, 8)
 layout_mode = 2
 theme_override_constants/separation = 2
 alignment = 1
 
-[node name="HPBarContainer" type="MarginContainer" parent="HBox/InfoBox/StatsBox"]
+[node name="HPBarContainer" type="MarginContainer" parent="MainVBox/TopHBox/InfoBox/StatsBox"]
 custom_minimum_size = Vector2(180, 14)
 layout_mode = 2
 size_flags_horizontal = 0
 mouse_filter = 2
 
-[node name="HPBar" type="ProgressBar" parent="HBox/InfoBox/StatsBox/HPBarContainer"]
+[node name="HPBar" type="ProgressBar" parent="MainVBox/TopHBox/InfoBox/StatsBox/HPBarContainer"]
 custom_minimum_size = Vector2(180, 14)
 layout_mode = 2
 size_flags_vertical = 4
@@ -87,7 +91,7 @@ mouse_filter = 2
 value = 100.0
 show_percentage = false
 
-[node name="HPLabel" type="RichTextLabel" parent="HBox/InfoBox/StatsBox/HPBarContainer"]
+[node name="HPLabel" type="RichTextLabel" parent="MainVBox/TopHBox/InfoBox/StatsBox/HPBarContainer"]
 clip_contents = false
 custom_minimum_size = Vector2(0, 14)
 layout_mode = 2
@@ -98,138 +102,116 @@ bbcode_enabled = true
 text = "[center]100 / 100[color=cyan]+0*[/color][/center]"
 scroll_active = false
 
-[node name="StatsGrid" type="GridContainer" parent="HBox/InfoBox"]
+[node name="StatsGrid" type="GridContainer" parent="MainVBox/TopHBox/InfoBox"]
 layout_mode = 2
 theme_override_constants/h_separation = 20
 columns = 2
 
-[node name="AtkLabel" type="Label" parent="HBox/InfoBox/StatsGrid"]
+[node name="AtkLabel" type="Label" parent="MainVBox/TopHBox/InfoBox/StatsGrid"]
 layout_mode = 2
 theme_override_colors/font_color = Color(1, 0.4, 0.4, 1)
 theme_override_font_sizes/font_size = 12
 text = "ATK: 10"
 
-[node name="SpdLabel" type="Label" parent="HBox/InfoBox/StatsGrid"]
+[node name="SpdLabel" type="Label" parent="MainVBox/TopHBox/InfoBox/StatsGrid"]
 layout_mode = 2
 theme_override_colors/font_color = Color(0.4, 0.8, 1, 1)
 theme_override_font_sizes/font_size = 12
 text = "SPD: 3"
 
-[node name="AvdLabel" type="Label" parent="HBox/InfoBox/StatsGrid"]
+[node name="AvdLabel" type="Label" parent="MainVBox/TopHBox/InfoBox/StatsGrid"]
 layout_mode = 2
 theme_override_colors/font_color = Color(0.8, 0.4, 1, 1)
 theme_override_font_sizes/font_size = 12
 text = "AVD: 0%"
 
-[node name="AccLabel" type="Label" parent="HBox/InfoBox/StatsGrid"]
+[node name="AccLabel" type="Label" parent="MainVBox/TopHBox/InfoBox/StatsGrid"]
 layout_mode = 2
 theme_override_colors/font_color = Color(1, 0.6, 0.2, 1)
 theme_override_font_sizes/font_size = 12
 text = "ACC: 100%"
 
-[node name="DRLabel" type="Label" parent="HBox/InfoBox/StatsGrid"]
+[node name="DRLabel" type="Label" parent="MainVBox/TopHBox/InfoBox/StatsGrid"]
 layout_mode = 2
 theme_override_colors/font_color = Color(0.7, 0.7, 0.7, 1)
 theme_override_font_sizes/font_size = 12
 text = "DR: 0%"
 
-[node name="ResLabel" type="Label" parent="HBox/InfoBox/StatsGrid"]
+[node name="ResLabel" type="Label" parent="MainVBox/TopHBox/InfoBox/StatsGrid"]
 layout_mode = 2
 theme_override_colors/font_color = Color(0.4, 1, 0.8, 1)
 theme_override_font_sizes/font_size = 12
 text = "RES: 0%"
 
-[node name="RefLabel" type="Label" parent="HBox/InfoBox/StatsGrid"]
+[node name="RefLabel" type="Label" parent="MainVBox/TopHBox/InfoBox/StatsGrid"]
 layout_mode = 2
 theme_override_colors/font_color = Color(0.9, 0.9, 1, 1)
 theme_override_font_sizes/font_size = 12
 text = "REF: 0%"
 
-[node name="PurLabel" type="Label" parent="HBox/InfoBox/StatsGrid"]
+[node name="PurLabel" type="Label" parent="MainVBox/TopHBox/InfoBox/StatsGrid"]
 layout_mode = 2
 theme_override_colors/font_color = Color(0, 1, 1, 1)
 theme_override_font_sizes/font_size = 12
 text = "PUR: 0"
 
-[node name="ParryLabel" type="Label" parent="HBox/InfoBox/StatsGrid"]
+[node name="ParryLabel" type="Label" parent="MainVBox/TopHBox/InfoBox/StatsGrid"]
 layout_mode = 2
 theme_override_colors/font_color = Color(0.6, 0.4, 1, 1)
 theme_override_font_sizes/font_size = 12
 text = "PRY: 0%"
 
-[node name="DrainLabel" type="Label" parent="HBox/InfoBox/StatsGrid"]
+[node name="DrainLabel" type="Label" parent="MainVBox/TopHBox/InfoBox/StatsGrid"]
 layout_mode = 2
 theme_override_colors/font_color = Color(0.2, 0.8, 0.2, 1)
 theme_override_font_sizes/font_size = 12
 text = "DRN: 0%"
 
-[node name="CritDmgLabel" type="Label" parent="HBox/InfoBox/StatsGrid"]
+[node name="CritDmgLabel" type="Label" parent="MainVBox/TopHBox/InfoBox/StatsGrid"]
 layout_mode = 2
 theme_override_colors/font_color = Color(1, 0.8, 0, 1)
 theme_override_font_sizes/font_size = 12
 text = "CDM: 200%"
 
-[node name="PenLabel" type="Label" parent="HBox/InfoBox/StatsGrid"]
+[node name="PenLabel" type="Label" parent="MainVBox/TopHBox/InfoBox/StatsGrid"]
 layout_mode = 2
 theme_override_colors/font_color = Color(0, 0.8, 0.8, 1)
 theme_override_font_sizes/font_size = 12
 text = "PEN: 0%"
 
-[node name="ComboLabel" type="Label" parent="HBox/InfoBox"]
+[node name="ComboLabel" type="Label" parent="MainVBox/TopHBox/InfoBox"]
 layout_mode = 2
 theme_override_font_sizes/font_size = 12
 text = "Combo: 1 (1.0)"
 
-[node name="SkillSlot" parent="HBox/InfoBox" instance=ExtResource("4_skill")]
+[node name="SkillSlot" parent="MainVBox/TopHBox/InfoBox" instance=ExtResource("4_skill")]
 visible = false
 layout_mode = 2
-theme_override_styles/panel = null
 
-[node name="LeaderSkillBox" type="VBoxContainer" parent="HBox"]
-visible = false
-custom_minimum_size = Vector2(0, 80)
+[node name="EquipmentBox" type="VBoxContainer" parent="MainVBox"]
+custom_minimum_size = Vector2(0, 44)
 layout_mode = 2
 size_flags_horizontal = 3
-size_flags_vertical = 4
-theme_override_constants/separation = 0
+theme_override_constants/separation = 2
 
-[node name="SkillNameLabel" type="Label" parent="HBox/LeaderSkillBox"]
+[node name="Slots" type="HBoxContainer" parent="MainVBox/EquipmentBox"]
 layout_mode = 2
-theme_override_colors/font_color = Color(0.85098, 0.741176, 0.611765, 1)
-theme_override_font_sizes/font_size = 16
-text = "Leader Skill Name"
-
-[node name="SkillDescLabel" type="Label" parent="HBox/LeaderSkillBox"]
-layout_mode = 2
-theme_override_font_sizes/font_size = 12
-text = "Skill Description text goes here..."
-autowrap_mode = 3
-max_lines_visible = 3
-
-[node name="EquipmentBox" type="VBoxContainer" parent="HBox"]
-visible = false
-custom_minimum_size = Vector2(0, 80)
-layout_mode = 2
-size_flags_horizontal = 3
-size_flags_vertical = 4
-theme_override_constants/separation = 0
-
-[node name="Title" type="Label" parent="HBox/EquipmentBox"]
-layout_mode = 2
-theme_override_font_sizes/font_size = 14
-text = "EQUIPMENT"
-horizontal_alignment = 1
-
-[node name="Slots" type="HBoxContainer" parent="HBox/EquipmentBox"]
-layout_mode = 2
-theme_override_constants/separation = 15
+theme_override_constants/separation = 20
 alignment = 1
 
-[node name="WeaponSlot" parent="HBox/EquipmentBox/Slots" instance=ExtResource("3_slot")]
+[node name="WeaponSlot" parent="MainVBox/EquipmentBox/Slots" instance=ExtResource("3_slot")]
+custom_minimum_size = Vector2(32, 32)
 layout_mode = 2
 
-[node name="ArmorSlot" parent="HBox/EquipmentBox/Slots" instance=ExtResource("3_slot")]
+[node name="ArmorSlot" parent="MainVBox/EquipmentBox/Slots" instance=ExtResource("3_slot")]
+custom_minimum_size = Vector2(32, 32)
 layout_mode = 2
 
-[node name="AccessorySlot" parent="HBox/EquipmentBox/Slots" instance=ExtResource("3_slot")]
+[node name="AccessorySlot" parent="MainVBox/EquipmentBox/Slots" instance=ExtResource("3_slot")]
+custom_minimum_size = Vector2(32, 32)
 layout_mode = 2
+
+[node name="BottomSpacer" type="Control" parent="MainVBox/EquipmentBox"]
+custom_minimum_size = Vector2(0, 4)
+layout_mode = 2
+mouse_filter = 2
