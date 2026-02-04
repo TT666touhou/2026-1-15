@@ -16,7 +16,7 @@ func _ready() -> void:
 	freeze = false
 	lock_rotation = true
 	gravity_scale = 0.0
-	linear_damp = 5.0
+	linear_damp = 6.5
 	angular_damp = 5.0
 	is_collectible = false # 預設關閉拾取
 	

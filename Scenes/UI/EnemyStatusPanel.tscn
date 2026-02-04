@@ -10,7 +10,7 @@ border_width_left = 2
 border_width_top = 2
 border_width_right = 2
 border_width_bottom = 2
-border_color = Color(0.85098, 0.741176, 0.611765, 1)
+border_color = Color(0.709804, 0.611765, 0.564706, 1)
 corner_radius_top_left = 4
 corner_radius_top_right = 4
 corner_radius_bottom_right = 4
@@ -48,7 +48,8 @@ theme_override_constants/separation = 20
 
 [node name="Label" type="Label" parent="MarginContainer/VBox"]
 layout_mode = 2
-theme_override_colors/font_color = Color(0.85098, 0.741176, 0.611765, 1)
+texture_filter = 1
+theme_override_colors/font_color = Color(0.709804, 0.611765, 0.564706, 1)
 theme_override_font_sizes/font_size = 24
 text = "Enemies"
 horizontal_alignment = 1

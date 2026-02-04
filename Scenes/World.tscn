@@ -1,4 +1,4 @@
-[gd_scene load_steps=39 format=4 uid="uid://0ete046rt74c"]
+[gd_scene load_steps=38 format=4 uid="uid://0ete046rt74c"]
 
 [ext_resource type="TileSet" uid="uid://b1bitenv" path="res://Tilesheet/1bit_environment.tres" id="1_1bit"]
 [ext_resource type="Script" uid="uid://dpwf6ofa0hxkp" path="res://Scripts/Grid/Grid.gd" id="6"]
@@ -64,7 +64,7 @@ border_width_left = 2
 border_width_top = 2
 border_width_right = 2
 border_width_bottom = 2
-border_color = Color(0.85098, 0.741176, 0.611765, 1)
+border_color = Color(0.709804, 0.611765, 0.564706, 1)
 corner_radius_top_left = 4
 corner_radius_top_right = 4
 corner_radius_bottom_right = 4
@@ -225,48 +225,36 @@ offset_left = 395.0
 offset_top = 25.0
 scale = Vector2(0.5, 0.5)
 
-		[node name="TopRightToolbar" type="HBoxContainer" parent="UI"]
-		anchors_preset = 1
-		anchor_left = 1.0
-		anchor_right = 1.0
-		offset_left = -400.0
-		offset_top = 10.0
-		offset_right = -20.0
-		offset_bottom = 50.0
-		grow_horizontal = 0
-		theme_override_constants/separation = 10
-		alignment = 2
+[node name="TopRightToolbar" type="HBoxContainer" parent="UI"]
+anchors_preset = 1
+anchor_left = 1.0
+anchor_right = 1.0
+offset_left = -400.0
+offset_top = 10.0
+offset_right = -20.0
+offset_bottom = 50.0
+grow_horizontal = 0
+theme_override_constants/separation = 10
+alignment = 2
 
-		[node name="TurnDebugInfo" type="HBoxContainer" parent="UI"]
-		anchors_preset = 5
-		anchor_left = 0.5
-		anchor_right = 0.5
-		offset_left = -100.0
-		offset_top = 60.0
-		offset_right = 100.0
-		offset_bottom = 100.0
-		grow_horizontal = 2
-		alignment = 1
-		script = ExtResource("45")
+[node name="DebugResourceButton" parent="UI/TopRightToolbar" instance=ExtResource("39")]
+visible = false
+layout_mode = 2
 
-		[node name="DebugResourceButton" parent="UI/TopRightToolbar" instance=ExtResource("39")]
-		visible = false
-		layout_mode = 2
+[node name="DebugRoomLoader" parent="UI/TopRightToolbar" instance=ExtResource("46")]
+visible = false
+layout_mode = 2
 
-		[node name="DebugRoomLoader" parent="UI/TopRightToolbar" instance=ExtResource("46")]
-		visible = false
-		layout_mode = 2
-
-		[node name="EndTurnButton" type="Button" parent="UI/TopRightToolbar"]
-		visible = false
-		layout_mode = 2
-		focus_mode = 0
-		theme_override_colors/font_color = Color(0.85098, 0.741176, 0.611765, 1)
-		theme_override_styles/normal = SubResource("StyleBoxFlat_button")
-		theme_override_styles/pressed = SubResource("StyleBoxFlat_button")
-		theme_override_styles/hover = SubResource("StyleBoxFlat_button")
-		text = "Force End Turn"
-		script = ExtResource("33")
+[node name="EndTurnButton" type="Button" parent="UI/TopRightToolbar"]
+visible = false
+layout_mode = 2
+focus_mode = 0
+theme_override_colors/font_color = Color(0.709804, 0.611765, 0.564706, 1)
+theme_override_styles/normal = SubResource("StyleBoxFlat_button")
+theme_override_styles/pressed = SubResource("StyleBoxFlat_button")
+theme_override_styles/hover = SubResource("StyleBoxFlat_button")
+text = "Force End Turn"
+script = ExtResource("33")
 
 [node name="MenuButton" type="TextureButton" parent="UI/TopRightToolbar"]
 custom_minimum_size = Vector2(32, 32)
@@ -282,6 +270,19 @@ position = Vector2(16, 16)
 texture = ExtResource("32")
 region_enabled = true
 region_rect = Rect2(752, 272, 16, 16)
+
+[node name="TurnDebugInfo" type="HBoxContainer" parent="UI"]
+visible = false
+anchors_preset = 5
+anchor_left = 0.5
+anchor_right = 0.5
+offset_left = -100.0
+offset_top = 60.0
+offset_right = 100.0
+offset_bottom = 100.0
+grow_horizontal = 2
+alignment = 1
+script = ExtResource("45")
 
 [node name="DebugLayer" type="CanvasLayer" parent="UI"]
 process_mode = 4
@@ -315,6 +316,7 @@ layout_mode = 2
 theme_override_constants/separation = 5
 
 [node name="Label" type="Label" parent="UI/DebugLayer/DebugMenuPanel/Margin/VBox"]
+texture_filter = 1
 layout_mode = 2
 theme_override_font_sizes/font_size = 14
 text = "DEBUG TOOLS"

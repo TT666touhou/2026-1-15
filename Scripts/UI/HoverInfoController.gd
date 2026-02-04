@@ -1,11 +1,13 @@
 extends Control
 
 @export var offset_from_mouse: Vector2 = Vector2(20, -20)
+@export var synergy_tooltip_offset: Vector2 = Vector2(100, -20)
 
 var _card_instance: Control = null
 var _trap_card_instance: Control = null
 var _equip_panel_instance: Control = null
 var _skill_tooltip_instance: Control = null
+var _synergy_tooltip_instance: Control = null
 var _grid: Node = null
 var _last_hovered_entity_id: int = -1 # Track instance ID to force updates
 var _current_entity: Node = null # 目前懸停的實體
@@ -14,6 +16,7 @@ var _is_ui_hovering: bool = false # 標記目前是否由 UI 元素觸發懸停�
 const EnemyInfoCardScene = preload("res://Scenes/UI/EnemyInfoCard.tscn")
 const TrapInfoCardScene = preload("res://Scenes/UI/TrapInfoCard.tscn")
 const SkillTooltipScene = preload("res://Scenes/UI/Skills/SkillTooltipUI.tscn")
+const SynergyTooltipScene = preload("res://Scenes/UI/Synergy/SynergyTooltipUI.tscn")
 var EquipmentInfoPanelScene = null
 
 func _ready() -> void:
@@ -53,6 +56,12 @@ func _ready() -> void:
 		add_child(_skill_tooltip_instance)
 		_skill_tooltip_instance.visible = false
 		_skill_tooltip_instance.mouse_filter = Control.MOUSE_FILTER_IGNORE
+
+	if SynergyTooltipScene:
+		_synergy_tooltip_instance = SynergyTooltipScene.instantiate()
+		add_child(_synergy_tooltip_instance)
+		_synergy_tooltip_instance.visible = false
+		_synergy_tooltip_instance.mouse_filter = Control.MOUSE_FILTER_IGNORE
 		
 	# 將面板移至頂層 CanvasLayer 確保不會被遮擋
 	call_deferred("_reparent_to_top_layer")
@@ -72,6 +81,8 @@ func _reparent_to_top_layer() -> void:
 		_equip_panel_instance.reparent(layer)
 	if _skill_tooltip_instance:
 		_skill_tooltip_instance.reparent(layer)
+	if _synergy_tooltip_instance:
+		_synergy_tooltip_instance.reparent(layer)
 		
 	print("[HoverInfoController] Panels reparented to new top-level CanvasLayer (layer 100)")
 
@@ -83,7 +94,7 @@ func _process(_delta: float) -> void:
 
 	# 1. 拖拽中強制隱藏
 	if get_viewport().gui_is_dragging():
-		if _equip_panel_instance.visible or _card_instance.visible or _skill_tooltip_instance.visible:
+		if _equip_panel_instance.visible or _card_instance.visible or _skill_tooltip_instance.visible or (_synergy_tooltip_instance and _synergy_tooltip_instance.visible):
 			_hide_all()
 		return
 
@@ -94,7 +105,7 @@ func _process(_delta: float) -> void:
 	if entity:
 		_update_display_logic(entity)
 		# 核心修正：如果顯示了面板，就更新位置
-		if _equip_panel_instance.visible or _card_instance.visible or _trap_card_instance.visible:
+		if _equip_panel_instance.visible or _card_instance.visible or _trap_card_instance.visible or (_synergy_tooltip_instance and _synergy_tooltip_instance.visible):
 			_update_position()
 	else:
 		_hide_all()
@@ -216,6 +227,8 @@ func _update_position() -> void:
 		active_panel = _equip_panel_instance
 	elif _skill_tooltip_instance and _skill_tooltip_instance.visible:
 		active_panel = _skill_tooltip_instance
+	elif _synergy_tooltip_instance and _synergy_tooltip_instance.visible:
+		active_panel = _synergy_tooltip_instance
 		
 	if active_panel:
 		# 決定錨點位置 (Anchor Position)
@@ -227,8 +240,11 @@ func _update_position() -> void:
 			anchor_pos = _current_entity.get_global_transform_with_canvas().origin
 			# print("[HoverInfoController] Using Entity Anchor: ", anchor_pos)
 		
+		var offset = offset_from_mouse
+		if active_panel == _synergy_tooltip_instance:
+			offset = synergy_tooltip_offset
 		# 計算目標位置
-		var target_pos = anchor_pos + offset_from_mouse
+		var target_pos = anchor_pos + offset
 		
 		# 邊界檢查
 		var viewport_rect = get_viewport_rect()
@@ -236,11 +252,10 @@ func _update_position() -> void:
 		
 		# 防止超出右邊界
 		if target_pos.x + panel_size.x > viewport_rect.size.x:
-			target_pos.x = anchor_pos.x - panel_size.x - offset_from_mouse.x
-			
+			target_pos.x = anchor_pos.x - panel_size.x - offset.x
 		# 防止超出下邊界
 		if target_pos.y + panel_size.y > viewport_rect.size.y:
-			target_pos.y = anchor_pos.y - panel_size.y - offset_from_mouse.y
+			target_pos.y = anchor_pos.y - panel_size.y - offset.y
 			
 		# 確保不會超出左上邊界
 		target_pos.x = max(0, target_pos.x)
@@ -259,6 +274,7 @@ func _hide_all() -> void:
 	if _trap_card_instance: _trap_card_instance.visible = false
 	if _equip_panel_instance: _equip_panel_instance.visible = false
 	if _skill_tooltip_instance: _skill_tooltip_instance.visible = false
+	if _synergy_tooltip_instance: _synergy_tooltip_instance.visible = false
 
 # 公開 API：讓 UI 元素直接顯示資料
 func show_data_info(data: Resource, from_ui: bool = false) -> void:
@@ -302,3 +318,21 @@ func show_skill_info(skill: Resource, from_ui: bool = false) -> void:
 		_skill_tooltip_instance.visible = true
 		_skill_tooltip_instance.get_parent().move_child(_skill_tooltip_instance, -1)
 		_update_position()
+
+func show_synergy_info(trait_id: String, from_ui: bool = false) -> void:
+	print("[HoverInfoController] show_synergy_info trait_id=%s from_ui=%s" % [trait_id, from_ui])
+	if trait_id.is_empty():
+		_hide_all()
+		return
+	if from_ui:
+		_is_ui_hovering = true
+	else:
+		_is_ui_hovering = false
+	if _synergy_tooltip_instance and _synergy_tooltip_instance.has_method("setup_by_trait_id"):
+		_synergy_tooltip_instance.setup_by_trait_id(trait_id)
+		_synergy_tooltip_instance.visible = true
+		_synergy_tooltip_instance.get_parent().move_child(_synergy_tooltip_instance, -1)
+		_update_position()
+		print("[HoverInfoController] Synergy tooltip shown")
+	else:
+		print("[HoverInfoController] SKIP: no _synergy_tooltip_instance or setup_by_trait_id")

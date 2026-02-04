@@ -114,7 +114,7 @@ func _get_or_create_entry(resource: String) -> HBoxContainer:
 	# 使用 ReferenceRect 做外框比較輕量，或者用 PanelContainer 
 	var border = ReferenceRect.new()
 	border.name = "Border"
-	border.border_color = Color(0.85098, 0.741176, 0.611765, 1) # Sand Gold
+	border.border_color = Color("#b59c90") # Sand Gold
 	border.border_width = 2.0
 	border.editor_only = false
 	border.visible = false # Default hidden

@@ -10,6 +10,8 @@ enum Rarity { COMMON, RARE, EPIC, LEGENDARY, RELIC }
 @export var item_level: int = 1
 @export var icon: Texture2D
 
+@export var traits: Array[Resource] = []
+
 @export var modifiers: Array[ModifierData] = []
 
 func get_equipment_text() -> String:

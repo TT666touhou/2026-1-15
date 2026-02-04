@@ -10,7 +10,7 @@ border_width_left = 2
 border_width_top = 2
 border_width_right = 2
 border_width_bottom = 2
-border_color = Color(0.85098, 0.741176, 0.611765, 1)
+border_color = Color(0.709804, 0.611765, 0.564706, 1)
 corner_radius_top_left = 4
 corner_radius_top_right = 4
 corner_radius_bottom_right = 4
@@ -38,7 +38,7 @@ layout_mode = 1
 anchors_preset = 1
 anchor_left = 1.0
 anchor_right = 1.0
-offset_left = -68.0
+offset_left = -180.0
 offset_bottom = 68.0
 grow_horizontal = 0
 theme_override_constants/margin_top = 20
@@ -48,6 +48,16 @@ theme_override_constants/margin_right = 20
 layout_mode = 2
 theme_override_constants/separation = 10
 alignment = 2
+
+[node name="RandomEquipButton" type="Button" parent="TopRightHUD/HBox"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(48, 48)
+layout_mode = 2
+theme_override_styles/normal = SubResource("StyleBoxFlat_opaque")
+theme_override_styles/hover = SubResource("StyleBoxFlat_opaque")
+theme_override_styles/pressed = SubResource("StyleBoxFlat_opaque")
+theme_override_styles/focus = SubResource("StyleBoxFlat_opaque")
+text = "隨機裝備"
 
 [node name="SettingsButton" type="Button" parent="TopRightHUD/HBox"]
 unique_name_in_owner = true
@@ -65,6 +75,7 @@ anchor_right = 1.0
 anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
+texture_filter = 1
 theme_override_font_sizes/font_size = 24
 text = "⚙"
 horizontal_alignment = 1
@@ -176,7 +187,8 @@ theme_override_constants/separation = 2
 
 [node name="Title" type="Label" parent="LeftPanel/Margin/VBox/LeaderTraitPanel/Margin/VBox"]
 layout_mode = 2
-theme_override_colors/font_color = Color(0.85098, 0.741176, 0.611765, 1)
+texture_filter = 1
+theme_override_colors/font_color = Color(0.709804, 0.611765, 0.564706, 1)
 theme_override_font_sizes/font_size = 14
 text = "隊長特性"
 horizontal_alignment = 1
@@ -184,6 +196,7 @@ horizontal_alignment = 1
 [node name="TraitDescLabel" type="Label" parent="LeftPanel/Margin/VBox/LeaderTraitPanel/Margin/VBox"]
 unique_name_in_owner = true
 layout_mode = 2
+texture_filter = 1
 theme_override_font_sizes/font_size = 12
 text = "特性描述文字..."
 autowrap_mode = 3
@@ -206,6 +219,12 @@ layout_mode = 0
 offset_right = 280.0
 offset_bottom = 4.0
 mouse_filter = 2
+
+[node name="SynergyBookmarkList" type="VBoxContainer" parent="."]
+unique_name_in_owner = true
+layout_mode = 0
+theme_override_constants/separation = 8
+alignment = 1
 
 [node name="CenterTooltipSlot" type="Control" parent="."]
 unique_name_in_owner = true

@@ -1,8 +1,12 @@
-[gd_resource type="Resource" script_class="BaseItemResource" load_steps=8 format=3 uid="uid://dt2hjsp34q4gx"]
+[gd_resource type="Resource" script_class="BaseItemResource" load_steps=12 format=3 uid="uid://dt2hjsp34q4gx"]
 
 [ext_resource type="Texture2D" uid="uid://igs8giojsm55" path="res://Tilesheet/colored-transparent_packed.png" id="1_atlas"]
 [ext_resource type="Script" uid="uid://cums6yvi6wbcm" path="res://Scripts/Items/AffixDefinition.gd" id="2_affix_script"]
 [ext_resource type="Script" uid="uid://j3mkl5jfwq5g" path="res://Scripts/Items/BaseItemResource.gd" id="3_script"]
+[ext_resource type="Resource" path="res://Resources/Equipment/Tags/Tag_Immortal.tres" id="4_tag_immortal"]
+[ext_resource type="Resource" path="res://Resources/Equipment/Tags/Tag_Crimson.tres" id="5_tag_crimson"]
+[ext_resource type="Resource" path="res://Resources/Equipment/Tags/Tag_SwiftWind.tres" id="6_tag_swift"]
+[ext_resource type="Resource" path="res://Resources/Equipment/Tags/Tag_Arcane.tres" id="7_tag_arcane"]
 
 [sub_resource type="Resource" id="SubResource_pie"]
 script = ExtResource("2_affix_script")
@@ -33,3 +37,4 @@ item_names = Array[String](["甲冑"])
 slot = 1
 visual_icons = Array[Texture2D]([SubResource("AtlasTexture_plate")])
 affix_pool = Array[ExtResource("2_affix_script")]([SubResource("SubResource_hp"), SubResource("SubResource_dr"), SubResource("SubResource_pie")])
+tag_pool = Array[ExtResource("4_tag_immortal")]([ExtResource("4_tag_immortal"), ExtResource("5_tag_crimson"), ExtResource("6_tag_swift"), ExtResource("7_tag_arcane")])

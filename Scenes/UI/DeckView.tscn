@@ -9,7 +9,7 @@ border_width_left = 2
 border_width_top = 2
 border_width_right = 2
 border_width_bottom = 2
-border_color = Color(0.85098, 0.741176, 0.611765, 1)
+border_color = Color(0.709804, 0.611765, 0.564706, 1)
 corner_radius_top_left = 4
 corner_radius_top_right = 4
 corner_radius_bottom_right = 4
@@ -21,7 +21,7 @@ border_width_left = 2
 border_width_top = 2
 border_width_right = 2
 border_width_bottom = 2
-border_color = Color(0.85098, 0.741176, 0.611765, 1)
+border_color = Color(0.709804, 0.611765, 0.564706, 1)
 corner_radius_top_left = 4
 corner_radius_top_right = 4
 corner_radius_bottom_right = 4
@@ -92,6 +92,7 @@ theme_override_constants/separation = 20
 [node name="TitleLabel" type="Label" parent="ContentPanel/Margin/VBox/Header"]
 layout_mode = 2
 size_flags_horizontal = 3
+texture_filter = 1
 theme_override_colors/font_color = Color(0.85098, 0.741176, 0.611765, 1)
 theme_override_font_sizes/font_size = 32
 text = "DECK LIBRARY"
@@ -105,8 +106,8 @@ theme_override_constants/separation = 10
 [node name="BtnRemaining" type="Button" parent="ContentPanel/Margin/VBox/Header/ModeSwitch"]
 custom_minimum_size = Vector2(120, 0)
 layout_mode = 2
-theme_override_colors/font_pressed_color = Color(0.85098, 0.741176, 0.611765, 1)
-theme_override_colors/font_hover_color = Color(0.85098, 0.741176, 0.611765, 1)
+theme_override_colors/font_pressed_color = Color(0.709804, 0.611765, 0.564706, 1)
+theme_override_colors/font_hover_color = Color(0.709804, 0.611765, 0.564706, 1)
 theme_override_styles/normal = SubResource("StyleBoxFlat_btn")
 theme_override_styles/hover = SubResource("StyleBoxFlat_btn")
 theme_override_styles/pressed = SubResource("StyleBoxFlat_btn")
@@ -117,8 +118,8 @@ text = "Remaining"
 [node name="BtnAll" type="Button" parent="ContentPanel/Margin/VBox/Header/ModeSwitch"]
 custom_minimum_size = Vector2(120, 0)
 layout_mode = 2
-theme_override_colors/font_pressed_color = Color(0.85098, 0.741176, 0.611765, 1)
-theme_override_colors/font_hover_color = Color(0.85098, 0.741176, 0.611765, 1)
+theme_override_colors/font_pressed_color = Color(0.709804, 0.611765, 0.564706, 1)
+theme_override_colors/font_hover_color = Color(0.709804, 0.611765, 0.564706, 1)
 theme_override_styles/normal = SubResource("StyleBoxFlat_btn")
 theme_override_styles/hover = SubResource("StyleBoxFlat_btn")
 theme_override_styles/pressed = SubResource("StyleBoxFlat_btn")
@@ -132,6 +133,7 @@ size_flags_horizontal = 3
 
 [node name="CountLabel" type="Label" parent="ContentPanel/Margin/VBox/Header"]
 layout_mode = 2
+texture_filter = 1
 theme_override_font_sizes/font_size = 24
 text = "0 / 0"
 horizontal_alignment = 2

@@ -1,8 +1,7 @@
-[gd_resource type="Resource" script_class="UnitCard" load_steps=11 format=3 uid="uid://bacledih1gadx"]
+[gd_resource type="Resource" script_class="UnitCard" load_steps=10 format=3 uid="uid://bacledih1gadx"]
 
 [ext_resource type="Resource" path="res://Resources/Traits/Trait_Test_OnDamaged.tres" id="1_2stax"]
 [ext_resource type="Script" uid="uid://b20pxhdoxomx7" path="res://Resources/Cards/UnitCard.gd" id="1_unitcard"]
-[ext_resource type="Script" uid="uid://c4tsurqdphht0" path="res://Scripts/SkillSystem/UnitSkillData.gd" id="2_m46kw"]
 [ext_resource type="PackedScene" uid="uid://c13ktx8qtsfb0" path="res://Scenes/Entities/Player/Unit001.tscn" id="2_unitscene"]
 [ext_resource type="Resource" path="res://Footprints/Footprint_1x1.tres" id="3_footprint"]
 [ext_resource type="Resource" path="res://Resources/MovementRanges/MovementRange_OneStep.tres" id="4_movement"]
@@ -21,12 +20,11 @@ faction = ExtResource("5_faction")
 icon = SubResource("AtlasTexture_icon")
 footprint_data = ExtResource("3_footprint")
 movement_range_data = ExtResource("4_movement")
+base_speed = 1.5
 base_combo_count = 1.5
 base_penetration = 0.5
 character_trait = ExtResource("1_2stax")
-max_health = 200.0
-attack_damage = 10
-attack_depth = 2
+default_skill = ExtResource("7_skill")
 card_id = "unit_001"
 card_name = "Unit 001"
 description = "A basic unit."
@@ -34,5 +32,4 @@ cost = {
 "coin": 10
 }
 display_name = "Archer"
-base_speed = 1.5
-default_skill = ExtResource("7_skill")
+max_health = 200.0

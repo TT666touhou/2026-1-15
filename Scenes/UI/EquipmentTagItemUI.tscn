@@ -1,0 +1,121 @@
+[gd_scene load_steps=4 format=3 uid="uid://b0thjwgyanst3"]
+
+[ext_resource type="Script" uid="uid://i7t762m1ewpu" path="res://Scripts/UI/Equipment/EquipmentTagItemUI.gd" id="1_script"]
+[ext_resource type="Texture2D" uid="uid://0modheirbetv" path="res://Tilesheet/kenney_fantasy-ui-borders/Vector/fantasy-ui-borders.svg" id="2_border"]
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_bookmark"]
+bg_color = Color(0.0941176, 0.0980392, 0.137255, 1)
+border_width_left = 1
+border_width_top = 1
+border_width_right = 1
+border_width_bottom = 1
+border_color = Color(0.709804, 0.611765, 0.564706, 1)
+corner_radius_top_right = 4
+corner_radius_bottom_right = 4
+anti_aliasing = false
+
+[node name="EquipmentTagItemUI" type="MarginContainer"]
+custom_minimum_size = Vector2(0, 28)
+offset_right = 180.0
+offset_bottom = 28.0
+theme_override_constants/margin_left = 0
+theme_override_constants/margin_top = 1
+theme_override_constants/margin_right = 4
+theme_override_constants/margin_bottom = 1
+script = ExtResource("1_script")
+
+[node name="Base" type="PanelContainer" parent="."]
+unique_name_in_owner = true
+layout_mode = 2
+theme_override_styles/panel = SubResource("StyleBoxFlat_bookmark")
+
+[node name="StitchLayer" type="ColorRect" parent="Base"]
+unique_name_in_owner = true
+layout_mode = 2
+mouse_filter = 2
+color = Color(1, 1, 1, 0)
+
+[node name="Layout" type="HBoxContainer" parent="Base"]
+layout_mode = 2
+theme_override_constants/separation = 0
+
+[node name="AccentStrip" type="ColorRect" parent="Base/Layout"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(2, 0)
+layout_mode = 2
+color = Color(0.752941, 0.752941, 0.752941, 1)
+
+[node name="ContentMargin" type="MarginContainer" parent="Base/Layout"]
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_constants/margin_left = 12
+theme_override_constants/margin_top = 2
+theme_override_constants/margin_right = 12
+theme_override_constants/margin_bottom = 2
+
+[node name="MainHBox" type="HBoxContainer" parent="Base/Layout/ContentMargin"]
+layout_mode = 2
+theme_override_constants/separation = 14
+
+[node name="IconContainer" type="Control" parent="Base/Layout/ContentMargin/MainHBox"]
+custom_minimum_size = Vector2(21, 21)
+layout_mode = 2
+size_flags_vertical = 4
+
+[node name="IconBG" type="NinePatchRect" parent="Base/Layout/ContentMargin/MainHBox/IconContainer"]
+unique_name_in_owner = true
+visible = false
+z_index = 1
+texture_filter = 1
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+texture = ExtResource("2_border")
+region_rect = Rect2(612, 226, 48, 48)
+patch_margin_left = 4
+patch_margin_top = 4
+patch_margin_right = 4
+patch_margin_bottom = 4
+
+[node name="BadgeIcon" type="TextureRect" parent="Base/Layout/ContentMargin/MainHBox/IconContainer"]
+unique_name_in_owner = true
+texture_filter = 1
+custom_minimum_size = Vector2(14, 14)
+layout_mode = 1
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -7.0
+offset_top = -7.0
+offset_right = 7.0
+offset_bottom = 7.0
+grow_horizontal = 2
+grow_vertical = 2
+size_flags_vertical = 4
+expand_mode = 1
+stretch_mode = 5
+
+[node name="RightVBox" type="VBoxContainer" parent="Base/Layout/ContentMargin/MainHBox"]
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_constants/separation = 2
+alignment = 1
+
+[node name="NameLabel" type="Label" parent="Base/Layout/ContentMargin/MainHBox/RightVBox"]
+unique_name_in_owner = true
+texture_filter = 1
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_colors/font_color = Color(1, 1, 1, 1)
+theme_override_font_sizes/font_size = 12
+text = "Tag Name"
+vertical_alignment = 1
+
+[node name="RightAnchor" type="Control" parent="."]
+unique_name_in_owner = true
+layout_mode = 2

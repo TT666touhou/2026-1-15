@@ -17,6 +17,6 @@ end_cap_mode = 2
 texture_filter = 1
 points = PackedVector2Array(0, 0, 0, 0)
 width = 1.0
-default_color = Color(0.85098, 0.741176, 0.611765, 1)
+default_color = Color(0.709804, 0.611765, 0.564706, 1)
 begin_cap_mode = 2
 end_cap_mode = 2
