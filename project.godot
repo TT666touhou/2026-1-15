@@ -27,6 +27,7 @@ PartyManager="*res://Scripts/Managers/PartyManager.gd"
 AttackManager="*res://Scripts/Managers/AttackManager.gd"
 DungeonManager="*res://Scripts/Managers/DungeonManager.gd"
 SkillManager="*res://Scripts/Managers/SkillManager.gd"
+SynergyManager="*res://Scripts/Managers/SynergyManager.gd"
 EquipmentGenerator="*res://Scripts/Items/EquipmentGenerator.gd"
 
 [display]
@@ -90,5 +91,6 @@ settings_cancel={
 
 [rendering]
 
+textures/vram_compression/import_etc2_astc=true
 2d/snap/snap_2d_transforms_to_pixel=true
 2d/snap/snap_2d_vertices_to_pixel=true

@@ -12,7 +12,7 @@ border_width_left = 2
 border_width_top = 2
 border_width_right = 2
 border_width_bottom = 2
-border_color = Color(0.85098, 0.741176, 0.611765, 1)
+border_color = Color(0.709804, 0.611765, 0.564706, 1)
 corner_radius_top_left = 4
 corner_radius_top_right = 4
 corner_radius_bottom_right = 4
@@ -24,7 +24,7 @@ border_width_left = 2
 border_width_top = 2
 border_width_right = 2
 border_width_bottom = 2
-border_color = Color(0.85098, 0.741176, 0.611765, 1)
+border_color = Color(0.709804, 0.611765, 0.564706, 1)
 corner_radius_top_left = 4
 corner_radius_top_right = 4
 corner_radius_bottom_right = 4
@@ -78,7 +78,8 @@ theme_override_constants/separation = 15
 
 [node name="Label" type="Label" parent="CenterContainer/PanelContainer/MarginContainer/VBoxContainer"]
 layout_mode = 2
-theme_override_colors/font_color = Color(0.85098, 0.741176, 0.611765, 1)
+texture_filter = 1
+theme_override_colors/font_color = Color(0.709804, 0.611765, 0.564706, 1)
 theme_override_font_sizes/font_size = 32
 text = "PAUSED"
 horizontal_alignment = 1
@@ -94,6 +95,7 @@ columns = 2
 
 [node name="LabelRes" type="Label" parent="CenterContainer/PanelContainer/MarginContainer/VBoxContainer/GridContainer"]
 layout_mode = 2
+texture_filter = 1
 text = "Resolution"
 
 [node name="ResolutionOption" type="OptionButton" parent="CenterContainer/PanelContainer/MarginContainer/VBoxContainer/GridContainer"]
@@ -103,6 +105,7 @@ size_flags_horizontal = 3
 
 [node name="LabelFull" type="Label" parent="CenterContainer/PanelContainer/MarginContainer/VBoxContainer/GridContainer"]
 layout_mode = 2
+texture_filter = 1
 text = "Fullscreen"
 
 [node name="FullscreenCheck" type="CheckBox" parent="CenterContainer/PanelContainer/MarginContainer/VBoxContainer/GridContainer"]
@@ -111,6 +114,7 @@ layout_mode = 2
 
 [node name="LabelVSync" type="Label" parent="CenterContainer/PanelContainer/MarginContainer/VBoxContainer/GridContainer"]
 layout_mode = 2
+texture_filter = 1
 text = "VSync"
 
 [node name="VSyncCheck" type="CheckBox" parent="CenterContainer/PanelContainer/MarginContainer/VBoxContainer/GridContainer"]
@@ -128,6 +132,7 @@ columns = 2
 
 [node name="LabelMaster" type="Label" parent="CenterContainer/PanelContainer/MarginContainer/VBoxContainer/GridContainerAudio"]
 layout_mode = 2
+texture_filter = 1
 text = "Master Volume"
 
 [node name="MasterSlider" type="HSlider" parent="CenterContainer/PanelContainer/MarginContainer/VBoxContainer/GridContainerAudio"]
@@ -140,6 +145,7 @@ value = 1.0
 
 [node name="LabelMusic" type="Label" parent="CenterContainer/PanelContainer/MarginContainer/VBoxContainer/GridContainerAudio"]
 layout_mode = 2
+texture_filter = 1
 text = "Music"
 
 [node name="MusicSlider" type="HSlider" parent="CenterContainer/PanelContainer/MarginContainer/VBoxContainer/GridContainerAudio"]
@@ -152,6 +158,7 @@ value = 1.0
 
 [node name="LabelSFX" type="Label" parent="CenterContainer/PanelContainer/MarginContainer/VBoxContainer/GridContainerAudio"]
 layout_mode = 2
+texture_filter = 1
 text = "SFX"
 
 [node name="SFXSlider" type="HSlider" parent="CenterContainer/PanelContainer/MarginContainer/VBoxContainer/GridContainerAudio"]
@@ -175,7 +182,7 @@ alignment = 1
 unique_name_in_owner = true
 custom_minimum_size = Vector2(100, 40)
 layout_mode = 2
-theme_override_colors/font_color = Color(0.85098, 0.741176, 0.611765, 1)
+theme_override_colors/font_color = Color(0.709804, 0.611765, 0.564706, 1)
 theme_override_styles/normal = SubResource("StyleBoxFlat_btn")
 theme_override_styles/hover = SubResource("StyleBoxFlat_btn")
 theme_override_styles/pressed = SubResource("StyleBoxFlat_btn")
@@ -186,7 +193,7 @@ text = "RESUME"
 unique_name_in_owner = true
 custom_minimum_size = Vector2(100, 40)
 layout_mode = 2
-theme_override_colors/font_color = Color(0.85098, 0.741176, 0.611765, 1)
+theme_override_colors/font_color = Color(0.709804, 0.611765, 0.564706, 1)
 theme_override_styles/normal = SubResource("StyleBoxFlat_btn")
 theme_override_styles/hover = SubResource("StyleBoxFlat_btn")
 theme_override_styles/pressed = SubResource("StyleBoxFlat_btn")

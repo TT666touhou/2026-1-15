@@ -40,12 +40,14 @@ alignment = 1
 
 [node name="NameLabel" type="Label" parent="HBox/VBox"]
 layout_mode = 2
+texture_filter = 1
 theme_override_colors/font_color = Color(1, 0.8, 0.4, 1)
 theme_override_font_sizes/font_size = 16
 text = "Trap Name"
 
 [node name="AtkLabel" type="Label" parent="HBox/VBox"]
 layout_mode = 2
+texture_filter = 1
 theme_override_colors/font_color = Color(1, 0.4, 0.4, 1)
 theme_override_font_sizes/font_size = 14
 text = "ATK: 10"

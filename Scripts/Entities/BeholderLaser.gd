@@ -5,7 +5,7 @@ class_name BeholderLaser
 ## 負責分段計算路徑、逐段繪製 Line2D 並造成穿透傷害
 
 # 顏色定義 (來自色錶)
-const COLOR_LASER_CORE = Color("#d9bd9c")
+const COLOR_LASER_CORE = Color("#b59c90")
 const COLOR_LASER_GLOW = Color("#6b6a80")
 
 @export var damage: int = 15

@@ -138,8 +138,8 @@ func resolve_combat(attacker: Node, target: GridEntity, base_damage: int, is_ski
 		if drain_rate > 0:
 			report["heal_amount"] = int(actual_hp_lost * drain_rate)
 	
-	# 追擊 (僅限玩家主動碰撞，排除技能與子彈)
-	if not is_skill and not attacker is CharacterBody2D and a_data:
+	# 追擊：僅限單位撞擊觸發，投射物與技能不觸發
+	if not is_skill and attacker is GridEntity and a_data:
 		report["pursuit_damage"] = a_data.get_effective_pursuit()
 
 	# 增加全域 Combo (僅玩家擊中敵人)

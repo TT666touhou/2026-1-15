@@ -10,7 +10,7 @@ border_width_left = 2
 border_width_top = 2
 border_width_right = 2
 border_width_bottom = 2
-border_color = Color(0.85098, 0.741176, 0.611765, 1)
+border_color = Color(0.709804, 0.611765, 0.564706, 1)
 corner_radius_top_left = 4
 corner_radius_top_right = 4
 corner_radius_bottom_right = 4
@@ -48,6 +48,7 @@ theme_override_constants/separation = 5
 [node name="NameLabel" type="Label" parent="Margin/VBox"]
 unique_name_in_owner = true
 layout_mode = 2
+texture_filter = 1
 theme_override_colors/font_color = Color(1, 0.9, 0.4, 1)
 theme_override_font_sizes/font_size = 18
 text = "Skill Name"
@@ -58,6 +59,7 @@ layout_mode = 2
 [node name="DescLabel" type="Label" parent="Margin/VBox"]
 unique_name_in_owner = true
 layout_mode = 2
+texture_filter = 1
 theme_override_font_sizes/font_size = 14
 text = "Description here..."
 autowrap_mode = 2
@@ -65,6 +67,7 @@ autowrap_mode = 2
 [node name="TargetingTypeLabel" type="Label" parent="Margin/VBox"]
 unique_name_in_owner = true
 layout_mode = 2
+texture_filter = 1
 theme_override_colors/font_color = Color(0.4, 0.8, 1, 1)
 theme_override_font_sizes/font_size = 12
 text = "Targeting: Center on Unit"
@@ -73,6 +76,7 @@ horizontal_alignment = 1
 [node name="ExecutionModeLabel" type="Label" parent="Margin/VBox"]
 unique_name_in_owner = true
 layout_mode = 2
+texture_filter = 1
 theme_override_colors/font_color = Color(0.8, 1, 0.4, 1)
 theme_override_font_sizes/font_size = 12
 text = "Mode: Direct"
@@ -83,6 +87,7 @@ layout_mode = 2
 
 [node name="RangeHeader" type="Label" parent="Margin/VBox"]
 layout_mode = 2
+texture_filter = 1
 theme_override_colors/font_color = Color(0.7, 0.7, 0.7, 1)
 theme_override_font_sizes/font_size = 12
 text = "- RANGE -"
@@ -99,6 +104,7 @@ layout_mode = 2
 
 [node name="Label" type="Label" parent="Margin/VBox/GridsHBox/SelectionContainer"]
 layout_mode = 2
+texture_filter = 1
 theme_override_colors/font_color = Color(0.4, 0.6, 1, 1)
 theme_override_font_sizes/font_size = 10
 text = "Selection"
@@ -120,6 +126,7 @@ layout_mode = 2
 
 [node name="Label" type="Label" parent="Margin/VBox/GridsHBox/EffectContainer"]
 layout_mode = 2
+texture_filter = 1
 theme_override_colors/font_color = Color(1, 0.6, 0.2, 1)
 theme_override_font_sizes/font_size = 10
 text = "Effect"

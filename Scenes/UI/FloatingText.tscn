@@ -21,6 +21,7 @@ offset_right = 20.0
 offset_bottom = 11.5
 grow_horizontal = 2
 grow_vertical = 2
+texture_filter = 1
 text = "9999"
 label_settings = ExtResource("2_settings")
 horizontal_alignment = 1

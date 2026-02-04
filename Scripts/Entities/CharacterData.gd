@@ -88,6 +88,7 @@ signal parry_triggered
 signal barrier_triggered
 signal died
 signal equipment_swapped(old_item: Resource, slot: int)
+signal equipment_changed(new_item: Resource, slot: int)
 
 # ============================================================================
 # 初始化
@@ -274,3 +275,4 @@ func equip(item: Resource) -> void:
 	# 如果原本有裝備，發出信號以便在世界中噴出
 	if old_item:
 		equipment_swapped.emit(old_item, i_slot)
+	equipment_changed.emit(item, i_slot)

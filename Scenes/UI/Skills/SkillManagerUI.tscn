@@ -60,6 +60,7 @@ layout_mode = 2
 
 [node name="Label" type="Label" parent="HBox/LeftPanel"]
 layout_mode = 2
+texture_filter = 1
 theme_override_colors/font_color = Color(1, 0.9, 0.2, 1)
 theme_override_font_sizes/font_size = 24
 text = "所有技能"
@@ -106,6 +107,7 @@ theme_override_constants/separation = 5
 
 [node name="NameLabel" type="Label" parent="HBox/RightPanel/VBox/InfoPanel/VBox"]
 layout_mode = 2
+texture_filter = 1
 theme_override_colors/font_color = Color(1, 0.9, 0.5, 1)
 theme_override_font_sizes/font_size = 22
 text = "技能名稱"
@@ -125,6 +127,7 @@ horizontal_alignment = 1
 [node name="TargetingTypeLabel" type="Label" parent="HBox/RightPanel/VBox/InfoPanel/VBox"]
 unique_name_in_owner = true
 layout_mode = 2
+texture_filter = 1
 theme_override_colors/font_color = Color(0.4, 0.8, 1, 1)
 theme_override_font_sizes/font_size = 14
 text = "瞄準：相對位置"
@@ -133,6 +136,7 @@ horizontal_alignment = 1
 [node name="ExecutionModeLabel" type="Label" parent="HBox/RightPanel/VBox/InfoPanel/VBox"]
 unique_name_in_owner = true
 layout_mode = 2
+texture_filter = 1
 theme_override_colors/font_color = Color(0.8, 1, 0.4, 1)
 theme_override_font_sizes/font_size = 14
 text = "模式：立刻發動"
@@ -144,6 +148,7 @@ theme_override_constants/separation = 5
 
 [node name="Label" type="Label" parent="HBox/RightPanel/VBox/InfoPanel/VBox/RangePreview"]
 layout_mode = 2
+texture_filter = 1
 theme_override_colors/font_color = Color(0.6, 0.6, 0.6, 1)
 theme_override_font_sizes/font_size = 14
 text = "- 技能範圍 -"
@@ -160,6 +165,7 @@ layout_mode = 2
 
 [node name="Label" type="Label" parent="HBox/RightPanel/VBox/InfoPanel/VBox/RangePreview/GridsHBox/SelectionContainer"]
 layout_mode = 2
+texture_filter = 1
 theme_override_colors/font_color = Color(0.4, 0.6, 1, 1)
 theme_override_font_sizes/font_size = 12
 text = "選取/移動"
@@ -181,6 +187,7 @@ layout_mode = 2
 
 [node name="Label" type="Label" parent="HBox/RightPanel/VBox/InfoPanel/VBox/RangePreview/GridsHBox/EffectContainer"]
 layout_mode = 2
+texture_filter = 1
 theme_override_colors/font_color = Color(1, 0.6, 0.2, 1)
 theme_override_font_sizes/font_size = 12
 text = "技能效果"
@@ -198,6 +205,7 @@ columns = 7
 
 [node name="Label" type="Label" parent="HBox/RightPanel/VBox"]
 layout_mode = 2
+texture_filter = 1
 text = "替換選定單位的技能槽位："
 horizontal_alignment = 1
 

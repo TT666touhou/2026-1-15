@@ -9,7 +9,7 @@ border_width_left = 2
 border_width_top = 2
 border_width_right = 2
 border_width_bottom = 2
-border_color = Color(0.85098, 0.741176, 0.611765, 1)
+border_color = Color(0.709804, 0.611765, 0.564706, 1)
 corner_radius_top_left = 4
 corner_radius_top_right = 4
 corner_radius_bottom_right = 4
@@ -65,7 +65,8 @@ theme_override_constants/separation = 2
 
 [node name="NameLabel" type="Label" parent="Margin/MainVBox/TopHBox/InfoBox"]
 layout_mode = 2
-theme_override_colors/font_color = Color(0.85098, 0.741176, 0.611765, 1)
+texture_filter = 1
+theme_override_colors/font_color = Color(0.709804, 0.611765, 0.564706, 1)
 theme_override_font_sizes/font_size = 16
 text = "Enemy Name"
 
@@ -91,6 +92,7 @@ show_percentage = false
 [node name="HPLabel" type="RichTextLabel" parent="Margin/MainVBox/TopHBox/InfoBox/StatsBox/HPBarContainer"]
 clip_contents = false
 layout_mode = 2
+texture_filter = 1
 theme_override_constants/outline_size = 4
 theme_override_font_sizes/normal_font_size = 9
 bbcode_enabled = true
@@ -104,6 +106,7 @@ columns = 2
 
 [node name="AtkLabel" type="Label" parent="Margin/MainVBox/TopHBox/InfoBox/StatsGrid"]
 layout_mode = 2
+texture_filter = 1
 theme_override_colors/font_color = Color(1, 0.4, 0.4, 1)
 theme_override_font_sizes/font_size = 11
 text = "ATK: 10"
@@ -114,6 +117,7 @@ theme_override_constants/separation = 2
 
 [node name="SkillLabel" type="RichTextLabel" parent="Margin/MainVBox/SkillsContainer"]
 layout_mode = 2
+texture_filter = 1
 theme_override_font_sizes/normal_font_size = 10
 bbcode_enabled = true
 text = "[color=yellow]Skill:[/color] Description"
