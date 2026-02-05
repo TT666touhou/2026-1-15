@@ -4,15 +4,9 @@
 [ext_resource type="Script" uid="uid://cums6yvi6wbcm" path="res://Scripts/Items/AffixDefinition.gd" id="2_affix_script"]
 [ext_resource type="Script" uid="uid://j3mkl5jfwq5g" path="res://Scripts/Items/BaseItemResource.gd" id="3_script"]
 [ext_resource type="Resource" path="res://Resources/Equipment/Tags/Tag_Immortal.tres" id="4_tag_immortal"]
-[ext_resource type="Resource" path="res://Resources/Equipment/Tags/Tag_Crimson.tres" id="5_tag_crimson"]
+[ext_resource type="Resource" uid="uid://dj2anv1yg74ra" path="res://Resources/Equipment/Tags/Tag_Crimson.tres" id="5_tag_crimson"]
 [ext_resource type="Resource" path="res://Resources/Equipment/Tags/Tag_SwiftWind.tres" id="6_tag_swift"]
-[ext_resource type="Resource" path="res://Resources/Equipment/Tags/Tag_Arcane.tres" id="7_tag_arcane"]
-
-[sub_resource type="Resource" id="SubResource_pie"]
-script = ExtResource("2_affix_script")
-stat_type = 0
-base_value = 2.0
-weight = 10.0
+[ext_resource type="Resource" uid="uid://cumovbbc83yuw" path="res://Resources/Equipment/Tags/Tag_Arcane.tres" id="7_tag_arcane"]
 
 [sub_resource type="Resource" id="SubResource_hp"]
 script = ExtResource("2_affix_script")
@@ -27,6 +21,11 @@ base_value = 0.02
 weight = 5.0
 min_ilvl = 5
 
+[sub_resource type="Resource" id="SubResource_pie"]
+script = ExtResource("2_affix_script")
+base_value = 2.0
+weight = 10.0
+
 [sub_resource type="AtlasTexture" id="AtlasTexture_plate"]
 atlas = ExtResource("1_atlas")
 region = Rect2(528, 16, 16, 16)
@@ -37,4 +36,4 @@ item_names = Array[String](["甲冑"])
 slot = 1
 visual_icons = Array[Texture2D]([SubResource("AtlasTexture_plate")])
 affix_pool = Array[ExtResource("2_affix_script")]([SubResource("SubResource_hp"), SubResource("SubResource_dr"), SubResource("SubResource_pie")])
-tag_pool = Array[ExtResource("4_tag_immortal")]([ExtResource("4_tag_immortal"), ExtResource("5_tag_crimson"), ExtResource("6_tag_swift"), ExtResource("7_tag_arcane")])
+tag_pool = Array[Resource]([ExtResource("4_tag_immortal"), ExtResource("5_tag_crimson"), ExtResource("6_tag_swift"), ExtResource("7_tag_arcane")])

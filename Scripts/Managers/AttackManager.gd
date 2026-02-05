@@ -2,6 +2,7 @@ extends Node
 
 ## AttackManager (Autoload)
 ## 負責處理攻擊判定、Combo 計算與統一傷害結算調度
+## [相關外部文件]: TurnManager.gd (檢查回合狀態), GridEntity.gd (受傷呼叫)
 
 # --- 信號 ---
 signal global_combo_changed(new_count: int)
@@ -37,7 +38,7 @@ func get_combo_damage_multiplier(scaling: float = 0.1) -> float:
 
 ## 統一戰鬥結算流 (7步結算)
 ## 返回: { "result": String, "damage": int, "is_crit": bool, "reflect_damage": int, "heal_amount": int, "pursuit_damage": int }
-func resolve_combat(attacker: Node, target: GridEntity, base_damage: int, is_skill: bool = false) -> Dictionary:
+func resolve_combat(attacker: Node, target: GridEntity, base_damage: int, is_skill: bool = false, is_pursuit: bool = false) -> Dictionary:
 	var report = {
 		"result": "hit",
 		"damage": 0,
@@ -53,15 +54,11 @@ func resolve_combat(attacker: Node, target: GridEntity, base_damage: int, is_ski
 	# 獲取攻擊者數據 (支援 GridEntity 或 Projectile)
 	var attacker_unit = null
 	if is_instance_valid(attacker):
-		if attacker is GridEntity:
-			attacker_unit = attacker
-		else:
-			# 嘗試從投射物獲取發動者 (相容不同投射物的屬性名)
-			if attacker.get("attacker_entity") != null:
-				attacker_unit = attacker.get("attacker_entity")
-			elif attacker.get("caster") != null:
-				attacker_unit = attacker.get("caster")
-	
+		# 優先檢查是否為 GridEntity，否則嘗試從投射物屬性獲取
+		attacker_unit = attacker if attacker is GridEntity else \
+						attacker.get("attacker_entity") if attacker.get("attacker_entity") != null else \
+						attacker.get("caster")
+
 	var a_data = attacker_unit.character_data if attacker_unit and "character_data" in attacker_unit else null
 	var t_data = target.character_data
 	
@@ -73,8 +70,8 @@ func resolve_combat(attacker: Node, target: GridEntity, base_damage: int, is_ski
 	# --- 1. 攻擊端計算 (基礎 * Combo * 特質 * 暴擊) ---
 	var current_dmg = float(base_damage)
 	
-	# 僅在玩家回合對玩家單位套用 Combo
-	if TurnManager and TurnManager.is_player_turn() and attacker_unit and attacker_unit.is_in_group("player"):
+	# 僅在玩家回合對玩家單位套用 Combo (技能傷害已在 SkillManager 預先計算倍率，故跳過)
+	if not is_skill and TurnManager and TurnManager.is_player_turn() and attacker_unit and attacker_unit.is_in_group("player"):
 		var combo_scaling = a_data.combo_damage_scaling if a_data else 0.1
 		current_dmg *= get_combo_damage_multiplier(combo_scaling)
 		current_dmg *= calculate_trait_bonus(attacker_unit, target, int(global_combo_count))
@@ -83,6 +80,7 @@ func resolve_combat(attacker: Node, target: GridEntity, base_damage: int, is_ski
 	if a_data:
 		var crit_rate = a_data.get_effective_crit_rate()
 		if randf() < crit_rate:
+			# 基礎 1.5x 暴擊傷害，可由 character_data 擴充
 			var crit_bonus = 1.5 + a_data.get_effective_crit_dmg()
 			current_dmg *= crit_bonus
 			report["is_crit"] = true
@@ -117,7 +115,7 @@ func resolve_combat(attacker: Node, target: GridEntity, base_damage: int, is_ski
 	# 	])
 	
 	# --- 6. 生命扣除：護盾 -> HP ---
-	var actual_hp_lost = t_data.take_damage_raw(final_dmg)
+	var actual_hp_lost = t_data.take_damage(final_dmg)
 	report["damage"] = final_dmg
 
 	# 發送全域受傷信號，供實體特質系統監聽
@@ -138,8 +136,8 @@ func resolve_combat(attacker: Node, target: GridEntity, base_damage: int, is_ski
 		if drain_rate > 0:
 			report["heal_amount"] = int(actual_hp_lost * drain_rate)
 	
-	# 追擊：僅限單位撞擊觸發，投射物與技能不觸發
-	if not is_skill and attacker is GridEntity and a_data:
+	# 追擊：僅限單位撞擊觸發，投射物、技能以及追擊本身不觸發
+	if not is_skill and not is_pursuit and attacker is GridEntity and a_data:
 		report["pursuit_damage"] = a_data.get_effective_pursuit()
 
 	# 增加全域 Combo (僅玩家擊中敵人)
@@ -248,9 +246,6 @@ func resolve_total_hits(attacker: GridEntity, arrow_count: int) -> int:
 	var base_per_arrow = int(floor(combo_rate))
 	var chance = combo_rate - base_per_arrow
 	
-	for i in range(arrow_count):
+	for _i in range(arrow_count):
 		total_hits += base_per_arrow + (1 if randf() < chance else 0)
 	return total_hits
-
-func resolve_slingshot_collision(_attacker: GridEntity, _target: GridEntity) -> void:
-	pass # 已由 resolve_combat 取代

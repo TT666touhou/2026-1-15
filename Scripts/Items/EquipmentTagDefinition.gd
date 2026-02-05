@@ -10,3 +10,4 @@ class_name EquipmentTagDefinition
 @export var icon: Texture2D
 @export var thresholds: Array = []  # 門檻數量，如 [1, 4, 7]
 @export var effect_descriptions: Array = []  # 各門檻效果描述
+@export var effect_script: GDScript  # 效果邏輯腳本

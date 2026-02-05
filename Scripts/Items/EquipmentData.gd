@@ -14,30 +14,23 @@ enum Rarity { COMMON, RARE, EPIC, LEGENDARY, RELIC }
 
 @export var modifiers: Array[ModifierData] = []
 
+const RARITY_CONFIG = {
+	Rarity.COMMON: {"color": "white", "text": "普通"},
+	Rarity.RARE: {"color": "cyan", "text": "稀有"},
+	Rarity.EPIC: {"color": "purple", "text": "史詩"},
+	Rarity.LEGENDARY: {"color": "orange", "text": "傳說"},
+	Rarity.RELIC: {"color": "red", "text": "神物"}
+}
+
+func get_rarity_color() -> String:
+	return RARITY_CONFIG.get(rarity, {}).get("color", "white")
+
 func get_equipment_text() -> String:
 	var lines = []
 	lines.append("[b]%s[/b] (Lv.%d)" % [item_name, item_level])
 	
-	var rarity_text = ""
-	var rarity_color = "white"
-	match rarity:
-		Rarity.COMMON: 
-			rarity_text = "普通"
-			rarity_color = "white"
-		Rarity.RARE: 
-			rarity_text = "稀有"
-			rarity_color = "cyan"
-		Rarity.EPIC: 
-			rarity_text = "史詩"
-			rarity_color = "purple"
-		Rarity.LEGENDARY: 
-			rarity_text = "傳說"
-			rarity_color = "orange"
-		Rarity.RELIC: 
-			rarity_text = "神物"
-			rarity_color = "red"
-	
-	lines.append("[color=%s]%s[/color]" % [rarity_color, rarity_text])
+	var config = RARITY_CONFIG.get(rarity, {"color": "white", "text": "未知"})
+	lines.append("[color=%s]%s[/color]" % [config["color"], config["text"]])
 	lines.append("")
 	
 	for mod in modifiers:

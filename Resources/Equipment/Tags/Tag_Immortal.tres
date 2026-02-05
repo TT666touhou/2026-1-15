@@ -3,11 +3,14 @@
 [ext_resource type="Script" path="res://Scripts/Items/EquipmentTagDefinition.gd" id="1_script"]
 [ext_resource type="Texture2D" path="res://Tilesheet/1bit_assetpack/1bit_assetpack/items/offhand_shield.png" id="2_icon"]
 
+[ext_resource type="Script" path="res://Scripts/Entities/ImmortalEffect.gd" id="3_effect"]
+
 [resource]
 script = ExtResource("1_script")
 trait_id = "immortal"
 trait_name = "Immortal"
 color = Color(0.75, 0.75, 0.75, 1)
 icon = ExtResource("2_icon")
-thresholds = Array[int]([1, 4, 7])
-effect_descriptions = Array[String](["每件減傷 20%", "減傷 25%", "減傷 30%，開始戰鬥時獲得 50% 最大生命值不可疊加的護盾"])
+thresholds = [1, 4, 7]
+effect_descriptions = ["減傷 20%", "減傷 40%", "減傷 60% 且進入房間獲得 50% 最大生命值護盾"]
+effect_script = ExtResource("3_effect")

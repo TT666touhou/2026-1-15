@@ -4,9 +4,9 @@
 [ext_resource type="Script" uid="uid://cums6yvi6wbcm" path="res://Scripts/Items/AffixDefinition.gd" id="2_affix_script"]
 [ext_resource type="Script" uid="uid://j3mkl5jfwq5g" path="res://Scripts/Items/BaseItemResource.gd" id="3_script"]
 [ext_resource type="Resource" path="res://Resources/Equipment/Tags/Tag_Immortal.tres" id="4_tag_immortal"]
-[ext_resource type="Resource" path="res://Resources/Equipment/Tags/Tag_Crimson.tres" id="5_tag_crimson"]
+[ext_resource type="Resource" uid="uid://dj2anv1yg74ra" path="res://Resources/Equipment/Tags/Tag_Crimson.tres" id="5_tag_crimson"]
 [ext_resource type="Resource" path="res://Resources/Equipment/Tags/Tag_SwiftWind.tres" id="6_tag_swift"]
-[ext_resource type="Resource" path="res://Resources/Equipment/Tags/Tag_Arcane.tres" id="7_tag_arcane"]
+[ext_resource type="Resource" uid="uid://cumovbbc83yuw" path="res://Resources/Equipment/Tags/Tag_Arcane.tres" id="7_tag_arcane"]
 
 [sub_resource type="Resource" id="SubResource_str"]
 script = ExtResource("2_affix_script")
@@ -15,7 +15,6 @@ weight = 10.0
 
 [sub_resource type="Resource" id="SubResource_dex"]
 script = ExtResource("2_affix_script")
-stat_type = 0
 base_value = 2.0
 weight = 10.0
 
@@ -40,7 +39,6 @@ region = Rect2(512, 128, 16, 16)
 [resource]
 script = ExtResource("3_script")
 item_names = Array[String](["劍"])
-slot = 0
 visual_icons = Array[Texture2D]([SubResource("AtlasTexture_sword")])
 affix_pool = Array[ExtResource("2_affix_script")]([SubResource("SubResource_str"), SubResource("SubResource_dex"), SubResource("SubResource_pen"), SubResource("SubResource_cdm")])
-tag_pool = Array[ExtResource("4_tag_immortal")]([ExtResource("4_tag_immortal"), ExtResource("5_tag_crimson"), ExtResource("6_tag_swift"), ExtResource("7_tag_arcane")])
+tag_pool = Array[Resource]([ExtResource("4_tag_immortal"), ExtResource("5_tag_crimson"), ExtResource("6_tag_swift"), ExtResource("7_tag_arcane")])

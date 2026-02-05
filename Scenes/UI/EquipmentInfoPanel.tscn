@@ -22,6 +22,7 @@ theme_override_constants/separation = 0
 script = ExtResource("1_script")
 
 [node name="Panel" type="PanelContainer" parent="."]
+z_index = 1
 layout_mode = 2
 size_flags_vertical = 4
 mouse_filter = 2
@@ -45,7 +46,7 @@ theme_override_constants/separation = 8
 [node name="Margin" type="MarginContainer" parent="Panel/VBox"]
 layout_mode = 2
 theme_override_constants/margin_left = 12
-theme_override_constants/margin_top = 12
+theme_override_constants/margin_top = 16
 theme_override_constants/margin_right = 12
 
 [node name="Header" type="HBoxContainer" parent="Panel/VBox/Margin"]
@@ -65,12 +66,14 @@ size_flags_horizontal = 3
 theme_override_constants/separation = 0
 alignment = 1
 
-[node name="NameLabel" type="Label" parent="Panel/VBox/Margin/Header/Info"]
+[node name="NameLabel" type="RichTextLabel" parent="Panel/VBox/Margin/Header/Info"]
 texture_filter = 1
 layout_mode = 2
-theme_override_colors/font_color = Color(0.709804, 0.611765, 0.564706, 1)
-theme_override_font_sizes/font_size = 16
+bbcode_enabled = true
 text = "Item Name"
+fit_content = true
+scroll_active = false
+autowrap_mode = 0
 
 [node name="LevelLabel" type="Label" parent="Panel/VBox/Margin/Header/Info"]
 texture_filter = 1
@@ -78,6 +81,12 @@ layout_mode = 2
 theme_override_colors/font_color = Color(0.7, 0.7, 0.7, 1)
 theme_override_font_sizes/font_size = 12
 text = "Lv.1 | Common"
+
+[node name="TagList" type="VBoxContainer" parent="Panel/VBox/Margin/Header"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_vertical = 0
+theme_override_constants/separation = 4
 
 [node name="HSeparator" type="HSeparator" parent="Panel/VBox"]
 layout_mode = 2
@@ -98,68 +107,3 @@ bbcode_enabled = true
 text = "Modifiers list..."
 fit_content = true
 scroll_active = false
-
-[node name="DebugUI" type="CanvasLayer" parent="Panel"]
-unique_name_in_owner = true
-visible = false
-
-[node name="DebugControls" type="PanelContainer" parent="Panel/DebugUI"]
-anchors_preset = 7
-anchor_left = 0.5
-anchor_top = 1.0
-anchor_right = 0.5
-anchor_bottom = 1.0
-offset_left = -150.0
-offset_top = -60.0
-offset_right = 150.0
-offset_bottom = -20.0
-grow_horizontal = 2
-grow_vertical = 0
-
-[node name="Margin" type="MarginContainer" parent="Panel/DebugUI/DebugControls"]
-layout_mode = 2
-theme_override_constants/margin_left = 12
-theme_override_constants/margin_top = 5
-theme_override_constants/margin_right = 12
-theme_override_constants/margin_bottom = 5
-
-[node name="HBox" type="HBoxContainer" parent="Panel/DebugUI/DebugControls/Margin"]
-layout_mode = 2
-theme_override_constants/separation = 10
-
-[node name="TextLabel" type="Label" parent="Panel/DebugUI/DebugControls/Margin/HBox"]
-texture_filter = 1
-layout_mode = 2
-theme_override_font_sizes/font_size = 14
-text = "Debug Level:"
-
-[node name="LevelSlider" type="HSlider" parent="Panel/DebugUI/DebugControls/Margin/HBox"]
-unique_name_in_owner = true
-layout_mode = 2
-size_flags_horizontal = 3
-size_flags_vertical = 4
-min_value = 1.0
-value = 1.0
-
-[node name="ValueLabel" type="Label" parent="Panel/DebugUI/DebugControls/Margin/HBox"]
-unique_name_in_owner = true
-texture_filter = 1
-custom_minimum_size = Vector2(30, 0)
-layout_mode = 2
-theme_override_font_sizes/font_size = 14
-text = "1"
-
-[node name="TagListContainer" type="Control" parent="."]
-layout_mode = 2
-size_flags_vertical = 4
-
-[node name="TagList" type="VBoxContainer" parent="TagListContainer"]
-unique_name_in_owner = true
-layout_mode = 1
-anchors_preset = 15
-anchor_right = 1.0
-anchor_bottom = 1.0
-grow_horizontal = 2
-grow_vertical = 2
-theme_override_constants/separation = 4
-alignment = 2

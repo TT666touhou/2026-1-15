@@ -1,123 +1,118 @@
 extends HBoxContainer
 class_name EquipmentInfoPanel
 
-const TagItemScene = preload("res://Scenes/UI/EquipmentTagItemUI.tscn")
-const TAG_ALIGN_GAP := 0.0
-const TAG_ALIGN_Y := -2.0
+## 裝備資訊面版：整合了標籤生成邏輯，無需外部場景。
 
 const RARITY_NAMES := ["Common", "Rare", "Legendary"]
 const SLOT_NAMES := ["Weapon", "Armor", "Accessory"]
 
 @onready var panel: PanelContainer = $Panel
 @onready var icon_rect: TextureRect = $Panel/VBox/Margin/Header/Icon
-@onready var name_label: Label = $Panel/VBox/Margin/Header/Info/NameLabel
+@onready var name_label: RichTextLabel = $Panel/VBox/Margin/Header/Info/NameLabel
 @onready var level_label: Label = $Panel/VBox/Margin/Header/Info/LevelLabel
 @onready var content_label: RichTextLabel = $Panel/VBox/ContentMargin/ContentLabel
-@onready var tag_list_container: Control = $TagListContainer
 @onready var tag_list: VBoxContainer = %TagList
 
-@onready var debug_ui: CanvasLayer = %DebugUI
-@onready var level_slider: HSlider = %LevelSlider
-@onready var value_label: Label = %ValueLabel
-
-var _debug_level: int = 1
 var _current_data: Resource
+var _fade_tween: Tween
+
+# 預先定義 Pill Badge 的樣式資源
+var _pill_style: StyleBoxFlat
 
 func _ready() -> void:
 	visible = false
 	mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_set_mouse_filter_recursive(self, Control.MOUSE_FILTER_IGNORE)
+	
 	if tag_list:
+		tag_list.mouse_filter = Control.MOUSE_FILTER_IGNORE
 		_set_mouse_filter_recursive(tag_list, Control.MOUSE_FILTER_IGNORE)
+		
+	# 初始化標籤樣式
+	_pill_style = StyleBoxFlat.new()
+	_pill_style.bg_color = Color(0, 0, 0, 0.6)
+	_pill_style.set_corner_radius_all(12)
+	_pill_style.set_border_width_all(1)
+	_pill_style.border_color = Color(0.5, 0.5, 0.5, 0.4)
+	_pill_style.anti_aliasing = false
+	
+	# F6 獨立執行時進入預覽模式
+	if get_parent() == get_tree().root:
+		_run_standalone_preview()
 
-	var is_debug := get_parent() == get_tree().root
-	debug_ui.visible = is_debug
-	if is_debug:
-		level_slider.value_changed.connect(_on_level_slider_changed)
-		_run_debug_mode()
+func _run_standalone_preview() -> void:
+	var mock_data = {
+		"item_name": "[Preview] 龍鱗重甲",
+		"item_level": 45,
+		"rarity": 3, # Legendary
+		"slot": 1, # Armor
+		"traits": _get_mock_tags(),
+		"modifiers": []
+	}
+	# 模擬一點內容文字
+	mock_data["get_modifiers_text"] = func(): return "[b]基礎防禦: +250[/b]\n[color=yellow]火抗性: +20%[/color]\n[color=cyan]格擋率: +5%[/color]"
+	
+	display_equipment(mock_data)
+	modulate.a = 1.0 # 強制顯示，不受淡入影響
+	visible = true
 
-func _on_level_slider_changed(value: float) -> void:
-	_debug_level = int(value)
-	value_label.text = str(_debug_level)
-	if _current_data:
-		_current_data.item_level = _debug_level
-		_recalculate_modifiers_for_level(_current_data, _debug_level)
-		display_equipment(_current_data)
-
-func _recalculate_modifiers_for_level(data: Resource, ilvl: int) -> void:
-	if not data.get("modifiers"):
-		return
-	var scaling := 1.0 + (0.2 * float(ilvl))
-	for mod in data.modifiers:
-		mod.value = mod.base_value * scaling * mod.variance
-		if not _is_percent_stat(mod.type):
-			mod.value = round(mod.value)
-
-func _is_percent_stat(type: int) -> bool:
-	return (type >= 5 and type <= 14) or type >= 15
-
-func _input(event: InputEvent) -> void:
-	if get_parent() == get_tree().root and event is InputEventKey and event.pressed and event.keycode == KEY_R:
-		_run_debug_mode()
-
-func _run_debug_mode() -> void:
-	var gen = get_node_or_null("/root/EquipmentGenerator")
-	if gen:
-		_current_data = gen.generate_random_item(_debug_level)
-		display_equipment(_current_data)
-	else:
-		_build_tag_list(_get_mock_tags())
-		visible = true
-		if is_inside_tree():
-			await get_tree().process_frame
-			_sync_tag_list_height()
-			_align_tag_items()
-			_center_panel_for_debug()
-
-func display_equipment(data: Resource) -> void:
+func display_equipment(data: Variant) -> void:
 	if data == null:
+		if _fade_tween: _fade_tween.kill()
 		visible = false
 		return
 
+	print("[EquipmentInfoPanel] Displaying: ", data.get("item_name"))
+	
 	_update_header(data)
 	_update_content(data)
 	_update_tags(data)
 
+	# 執行面板整體的淡入動畫
+	if _fade_tween:
+		_fade_tween.kill()
+	
+	_fade_tween = create_tween().set_ease(Tween.EASE_OUT).set_trans(Tween.TRANS_SINE)
+	modulate.a = 0.0
 	visible = true
+	_fade_tween.tween_property(self, "modulate:a", 1.0, 0.2)
+
 	custom_minimum_size.y = 0
 	size.y = 0
 
 	if is_inside_tree():
 		await get_tree().process_frame
 		_reset_panel_size()
-		_sync_tag_list_height()
-		_align_tag_items()
 
 		if get_parent() == get_tree().root:
 			_center_panel_for_debug()
 
-func _update_header(data: Resource) -> void:
-	if data.get("icon"):
-		icon_rect.texture = data.icon
+func _update_header(data: Variant) -> void:
+	var icon = data.get("icon")
+	if icon:
+		icon_rect.texture = icon
 	else:
 		var atlas = AtlasTexture.new()
 		atlas.atlas = load("res://Tilesheet/colored-transparent_packed.png")
 		atlas.region = Rect2(480, 288, 16, 16)
 		icon_rect.texture = atlas
 
-	name_label.text = data.get("item_name")
-	name_label.add_theme_color_override("font_color", _rarity_color(data.get("rarity")))
+	name_label.text = str(data.get("item_name")) if data.get("item_name") != null else "Unknown"
+	name_label.add_theme_color_override("default_color", _rarity_color(data.get("rarity")))
 
 	var rarity_str := _rarity_display_name(data.get("rarity"))
 	var slot_str := _slot_display_name(data.get("slot"))
-	level_label.text = "Lv.%d | %s | %s" % [data.get("item_level"), slot_str, rarity_str]
+	var val_lv = data.get("item_level")
+	level_label.text = "Lv.%d | %s | %s" % [int(val_lv) if val_lv != null else 1, slot_str, rarity_str]
 
 func _rarity_color(rarity: Variant) -> Color:
 	if rarity == null:
 		return Color.WHITE
 	match int(rarity):
-		1: return Color.CYAN
-		2: return Color.ORANGE
+		1: return Color.CYAN       # Rare
+		2: return Color.MEDIUM_PURPLE # Epic
+		3: return Color.ORANGE     # Legendary
+		4: return Color.CRIMSON    # Relic
 		_: return Color.WHITE
 
 func _rarity_display_name(rarity: Variant) -> String:
@@ -134,20 +129,28 @@ func _slot_display_name(slot: Variant) -> String:
 		return SLOT_NAMES[idx]
 	return "Item"
 
-func _update_content(data: Resource) -> void:
-	if data.has_method("get_modifiers_text"):
+func _update_content(data: Variant) -> void:
+	if data is Object and data.has_method("get_modifiers_text"):
 		content_label.text = data.get_modifiers_text()
-	elif data.has_method("get_equipment_text"):
+	elif data is Object and data.has_method("get_equipment_text"):
 		content_label.text = data.get_equipment_text()
+	elif data is Dictionary and data.has("get_modifiers_text"):
+		# 支援 Mock 資料中的 Callable
+		var callable = data["get_modifiers_text"]
+		if callable is Callable:
+			content_label.text = callable.call()
 	else:
 		content_label.text = ""
 
-func _update_tags(data: Resource) -> void:
+func _update_tags(data: Variant) -> void:
+	var traits = data.get("traits")
 	var tags: Array = []
-	if data.get("traits") is Array:
-		tags.assign(data.get("traits"))
-	if tags.is_empty():
+	if traits is Array:
+		tags.assign(traits)
+	
+	if tags.is_empty() and get_parent() == get_tree().root:
 		tags = _get_mock_tags()
+		
 	_build_tag_list(tags)
 
 func _build_tag_list(tags: Array) -> void:
@@ -155,11 +158,87 @@ func _build_tag_list(tags: Array) -> void:
 		return
 	for child in tag_list.get_children():
 		child.queue_free()
+
 	for tag_data in tags:
-		var item = TagItemScene.instantiate()
-		tag_list.add_child(item)
-		if item.has_method("setup"):
-			item.setup(tag_data)
+		var badge = _create_tag_badge(tag_data)
+		tag_list.add_child(badge)
+	
+	# 強制容器重新計算大小
+	if is_inside_tree():
+		await get_tree().process_frame
+		_reset_panel_size()
+
+## 核心整合：直接透過程式碼構建標籤徽章 (Pill Badge)
+func _create_tag_badge(tag: Variant) -> Control:
+	var t_name := ""
+	var t_icon: Texture2D = null
+	var t_color := Color.WHITE
+	
+	if tag is Dictionary:
+		t_name = tag.get("trait_name", tag.get("name", ""))
+		t_icon = tag.get("icon", null)
+		t_color = tag.get("color", Color.WHITE)
+	elif tag is Resource:
+		t_name = tag.get("trait_name") if tag.get("trait_name") else tag.get("name")
+		t_icon = tag.get("icon") if tag.get("icon") else null
+		t_color = tag.get("color") if tag.get("color") else Color.WHITE
+
+	# 1. 建立外層容器 (MarginContainer)
+	var margin = MarginContainer.new()
+	margin.custom_minimum_size = Vector2(0, 18)
+	margin.size_flags_horizontal = Control.SIZE_SHRINK_END
+	margin.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+	margin.mouse_filter = Control.MOUSE_FILTER_IGNORE
+
+	# 2. 建立背景 (PanelContainer)
+	var base = PanelContainer.new()
+	base.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	var custom_style = _pill_style.duplicate()
+	var border_color = t_color
+	border_color.a = 0.5
+	custom_style.border_color = border_color
+	base.add_theme_stylebox_override("panel", custom_style)
+	margin.add_child(base)
+
+	# 3. 建立內部邊距 (MarginContainer)
+	var innermargin = MarginContainer.new()
+	innermargin.add_theme_constant_override("margin_left", 8)
+	innermargin.add_theme_constant_override("margin_right", 8)
+	innermargin.add_theme_constant_override("margin_top", 1)
+	innermargin.add_theme_constant_override("margin_bottom", 1)
+	innermargin.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	base.add_child(innermargin)
+
+	# 4. 建立布局 (HBoxContainer)
+	var hbox = HBoxContainer.new()
+	hbox.add_theme_constant_override("separation", 5)
+	hbox.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	innermargin.add_child(hbox)
+
+	# 5. 建立圖示 (直接置入 HBox，確保對齊穩定)
+	if t_icon:
+		var icon_rect_node = TextureRect.new()
+		icon_rect_node.texture = t_icon
+		icon_rect_node.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+		icon_rect_node.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+		icon_rect_node.custom_minimum_size = Vector2(13, 13)
+		icon_rect_node.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+		icon_rect_node.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
+		icon_rect_node.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		hbox.add_child(icon_rect_node)
+
+	# 6. 建立名稱標籤
+	var lbl = Label.new()
+	lbl.text = t_name
+	lbl.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
+	lbl.add_theme_font_size_override("font_size", 11)
+	lbl.modulate = t_color
+	lbl.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	lbl.size_flags_vertical = Control.SIZE_SHRINK_CENTER # 確保與圖示中線對齊
+	lbl.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	hbox.add_child(lbl)
+
+	return margin
 
 func _get_mock_tags() -> Array:
 	return [
@@ -172,28 +251,11 @@ func _reset_panel_size() -> void:
 	if panel:
 		panel.custom_minimum_size.y = 0
 
-func _sync_tag_list_height() -> void:
-	if tag_list_container and panel:
-		tag_list_container.custom_minimum_size.y = panel.size.y
-
-func _align_tag_items() -> void:
-	if not panel or not tag_list:
-		return
-	var panel_right := panel.global_position.x + panel.size.x
-	for item in tag_list.get_children():
-		if not (item is Control):
-			continue
-		var anchor = item.get_node_or_null("RightAnchor")
-		if anchor and anchor is Control:
-			var target_x := panel_right + TAG_ALIGN_GAP
-			var delta_x: float = target_x - anchor.global_position.x
-			item.global_position.x += delta_x
-			item.global_position.y += TAG_ALIGN_Y
-
 func _center_panel_for_debug() -> void:
+	force_update_transform()
 	var viewport_size := get_viewport_rect().size
-	global_position.x = (viewport_size.x - size.x) / 2
-	global_position.y = (viewport_size.y * 0.4) - (size.y / 2)
+	var target_pos = Vector2((viewport_size.x - size.x) / 2, (viewport_size.y * 0.4) - (size.y / 2))
+	global_position = target_pos
 
 func _set_mouse_filter_recursive(node: Node, filter: int) -> void:
 	if node is Control:

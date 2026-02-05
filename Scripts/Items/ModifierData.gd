@@ -43,31 +43,31 @@ func get_modifier_text() -> String:
 		ModifierType.HP_ADDITIVE: val_str = "HP"
 		ModifierType.PUR_ADDITIVE: val_str = "PUR"
 		
-		ModifierType.DR_ADDITIVE: 
+		ModifierType.DR_ADDITIVE:
 			val_str = "DR"
 			is_percent = true
-		ModifierType.AVOID_ADDITIVE: 
+		ModifierType.AVOID_ADDITIVE:
 			val_str = "AVD"
 			is_percent = true
-		ModifierType.ACCURACY_ADDITIVE: 
+		ModifierType.ACCURACY_ADDITIVE:
 			val_str = "ACC"
 			is_percent = true
-		ModifierType.RES_ADDITIVE: 
+		ModifierType.RES_ADDITIVE:
 			val_str = "RES"
 			is_percent = true
-		ModifierType.REF_ADDITIVE: 
+		ModifierType.REF_ADDITIVE:
 			val_str = "REF"
 			is_percent = true
-		ModifierType.PARRY_ADDITIVE: 
+		ModifierType.PARRY_ADDITIVE:
 			val_str = "PRY"
 			is_percent = true
-		ModifierType.DRAIN_ADDITIVE: 
+		ModifierType.DRAIN_ADDITIVE:
 			val_str = "DRN"
 			is_percent = true
-		ModifierType.CRIT_DMG_ADDITIVE: 
+		ModifierType.CRIT_DMG_ADDITIVE:
 			val_str = "CDM"
 			is_percent = true
-		ModifierType.PEN_ADDITIVE: 
+		ModifierType.PEN_ADDITIVE:
 			val_str = "PEN"
 			is_percent = true
 		ModifierType.CRIT_RATE_ADDITIVE:
@@ -85,10 +85,10 @@ func get_modifier_text() -> String:
 			val_str = "SPD %"
 			is_percent = true
 			
-		ModifierType.ATK_MULTIPLIER: 
+		ModifierType.ATK_MULTIPLIER:
 			val_str = "ATK %"
 			is_percent = true
-		ModifierType.HP_MULTIPLIER: 
+		ModifierType.HP_MULTIPLIER:
 			val_str = "HP %"
 			is_percent = true
 
@@ -97,3 +97,21 @@ func get_modifier_text() -> String:
 	else:
 		return "%s %s%d" % [val_str, sign_str, int(round(value))]
 
+
+func is_percentage() -> bool:
+	match type:
+		ModifierType.DR_ADDITIVE, \
+		ModifierType.AVOID_ADDITIVE, \
+		ModifierType.ACCURACY_ADDITIVE, \
+		ModifierType.RES_ADDITIVE, \
+		ModifierType.REF_ADDITIVE, \
+		ModifierType.PARRY_ADDITIVE, \
+		ModifierType.DRAIN_ADDITIVE, \
+		ModifierType.CRIT_DMG_ADDITIVE, \
+		ModifierType.PEN_ADDITIVE, \
+		ModifierType.CRIT_RATE_ADDITIVE, \
+		ModifierType.SPEED_MULTIPLIER, \
+		ModifierType.ATK_MULTIPLIER, \
+		ModifierType.HP_MULTIPLIER:
+			return true
+	return false

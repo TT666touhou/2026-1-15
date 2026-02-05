@@ -1,7 +1,8 @@
-[gd_resource type="Resource" script_class="EquipmentTagDefinition" load_steps=3 format=3]
+[gd_resource type="Resource" script_class="EquipmentTagDefinition" load_steps=4 format=3 uid="uid://dj2anv1yg74ra"]
 
-[ext_resource type="Script" path="res://Scripts/Items/EquipmentTagDefinition.gd" id="1_script"]
-[ext_resource type="Texture2D" path="res://Tilesheet/1bit_assetpack/1bit_assetpack/items/weapon_sword1.png" id="2_icon"]
+[ext_resource type="Script" uid="uid://ccw32ponqilab" path="res://Scripts/Items/EquipmentTagDefinition.gd" id="1_script"]
+[ext_resource type="Texture2D" uid="uid://b1rdbtpbi5mu3" path="res://Tilesheet/1bit_assetpack/1bit_assetpack/items/weapon_sword1.png" id="2_icon"]
+[ext_resource type="Script" uid="uid://d0q4xnr6apc8c" path="res://Scripts/Entities/CrimsonEffect.gd" id="3_effect"]
 
 [resource]
 script = ExtResource("1_script")
@@ -9,5 +10,6 @@ trait_id = "crimson"
 trait_name = "Crimson"
 color = Color(0.8, 0.1, 0.1, 1)
 icon = ExtResource("2_icon")
-thresholds = Array[int]([1, 3, 9])
-effect_descriptions = Array[String](["超過 60 combo 時接下來造成的傷害都會有 1% 吸血，每件提供 1%", "門檻降低成 10 combo，吸血量不變", "追加攻擊力提高 5 倍，血量 10 倍"])
+thresholds = [1, 3, 9]
+effect_descriptions = ["超過 60 combo 時接下來造成的傷害都會有 1% 吸血", "門檻降低成 10 combo，吸血量不變", "追加攻擊力提高 5 倍，血量 10 倍"]
+effect_script = ExtResource("3_effect")
