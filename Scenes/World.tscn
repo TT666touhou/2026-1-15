@@ -2,6 +2,7 @@
 
 [ext_resource type="TileSet" uid="uid://b1bitenv" path="res://Tilesheet/1bit_environment.tres" id="1_1bit"]
 [ext_resource type="Script" uid="uid://dpwf6ofa0hxkp" path="res://Scripts/Grid/Grid.gd" id="6"]
+[ext_resource type="PackedScene" uid="uid://test_turn_indicator_v2" path="res://Scenes/UI/TurnIndicatorV2.tscn" id="999_turn_indicator"]
 [ext_resource type="PackedScene" path="res://Scenes/UI/MainTopBar.tscn" id="15"]
 [ext_resource type="Script" uid="uid://2ryo8hx4hhts" path="res://Scripts/Selection/GridSelector.gd" id="20"]
 [ext_resource type="Script" uid="uid://dxm76r7y06g8" path="res://Scripts/Input/SlingshotController.gd" id="20_slingshot"]
@@ -283,6 +284,8 @@ offset_bottom = 100.0
 grow_horizontal = 2
 alignment = 1
 script = ExtResource("45")
+
+[node name="TurnIndicatorV2" parent="UI" instance=ExtResource("999_turn_indicator")]
 
 [node name="DebugLayer" type="CanvasLayer" parent="UI"]
 process_mode = 4

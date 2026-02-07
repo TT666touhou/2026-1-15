@@ -1,8 +1,15 @@
 extends Node
 
-## AttackManager (Autoload)
-## 負責處理攻擊判定、Combo 計算與統一傷害結算調度
-## [相關外部文件]: TurnManager.gd (檢查回合狀態), GridEntity.gd (受傷呼叫)
+# [AttackManager] 攻擊結算與連擊管理器 (Autoload)
+# 職責：
+# 1. 統一處理所有單位的攻擊/技能結算 (resolve_combat)。
+# 2. 計算傷害公式：基礎值 * Combo倍率 * 特質加成 * 暴擊 - 減傷。
+# 3. 管理全域連擊數 (Global Combo)，並在回合與物理靜止時重置。
+
+# [相關外部連動腳本]:
+# - TurnManager.gd: 用於判斷當前是否為玩家回合 (is_player_turn)，決定是否套用 Combo 倍率。
+# - GridEntity.gd: 受傷與死亡的實際執行者 (take_damage)。
+# - SkillManager.gd: 部分技能傷害計算會調用此處的通用公式。
 
 # --- 信號 ---
 signal global_combo_changed(new_count: int)

@@ -1,7 +1,15 @@
 extends Node
 
-# DungeonManager (Autoload)
-# 負責管理地牢流程、房間載入、戰後判定與轉場
+# [DungeonManager] 地牢流程管理器 (Autoload)
+# 職責：
+# 1. 管理地牢房間載入與初始化 (load_room_by_name)。
+# 2. 監控戰鬥狀態 (check_battle_status)，判定勝利條件。
+# 3. 執行房間轉場 (advance_to_next_room)，處理戰利品清除與動畫。
+
+# [相關外部連動腳本]:
+# - TurnManager.gd: 負責告知是否進入搜刮階段 (trigger_loot_phase)，並在轉場前等待物理結算 (_wait_for_physics)。
+# - BoardManager.gd: 監聽實體移除信號 (entity_unregistered) 以觸發勝利判定。
+# - MapLoader.gd: 實際執行實例化房間與生成單位的邏輯。
 
 var current_room_template: RoomTemplate
 var _is_transitioning: bool = false
@@ -52,7 +60,7 @@ func check_battle_status() -> void:
 
 func has_active_enemies() -> bool:
 	var enemies = get_tree().get_nodes_in_group("enemy")
-	var active = enemies.filter(func(e): 
+	var active = enemies.filter(func(e):
 		return is_instance_valid(e) and not e.get("is_dying")
 	)
 	return not active.is_empty()

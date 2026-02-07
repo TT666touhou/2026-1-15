@@ -1,6 +1,15 @@
 extends Node
 
-# Autoload name: PartyManager
+# [PartyManager] 隊伍與部署管理器 (Autoload)
+# 職責：
+# 1. 管理玩家隊伍成員 (recruit_member, move_member)。
+# 2. 控制戰鬥前的部署階段 UI (start_deployment, end_deployment)。
+# 3. 提供特質 (Trait) 資訊供全域計算。
+
+# [相關外部連動腳本]:
+# - TurnManager.gd: 在部署完成時通知 TurnManager 結束部署 (end_deployment)。
+# - DeploymentUI.tscn: 實際顯示與操作部署介面。
+# - SynergyManager.gd: 依賴隊伍成員的特質進行連結計算。
 
 signal party_updated
 
@@ -161,6 +170,7 @@ func end_deployment() -> void:
 	if top_bar:
 		top_bar.visible = true
 	
+	# 通知 TurnManager 結束部署，正式開始第一回合
 	if TurnManager:
 		TurnManager.end_deployment()
 

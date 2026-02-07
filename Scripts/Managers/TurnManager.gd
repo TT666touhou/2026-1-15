@@ -1,24 +1,40 @@
 extends Node
 
+# [TurnManager] 核心回合管理器 (Autoload)
+# 職責：
+# 1. 驅動戰鬥回合循環 (玩家、敵人、結算、搜刮)。
+# 2. 嚴格控管物理結算 (RESOLVING) 流程，確保傷害與 UI 數值一致。
+# 3. 作為多個 Manager 的中繼站，協調場地、隊伍與 UI 狀態。
+
+# [相關外部連動腳本]:
+# - DungeonManager.gd: 負責告知是否還有敵人 (has_active_enemies)，並在戰鬥清空時進場 (handle_battle_cleared)。
+# - PartyManager.gd: 在戰鬥開始時切換部署階段 (start_deployment)。
+# - AttackManager.gd: 在每一波物理結算完成後，重置全域連擊數 (reset_global_combo)。
+# - BoardManager.gd: 提供場上實體資訊供鎖定物理 (lock_physics)。
+# - GridEntity.gd / CharacterData.gd: 回合開始時扣除冷卻時間 (decrement_cooldowns)。
+
+# 核心依賴
 const TraitServiceScript = preload("res://Scripts/Managers/TraitService.gd")
 
-signal turn_changed(current_faction: FactionDefinition)
-signal turn_count_changed(count: int)
-signal turn_started(faction: FactionDefinition)
-signal turn_ended(faction: FactionDefinition)
-signal state_changed(new_state: State)
-signal free_roam_mode_changed(enabled: bool)
-signal enemy_turn_ticked # 用於通知子彈與攻擊組件的回合步進
-signal loot_unlocked # 新增：通知場上所有戰利品可以被拾取了
+# 對外信號 (用於同步 UI 與 實體狀態)
+signal turn_changed(current_faction: FactionDefinition) # 陣營變更 (用於頂部 Bar 顯示)
+signal turn_count_changed(count: int) # 回合計數更新
+signal turn_started(faction: FactionDefinition) # 當前回合正式啟動
+signal turn_ended(faction: FactionDefinition) # 當前回合結束清理
+signal state_changed(new_state: State) # 狀態機切換時觸發
+signal free_roam_mode_changed(enabled: bool) # 自由跑圖狀態同步
+signal enemy_turn_ticked # 回合步進信号 (子彈/狀態扣除用)
+signal loot_unlocked # 拾取權限解鎖 (戰後出現)
+signal turn_visuals_finished # 新增：UI 動畫播放完畢信號 (解除回合鎖定)
 
 enum State {
-	DEPLOYMENT,
-	PLAYER_TURN,
-	ENEMY_TURN,
-	RESOLVING, # 物理結算中
-	WAITING,
-	FREE_ROAM,
-	LOOT_PHASE # 戰後搜刮階段
+	DEPLOYMENT, # 部署階段 (連動 PartyManager)
+	PLAYER_TURN, # 玩家操作階段 (允許輸入、解鎖物理)
+	ENEMY_TURN, # 敵人 AI 執行階段 (自動化攻擊序列)
+	RESOLVING, # 物理結算階段 (等待所有 RigidBody 靜止與子彈消失)
+	WAITING, # 初始閒置
+	FREE_ROAM, # 自由跑圖 (非戰鬥狀態)
+	LOOT_PHASE # 戰後搜刮 (敵人全清但尚未轉場，允許玩家拾取掉落物)
 }
 
 var current_state: State = State.WAITING
@@ -102,37 +118,44 @@ func end_deployment() -> void:
 	start_turn()
 
 ## 開始當前回合
+## 流程：扣除冷卻 -> 發送 Tick 信号 -> 進入陣營專屬邏輯
 func start_turn() -> void:
-	# print("[TurnManager] start_turn() for Faction: %s" % [current_faction.faction_name if current_faction else "None"])
+	# [邏輯匯總]: 這裡是回合切換的最上層進入點
 	if current_faction == null: return
 	if is_free_roam_mode:
 		_ensure_player_control()
 		return
 		
+	# 1. 冷卻與步進通知 (連動技能系統與組件)
 	_decrement_all_skill_cooldowns()
 	enemy_turn_ticked.emit()
-	
-	if current_faction.is_controllable:
-		_set_state(State.PLAYER_TURN)
-		_units_launched = false
-		# 玩家回合開始：解鎖所有玩家單位
-		unlock_all_players()
-		# 解鎖戰利品拾取權限
-		loot_unlocked.emit()
-	else:
-		_set_state(State.ENEMY_TURN)
-		# 敵人回合開始前：確保所有單位（含玩家）都處於鎖定狀態，防止被誤推
-		lock_all_entities()
-		await _execute_enemy_actions()
-		
-		# 敵人回合結束：最終全體鎖定
-		lock_all_entities()
-		advance_turn()
-		return
 	
 	turn_started.emit(current_faction)
 	turn_changed.emit(current_faction)
 	turn_count_changed.emit(turn_count)
+	
+	if current_faction.is_controllable:
+		# 玩家回合：解鎖物理與拾取權限
+		_set_state(State.PLAYER_TURN)
+		_units_launched = false
+		unlock_all_players()
+		loot_unlocked.emit()
+	else:
+		# 敵人回合：鎖定所有實體，執行自動化攻擊 (連動 AttackComponent)
+		_set_state(State.ENEMY_TURN)
+		lock_all_entities()
+		
+		# 檢查是否有回合提示 UI 存在，若有則等待其動畫結束
+		# 避免硬編碼時間，改用信號同步
+		if not get_tree().get_nodes_in_group("turn_indicator").is_empty():
+			await turn_visuals_finished
+		
+		await _execute_enemy_actions()
+		
+		# 動畫與結算完成後，自動跳轉下一回合
+		lock_all_entities()
+		advance_turn()
+		return
 
 func _execute_enemy_actions() -> void:
 	var enemies = get_tree().get_nodes_in_group("enemy")
@@ -172,7 +195,7 @@ func lock_all_entities() -> void:
 			e.lock_physics()
 
 func unlock_all_players() -> void:
-	"""解鎖所有玩家單位"""
+	"""解鎖所有玩家單位 (連動 GridEntity.gd: unlock_physics)"""
 	var players = get_tree().get_nodes_in_group("player")
 	for p in players:
 		if p.has_method("unlock_physics"):
@@ -232,14 +255,15 @@ func _collect_all_physical_coins() -> void:
 		if coin.has_method("collect"):
 			coin.collect(target_pos)
 
+## 切換至下一個陣營的回合
 func advance_turn() -> void:
-	# print("[TurnManager] advance_turn() called. Current Faction: %s" % [current_faction.faction_name if current_faction else "None"])
+	# [邏輯匯總]: 負責計算 faction 索引並遞增 turn_count
 	if current_faction == null: return
 	if is_free_roam_mode:
 		_ensure_player_control()
 		return
 		
-	# 如果已經進入搜刮階段，禁止正常回合遞進
+	# 如果已經進入搜刮階段，禁止正常回合遞進 (由 DungeonManager 轉場觸發 reset)
 	if current_state == State.LOOT_PHASE:
 		print("[TurnManager] advance_turn blocked: Currently in LOOT_PHASE.")
 		return
@@ -251,7 +275,6 @@ func advance_turn() -> void:
 	if current_faction_index == 0:
 		turn_count += 1
 		
-	# print("[TurnManager] Advancing to Faction Index: %d (%s)" % [current_faction_index, current_faction.faction_name])
 	start_turn()
 
 func on_unit_launched(_unit: Node, _force: Vector2) -> void:
@@ -301,28 +324,24 @@ func _resolve_action() -> void:
 	_is_currently_resolving = false
 	_active_resolution_faction = null
 	
-	# 根據結算前的狀態決定下一步
+	# 物理結算靜止後的邏輯分歧
 	if prev_state == State.LOOT_PHASE:
-		# 搜刮射擊結束，交由 DungeonManager 處理轉場
+		# 搜刮結束：前往下一個房間 (連動 DungeonManager)
 		if DungeonManager:
-			# print("[TurnManager] LOOT_PHASE resolved. Calling DungeonManager.advance_to_next_room()")
 			DungeonManager.advance_to_next_room()
 	elif prev_state == State.PLAYER_TURN or prev_state == State.DEPLOYMENT:
-		# 正常玩家回合或部署階段射擊結束，檢查是否還有敵人
+		# 戰鬥結束檢查：如果沒敵人了進入 handle_battle_cleared (連動 DungeonManager)
 		var has_enemies = false
 		if DungeonManager:
 			has_enemies = DungeonManager.has_active_enemies()
-			# print("[TurnManager] PLAYER_TURN/DEPLOYMENT resolved. Active enemies: ", has_enemies)
 			
 		if not has_enemies:
-			# print("[TurnManager] No enemies remaining. Calling DungeonManager.handle_battle_cleared()")
 			DungeonManager.handle_battle_cleared()
 		else:
-			# print("[TurnManager] Enemies still present. Locking entities and advancing turn.")
+			# 還有敵人：鎖定實體並跳轉下一回合 (敵人回合)
 			lock_all_entities()
 			advance_turn()
 	else:
-		# print("[TurnManager] RESOLVE completed for state: ", State.keys()[prev_state], ". Advancing turn.")
 		lock_all_entities()
 		advance_turn()
 
@@ -353,6 +372,10 @@ func set_free_roam_mode(enabled: bool) -> void:
 	is_free_roam_mode = enabled
 	free_roam_mode_changed.emit(enabled)
 	if enabled: _ensure_player_control()
+
+## UI 呼叫此方法通知動畫結束
+func report_turn_visuals_finished() -> void:
+	turn_visuals_finished.emit()
 
 func _ensure_player_control() -> void:
 	for i in range(factions_order.size()):

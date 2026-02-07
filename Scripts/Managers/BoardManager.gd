@@ -1,5 +1,15 @@
 extends Node
 
+# [BoardManager] 棋盤實體註冊管理器 (Autoload)
+# 職責：
+# 1. 集中管理場上所有 GridEntity 的引用。
+# 2. 提供依陣營 (Faction) 分類的查詢接口 (get_entities_by_faction)。
+# 3. 發送實體進出信號，供 DungeonManager 與 UI 更新狀態。
+
+# [相關外部連動腳本]:
+# - DungeonManager.gd: 依賴 entity_unregistered 判斷戰鬥清空。
+# - GridEntity.gd: 在 _ready 與 _exit_tree 自動註冊/註銷。
+
 # 記錄所有在場上的實體： { FactionDefinition: [GridEntity, GridEntity, ...] }
 var _entities_by_faction: Dictionary = {}
 
